@@ -1,0 +1,60 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+# DroneHighlighter: tests on Windows + DroneHighlighter.exe as a downloadable artifact.
+# Run it from the Actions tab ("Run workflow") or push a tag like drone-v0.5.0.
+name: Build DroneHighlighter.exe
+
+on:
+  workflow_dispatch:
+    inputs:
+      with_clip:
+        description: 'Include PyTorch + CLIP (much larger, experimental)'
+        type: boolean
+        default: false
+  push:
+    tags: ['drone-v*']
+
+jobs:
+  windows-exe:
+    runs-on: windows-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: ffmpeg for the tests
+        run: choco install ffmpeg -y --no-progress
+      - name: Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install numpy opencv-python PySide6 pyyaml pillow imageio-ffmpeg av pyinstaller pytest
+      - name: CLIP dependencies
+        if: ${{ inputs.with_clip }}
+        run: |
+          pip install torch --index-url https://download.pytorch.org/whl/cu128
+          pip install transformers
+      - name: Tests (DroneHighlighter)
+        env:
+          QT_QPA_PLATFORM: offscreen
+          DRONEHIGHLIGHTER_NO_VIDEO_PREVIEW: '1'
+        run: python -m pytest tests/test_drone_pipeline.py tests/test_drone_ai_feedback.py tests/test_drone_styles.py tests/test_drone_material_groups.py tests/test_drone_manual_edit.py -q
+      - name: Build
+        env:
+          DH_WITH_CLIP: ${{ inputs.with_clip && '1' || '' }}
+        run: pyinstaller packaging/drone/DroneHighlighter.spec --noconfirm --distpath dist --workpath build/drone
+      - name: Smoke test the .exe
+        shell: pwsh
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          $env:DRONEHIGHLIGHTER_SELFTEST = "$env:RUNNER_TEMP\selftest.txt"
+          Start-Process -Wait -FilePath "dist\DroneHighlighter\DroneHighlighter.exe"
+          Get-Content $env:DRONEHIGHLIGHTER_SELFTEST
+          Remove-Item Env:DRONEHIGHLIGHTER_SELFTEST
+          & dist\DroneHighlighter\DroneHighlighter-cli.exe --help | Select-Object -First 3
+          Compress-Archive -Path dist\DroneHighlighter -DestinationPath dist\DroneHighlighter-win64.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DroneHighlighter-win64
+          path: dist/DroneHighlighter-win64.zip
+          retention-days: 30
