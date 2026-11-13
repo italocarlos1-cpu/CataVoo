@@ -70,7 +70,21 @@ def build_parser() -> argparse.ArgumentParser:
     return ap
 
 
+def _safe_console() -> None:
+    """Emoji in the log must never crash the program: redirected to a file or
+    a pipe, Windows would encode with cp1252 (and the .exe ignores PYTHONUTF8)."""
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            if stream.isatty():
+                stream.reconfigure(errors="replace")
+            else:
+                stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, OSError, ValueError):
+            pass
+
+
 def main(argv=None) -> int:
+    _safe_console()
     a = build_parser().parse_args(argv)
     style = STYLES[a.estilo]
     sizes = {"4k": (3840, 2160), "1080p": (1920, 1080), "720p": (1280, 720)}

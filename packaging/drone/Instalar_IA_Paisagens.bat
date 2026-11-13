@@ -15,7 +15,7 @@ REM    Instalar_IA_Paisagens.bat /silencioso  sem pausas (para scripts)
 REM
 REM  Para desinstalar: apague a pasta packs\clip.
 REM ===================================================================
-setlocal EnableExtensions EnableDelayedExpansion
+setlocal EnableExtensions
 cd /d "%~dp0"
 title DroneHighlighter - instalando a IA de paisagens (CLIP)
 
@@ -90,7 +90,7 @@ echo [2/4] Baixando e instalando PyTorch e transformers (demora) ...
   --target "%TARGET%" --only-binary=:all: --platform win_amd64 ^
   --python-version %PYXY% --implementation cp --abi cp%PYTAG% ^
   --index-url %INDEX% --extra-index-url https://pypi.org/simple ^
-  torch "transformers>=4.40" || goto :falha_pip
+  torch "transformers>=4.40" pillow || goto :falha_pip
 
 REM --- registro do pacote --------------------------------------------
 > "%PACK%\pack.json" echo {"name": "clip", "dep": "torch", "priority": 100}
