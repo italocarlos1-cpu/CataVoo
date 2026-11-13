@@ -58,6 +58,12 @@ ficam menos. A duração total e o encaixe na música não mudam.
   a sua seleção e, no modo Automático, o seu estilo.
 - **Música**: volume abaixando nos últimos ~4 s; uma faixa mais curta que o vídeo é repetida.
 
+## Base do VideoHighlighter
+
+A v0.5.4 roda sobre o VideoHighlighter **0.15.1** (merge de `upstream/main` no branch `drone`).
+Para atualizar de novo: `git fetch upstream && git merge upstream/main` no branch `drone`, depois
+rodar os testes `tests/test_drone_*.py` (o workflow do Windows faz isso a cada push).
+
 ## CLIP no .exe — `Instalar_IA_Paisagens.bat` (v0.5.3)
 
 O `.exe` sai sem PyTorch. O `Instalar_IA_Paisagens.bat`, copiado ao lado dele pelo
