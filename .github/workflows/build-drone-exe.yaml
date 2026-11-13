@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # DroneHighlighter: tests on Windows + DroneHighlighter.exe as a downloadable artifact.
-# Run it from the Actions tab ("Run workflow") or push a tag like drone-v0.5.0.
+# Runs on every push to the drone branch that touches the program, on tags like
+# drone-v0.5.2, or from the Actions tab ("Run workflow", once the file is on the default branch).
 name: Build DroneHighlighter.exe
 
 on:
@@ -12,6 +13,14 @@ on:
         default: false
   push:
     tags: ['drone-v*']
+    # Also on every update of the drone branch that touches the program.
+    branches: ['drone']
+    paths:
+      - 'drone/**'
+      - 'packaging/drone/**'
+      - 'tests/test_drone_*.py'
+      - 'tests/drone_fixtures.py'
+      - '.github/workflows/build-drone-exe.yaml'
 
 jobs:
   windows-exe:
