@@ -805,6 +805,7 @@ class SignalRunWorker(QThread):
                                        source_lang=p.get("source_lang"),
                                        target_lang=p.get("target_lang"),
                                        reuse_cached=p.get("reuse_cached", True),
+                                       snap_to_shots=bool(p.get("snap_to_shots")),
                                        progress=progress, cancel=c, log=self.log.emit)
             return {"transcript": result}
         raise ValueError(f"unknown signal kind: {self.kind}")
@@ -1189,6 +1190,8 @@ class VideoHighlighterGUI(QWidget):
         self.file_list = VideoList(self.add_video_paths)
         accept_video_drops(self.full_page, self.add_video_paths)
         self.file_list.setMaximumHeight(46)
+        self.file_list.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.file_list.customContextMenuRequested.connect(self._file_list_context_menu)
         file_layout.addWidget(self.file_list)
 
         saved_paths = self.config_data.get("video", {}).get("paths", [])
@@ -1624,8 +1627,8 @@ class VideoHighlighterGUI(QWidget):
 
         self.spin_scene_points = QSpinBox(); self.spin_scene_points.setRange(0,100); self.spin_scene_points.setValue(scoring_cfg.get("scene_points", 0))
         self.spin_scene_points.setToolTip(
-            "Points on the second a scene cut starts (a jump in frame difference). "
-            "One hit per cut, not for the rest of the scene.")
+            "Points on the second a shot change happens (a jump in frame difference). "
+            "One hit per cut, not for the rest of the shot.")
 
         self.spin_motion_event_points = QSpinBox(); self.spin_motion_event_points.setRange(0,100); self.spin_motion_event_points.setValue(scoring_cfg.get("motion_event_points", 0))
         self.spin_motion_event_points.setToolTip(
@@ -1635,7 +1638,7 @@ class VideoHighlighterGUI(QWidget):
 
         self.spin_motion_peak = QSpinBox(); self.spin_motion_peak.setRange(0,100); self.spin_motion_peak.setValue(scoring_cfg.get("motion_peak_points", 3))
         self.spin_motion_peak.setToolTip(
-            "Points when motion inside a scene rises above that scene's average, "
+            "Points when motion inside a shot rises above that shot's average, "
             "then stays low for about 4 seconds of samples.")
 
         self.spin_audio_peak = QSpinBox(); self.spin_audio_peak.setRange(0,100); self.spin_audio_peak.setValue(scoring_cfg.get("audio_peak_points", 0))
@@ -1741,7 +1744,7 @@ class VideoHighlighterGUI(QWidget):
         # One box per signal rather than one list of eleven rows. The labels
         # only mean anything once the reader knows which detector a row belongs
         # to, and in a flat column that has to be inferred from the wording of
-        # each label — which is why the shortest ones ("Scene points") were the
+        # each label — which is why the shortest ones ("Shot change points") were the
         # hardest to place. A box answers it before the row is read.
         face_row = QWidget()
         face_h = QHBoxLayout(face_row)
@@ -1755,11 +1758,11 @@ class VideoHighlighterGUI(QWidget):
         # the button lives on the first of the three and runs all three.
         # Keyword + transcript points likewise share one transcription pass.
         groups = (
-            ("Movement && scenes", (
-                ("Scene points:", self._points_row_with_button(
+            ("Movement && shots", (
+                ("Shot change points:", self._points_row_with_button(
                     self.spin_scene_points, "motion", "Scan motion",
-                    "Detect scene cuts and motion across every video in the list "
-                    "and cache them (covers scene, motion event and motion peak "
+                    "Detect shot changes and motion across every video in the list "
+                    "and cache them (covers shot change, motion event and motion peak "
                     "— one pass). No highlights are cut.")),
                 ("Motion event points:", self.spin_motion_event_points),
                 ("Motion peak points:", self.spin_motion_peak),
@@ -1949,7 +1952,7 @@ class VideoHighlighterGUI(QWidget):
             if is_auto:
                 self.auto_seg_info_label.setText(
                     "🔧 Auto mode: the app will determine clip boundaries from signal structure "
-                    "(action durations, scene cuts, keyword timing, object clusters, audio/motion peaks)."
+                    "(action durations, shot changes, keyword timing, object clusters, audio/motion peaks)."
                 )
             else:
                 self.auto_seg_info_label.setText(
@@ -2086,6 +2089,17 @@ class VideoHighlighterGUI(QWidget):
             subtitles_cfg.get("target_lang") or content_language.whisper_code(i18n.current_language())))
         self.subtitle_target_lang.setEnabled(subtitles_cfg.get("enabled", False) and transcript_cfg.get("enabled", False))
         subtitle_form.addRow(i18n.t("Target language:"), self.subtitle_target_lang)
+        # Off by default: it finds the shot changes first, which adds about a
+        # minute per 20 minutes of video on an Intel GPU.
+        self.subtitle_snap_checkbox = QCheckBox("Time subtitles to shot changes")
+        self.subtitle_snap_checkbox.setToolTip(
+            "Find the video's shot changes and line the subtitles up with them, "
+            "as subtitlers do: a line that starts or ends within half a second "
+            "of a cut starts on it, or ends just before it, so text and picture "
+            "change together instead of a few frames apart.")
+        self.subtitle_snap_checkbox.setChecked(bool(subtitles_cfg.get("snap_to_shots", False)))
+        self.subtitle_snap_checkbox.setEnabled(subtitles_cfg.get("enabled", False) and transcript_cfg.get("enabled", False))
+        subtitle_form.addRow("", self.subtitle_snap_checkbox)
         _sub_run = self._make_analyze_button(
             "subtitles", "Make subtitles",
             "Transcribe every video in the list and write a .srt next to each "
@@ -2114,7 +2128,7 @@ class VideoHighlighterGUI(QWidget):
         self.frame_skip_spin.setRange(1, 30)
         self.frame_skip_spin.setValue(advanced_cfg.get("frame_skip", 5))
         self.frame_skip_spin.setToolTip(
-            "Motion and scene detection read every Nth frame. "
+            "Motion and shot detection read every Nth frame. "
             "Higher is faster and can miss a short cut or a brief motion.")
 
         motion_layout.addRow("Frame skip:", self.frame_skip_spin)
@@ -4521,6 +4535,7 @@ class VideoHighlighterGUI(QWidget):
             "transcript_source_lang": self.transcript_source_lang.currentText(),
             "search_keywords": search_keywords,
             "create_subtitles": self.subtitles_checkbox.isChecked() and use_transcript,
+            "snap_subtitles_to_shots": self.subtitle_snap_checkbox.isChecked(),
             # The spoken language has one home: Transcript Settings.
             "source_lang": self.transcript_source_lang.currentText(),
             "target_lang": self.subtitle_target_lang.currentText(),
@@ -4724,6 +4739,18 @@ class VideoHighlighterGUI(QWidget):
             self.download_worker = None
 
     # --- Multi-file support methods ---
+    def _file_list_context_menu(self, pos):
+        item = self.file_list.itemAt(pos)
+        if item is None:
+            return
+        menu = QMenu(self)
+        # Every cut to the frame, as an EDL and a plain list beside the video:
+        # what a subtitle editor loads to keep lines off shot changes.
+        shots = menu.addAction("Export shot list (EDL)…")
+        if menu.exec(self.file_list.mapToGlobal(pos)) is shots:
+            from modules.ui.shot_list_action import export_shot_list
+            export_shot_list(self, item.data(Qt.UserRole) or item.text())
+
     def browse_files(self):
         """Add one or more video files"""
         file_paths, _ = QFileDialog.getOpenFileNames(
@@ -4961,6 +4988,8 @@ class VideoHighlighterGUI(QWidget):
             self.subtitles_checkbox.setChecked(bool(sub["enabled"]))
         if "target_lang" in sub:
             self._set_lang_combo(self.subtitle_target_lang, str(sub["target_lang"]))
+        if "snap_to_shots" in sub:
+            self.subtitle_snap_checkbox.setChecked(bool(sub["snap_to_shots"]))
 
         adv = data.get("advanced") or {}
         if "frame_skip" in adv:
@@ -5136,6 +5165,7 @@ class VideoHighlighterGUI(QWidget):
                 # still reading subtitles.source_lang) sees one answer, not two.
                 "source_lang": self.transcript_source_lang.currentText(),
                 "target_lang": self.subtitle_target_lang.currentText(),
+                "snap_to_shots": self.subtitle_snap_checkbox.isChecked(),
             },
             # Detector knobs with no widget of their own. Carried through from
             # whatever is on disk rather than omitted, because this dict is
@@ -5219,6 +5249,7 @@ class VideoHighlighterGUI(QWidget):
         final_state = checked and transcript_enabled
         
         self.subtitle_target_lang.setEnabled(final_state)
+        self.subtitle_snap_checkbox.setEnabled(final_state)
 
     # --- Labels ---
     def load_labels_from_json(self, filepath):
@@ -5929,7 +5960,7 @@ class VideoHighlighterGUI(QWidget):
             self.append_log("❌ ERROR: All scoring points are set to 0!")
             self.append_log("")
             self.append_log("Please configure at least one scoring point:")
-            self.append_log("  • Scene points")
+            self.append_log("  • Shot change points")
             self.append_log("  • Motion event points")
             self.append_log("  • Motion peak points")
             self.append_log("  • Audio peak points")
@@ -6012,6 +6043,7 @@ class VideoHighlighterGUI(QWidget):
             "transcript_source_lang": self.transcript_source_lang.currentText(),
             "search_keywords": search_keywords,
             "create_subtitles": self.subtitles_checkbox.isChecked() and use_transcript,
+            "snap_subtitles_to_shots": self.subtitle_snap_checkbox.isChecked(),
             # The spoken language has one home: Transcript Settings.
             "source_lang": self.transcript_source_lang.currentText(),
             "target_lang": self.subtitle_target_lang.currentText(),
@@ -6274,6 +6306,11 @@ class VideoHighlighterGUI(QWidget):
         if self._signal_worker and self._signal_worker.isRunning():
             self.append_log("⚠️ An on-demand run is already going.")
             return
+        # These runs read their settings back from config.yaml (the model,
+        # the language, the detector), so what is on screen has to be in the
+        # file first: a Whisper model picked a moment ago was otherwise
+        # ignored for the one still saved from the last full run.
+        self.save_config()
 
         video_paths = self.get_file_list()
         if not video_paths:
@@ -6353,6 +6390,7 @@ class VideoHighlighterGUI(QWidget):
             # cached one is labelled with its own language rather than this.
             params["language"] = self.transcript_source_lang.currentText()
             params["target_lang"] = self.subtitle_target_lang.currentText()
+            params["snap_to_shots"] = self.subtitle_snap_checkbox.isChecked()
             # "Force reprocess (ignore cache)" means a fresh transcript here too;
             # otherwise the one in the cache is reused and only the .srt is new.
             params["reuse_cached"] = not self.force_reprocess_checkbox.isChecked()
