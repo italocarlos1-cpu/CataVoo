@@ -9,8 +9,17 @@ Existem dois caminhos, e os dois usam a mesma receita (`DroneHighlighter.spec`).
    instala as dependências, gera o programa, faz um autoteste e compacta tudo.
 3. O resultado fica em `dist\DroneHighlighter\DroneHighlighter.exe` e `dist\DroneHighlighter-win64.zip`.
 
-`build_exe.bat clip` gera a edição com CLIP (PyTorch com CUDA, vários GB). Ela é **experimental**
-e ainda não foi testada.
+## IA de paisagens (CLIP) depois, sem gerar de novo
+Ao lado do `.exe` vai o **`Instalar_IA_Paisagens.bat`**. Com o programa fechado, dois cliques nele baixam o
+PyTorch (com CUDA se houver placa NVIDIA; `/cpu` força a versão sem placa) e o transformers para
+`packs\clip\site-packages`, e já baixam o modelo CLIP. Não precisa de Python no PC: o instalador usa um
+Python temporário e apaga depois. Ao abrir, o programa acha o pacote sozinho (o mesmo mecanismo de
+"packs" do VideoHighlighter, `packaging/packs/rthook_packs.py`). Para desinstalar, apague `packs\clip`.
+
+O workflow do GitHub testa isso de verdade: numa cópia da pasta, roda o `.bat /silencioso /cpu` e confere
+que o `DroneHighlighter-cli.exe` classifica as paisagens com o CLIP.
+
+`build_exe.bat clip` ainda existe para quem quer o CLIP *dentro* do `.exe` (vários GB, sem internet depois).
 
 ## B) No GitHub (sem instalar nada)
 1. Envie o projeto para o seu fork no GitHub.
@@ -22,7 +31,7 @@ e ainda não foi testada.
 - `DroneHighlighter.exe` é a janela; `DroneHighlighter-cli.exe` é a linha de comando (mesmas opções de `python -m drone.cli`).
 - O ffmpeg vem embutido (imageio-ffmpeg), então não é preciso instalar ffmpeg nem Python no PC que vai usar.
 - A pasta precisa ficar inteira, porque o `.exe` usa os arquivos de `_internal`. Para levar a outro PC, copie a pasta ou o `.zip`.
-- A edição "lite" não traz o PyTorch: as paisagens são reconhecidas pela cor e o restante funciona igual.
+- O `.exe` não traz o PyTorch: até rodar o `Instalar_IA_Paisagens.bat`, as paisagens são reconhecidas pela cor e o restante funciona igual.
 - O cache e as configurações ficam em `%LOCALAPPDATA%\DroneHighlighter`, compartilhados com a versão em Python.
 
 ## Ícone

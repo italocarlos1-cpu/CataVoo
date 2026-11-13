@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       with_clip:
-        description: 'Include PyTorch + CLIP (much larger, experimental)'
+        description: 'Bundle PyTorch + CLIP inside the .exe (huge; normally Instalar_IA_Paisagens.bat installs it later)'
         type: boolean
         default: false
   push:
@@ -67,3 +67,23 @@ jobs:
           name: DroneHighlighter-win64
           path: dist/DroneHighlighter-win64.zip
           retention-days: 30
+      # The artifact above stays "lite". Now prove the CLIP installer works:
+      # in a copy of the folder, run the .bat (CPU torch) and check that the
+      # frozen program really classifies landscapes with CLIP.
+      - name: CLIP installer test (Instalar_IA_Paisagens.bat)
+        if: ${{ !inputs.with_clip }}
+        shell: pwsh
+        env:
+          PYTHONUTF8: '1'
+          PYTHONIOENCODING: 'utf-8'
+        run: |
+          $t = "$env:RUNNER_TEMP\cliptest"
+          Copy-Item -Recurse dist\DroneHighlighter $t
+          & "$t\Instalar_IA_Paisagens.bat" /silencioso /cpu
+          if ($LASTEXITCODE -ne 0) { throw "installer failed ($LASTEXITCODE)" }
+          Get-Content "$t\packs\clip\pack.json"
+          if (Test-Path "$t\packs\.instalador") { throw "installer left its temp folder" }
+          python -c "import sys; sys.path.insert(0, 'tests'); import drone_fixtures as f; f.make_trip(sys.argv[1])" "$env:RUNNER_TEMP\trip"
+          $log = & "$t\DroneHighlighter-cli.exe" --pasta "$env:RUNNER_TEMP\trip" --so-analisar --saida "$env:RUNNER_TEMP\trip_out" 2>&1 | Out-String
+          $log -split "`r?`n" | Select-String -Pattern 'CLIP|paisagem|Traceback|Error'
+          if ($log -notmatch 'paisagem: clip') { $log; throw "CLIP was not used after the installer" }

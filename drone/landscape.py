@@ -3,10 +3,10 @@
 
 Two backends with one output shape (per-thumbnail category probabilities):
 
-* **CLIP zero-shot** through VideoHighlighter's own loader
-  (:class:`llm.clip_prefilter.ClipFramePrefilter` — CUDA on the RTX 2060,
-  OpenVINO/CPU elsewhere). ViT-B/32 is ~600 MB of VRAM in fp16, loaded once for
-  the whole folder after the decode pass, then released. Embeddings are cached,
+* **CLIP zero-shot** (ViT-B/32) through PyTorch + transformers — fp16 on an
+  NVIDIA card, fp32 on the processor otherwise. ~600 MB of VRAM, loaded once
+  for the whole folder after the decode pass, then released. In the .exe these
+  come from the separately installed CLIP pack (``Instalar_IA_Paisagens.bat``). Embeddings are cached,
   so a second montage of the same trip never runs CLIP again.
 * **Colour heuristic** when the CLIP stack is not installed: water, vegetation,
   sky, warm roofs and texture from :mod:`drone.frame_metrics`. Coarser — it
@@ -16,6 +16,8 @@ This replaces SkyGrid's YOLO-based subject detection (ultralytics is AGPL and
 banned from this codebase by upstream's own test) with a model-free design.
 """
 from __future__ import annotations
+
+from types import SimpleNamespace
 
 import numpy as np
 
@@ -102,27 +104,61 @@ def heuristic_interest(tl: dict, idx: np.ndarray) -> np.ndarray:
     return 0.45 * colorful + 0.30 * detail + 0.25 * horizon
 
 
+CLIP_MODEL_ID = "openai/clip-vit-base-patch32"
+
+
+class _TorchClip:
+    """CLIP through PyTorch + transformers only: the NVIDIA card when there is
+    one, the processor otherwise. No OpenVINO, so the separately installed
+    "pacote CLIP" (packs/clip) is all a PC needs. The weights (~600 MB) are
+    fetched from Hugging Face on first use and cached; offline afterwards."""
+
+    def __init__(self, model_id: str = CLIP_MODEL_ID):
+        import torch
+        from transformers import CLIPModel, CLIPProcessor
+        self.torch = torch
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.dtype = torch.float16 if self.device == "cuda" else torch.float32
+        self.model = CLIPModel.from_pretrained(model_id, torch_dtype=self.dtype).to(self.device).eval()
+        try:
+            self.processor = CLIPProcessor.from_pretrained(model_id, use_fast=False)
+        except TypeError:
+            self.processor = CLIPProcessor.from_pretrained(model_id)
+
+    def infer(self, texts: list, images: list):
+        torch = self.torch
+        inputs = self.processor(text=list(texts), images=images, return_tensors="pt", padding=True)
+        inputs = {k: v.to(self.device) for k, v in inputs.items()}
+        if "pixel_values" in inputs:
+            inputs["pixel_values"] = inputs["pixel_values"].to(self.dtype)
+        with torch.no_grad():
+            out = self.model(**inputs)
+        return SimpleNamespace(logits_per_image=out.logits_per_image.float().cpu())
+
+
 class ClipScorer:
-    """Thin wrapper around the engine's CLIP loader for multi-label zero-shot."""
+    """Multi-label zero-shot landscape recognition with CLIP."""
 
     def __init__(self, log_fn=print):
         self.log_fn = log_fn
         self._pf = None
-        self._text = None
 
     @staticmethod
     def available() -> bool:
+        """True when PyTorch and transformers can be imported — in the .exe,
+        from the CLIP pack next to the program (packs/clip)."""
+        import importlib.util
         try:
-            from llm.clip_prefilter import ClipFramePrefilter
-            return ClipFramePrefilter.available("AUTO")
-        except Exception:
+            return (importlib.util.find_spec("torch") is not None
+                    and importlib.util.find_spec("transformers") is not None)
+        except (ImportError, ValueError):
             return False
 
     def load(self):
-        from llm.clip_prefilter import ClipFramePrefilter
-        self._pf = ClipFramePrefilter(device="AUTO")
-        self._pf.load()
-        self.log_fn(f"🧠 CLIP carregado ({getattr(self._pf, 'device', '?')})")
+        self.log_fn("🧠 Carregando o CLIP (na primeira vez baixa ~600 MB da internet)…")
+        self._pf = _TorchClip()
+        where = "placa NVIDIA" if self._pf.device == "cuda" else "processador"
+        self.log_fn(f"🧠 CLIP carregado no {where} ({self._pf.device})")
 
     def probs(self, images_bgr: list) -> tuple[np.ndarray, np.ndarray]:
         """(category probs [n, C], P(boring) [n]) for BGR images."""

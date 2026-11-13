@@ -7,7 +7,8 @@ REM  Duplo clique neste arquivo (ou rode no Prompt de Comando).
 REM  Requisito: Python 3.12 (python.org, marcar "Add python.exe to PATH").
 REM
 REM    build_exe.bat          edicao "lite": sem PyTorch/CLIP (~350 MB)
-REM    build_exe.bat clip     com CLIP na placa NVIDIA (varios GB, experimental)
+REM    build_exe.bat clip     com o CLIP DENTRO do .exe (varios GB; o normal e
+REM                           usar o Instalar_IA_Paisagens.bat ao lado do .exe)
 REM
 REM  Resultado: dist\DroneHighlighter\DroneHighlighter.exe
 REM             dist\DroneHighlighter-win64.zip  (a pasta inteira, para copiar/compartilhar)

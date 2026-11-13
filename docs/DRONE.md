@@ -58,6 +58,21 @@ ficam menos. A duração total e o encaixe na música não mudam.
   a sua seleção e, no modo Automático, o seu estilo.
 - **Música**: volume abaixando nos últimos ~4 s; uma faixa mais curta que o vídeo é repetida.
 
+## CLIP no .exe — `Instalar_IA_Paisagens.bat` (v0.5.3)
+
+O `.exe` sai sem PyTorch. O `Instalar_IA_Paisagens.bat`, copiado ao lado dele pelo
+`DroneHighlighter.spec`, baixa um Python embutido temporário + `pip.pyz` e instala `torch`
+(índice `cu126` se `nvidia-smi -L` responder, senão `cpu`) e `transformers` em
+`packs\clip\site-packages`, com `--python-version` igual ao do build (`dh_python.txt`).
+Grava `packs\clip\pack.json` (`dep: torch`) e já baixa `openai/clip-vit-base-patch32`.
+
+No arranque, o runtime hook do upstream (`packaging/packs/rthook_packs.py`) acrescenta o pack
+ao `sys.path` (no fim: o que vem no bundle sempre ganha). Para isso funcionar o spec segue as
+regras de `tools/pack_core_args.py`: torch fica de fora, a biblioteca padrão vai inteira e os
+pacotes compartilhados (numpy, PIL, filelock…) vão completos. `drone/landscape.py` carrega o
+CLIP direto pelo `transformers` em CUDA fp16 ou CPU fp32, sem OpenVINO. O workflow do Windows
+roda o `.bat /silencioso /cpu` numa cópia da pasta e exige `Classificação de paisagem: clip`.
+
 ## Edição manual (timeline) — v0.5
 
 - `drone/pipeline.py` agora é separado em `_analyse` (análise), `prepare_group` / `plan_format`
@@ -222,7 +237,7 @@ continua passando (3.792 testes).
 
 1. Calibrar os limiares com 5 a 10 clipes DJI reais seus: alguns bons, alguns
    tremidos e alguns com D-Log.
-2. Validar o CLIP na RTX 2060 (aqui só a integração foi testada, com um modelo falso).
+2. Medir o CLIP na sua placa NVIDIA (no CI ele roda de verdade, mas no processador).
 3. Normalizar com NVENC e CRF menor em 4K (proposta de PR para o upstream).
 4. Recorte 9:16 que acompanha o assunto durante panorâmicas e órbitas, em vez de ficar fixo.
 5. Correção automática de D-Log/HLG (LUT) e nivelamento do horizonte.

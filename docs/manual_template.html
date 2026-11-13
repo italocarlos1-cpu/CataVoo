@@ -76,7 +76,7 @@
   <img src="{{IMG_ICONE}}" alt="Ícone do DroneHighlighter" style="width:96px;height:96px;float:right;margin:0 0 10px 16px">
   <h1>DroneHighlighter</h1>
   <p class="sub">Manual de uso: editor automático de vídeos de drone, 100% local</p>
-  <p class="meta">Versão do programa: 0.5.2 · Manual atualizado em 13/11/2026 · Licença AGPL-3.0</p>
+  <p class="meta">Versão do programa: 0.5.3 · Manual atualizado em 13/11/2026 · Licença AGPL-3.0</p>
 </header>
 
 <p>O DroneHighlighter transforma uma pasta de vídeos brutos de drone em vídeos prontos para publicar. Você escolhe a pasta, o estilo e a duração e clica em <b>GERAR VÍDEO</b>. O programa analisa as filmagens, escolhe os melhores trechos, descarta cenas tremidas, borradas ou repetidas, monta a sequência no ritmo da música e exporta nos formatos horizontal (16:9) e vertical (9:16).</p>
@@ -614,7 +614,7 @@ Tudo roda no seu computador: nenhum vídeo é enviado para a internet e não há
 <tr><td>IA: "não consegui conectar… está aberto?"</td><td>Abra o Ollama ou o LM Studio (e ligue o servidor local no LM Studio). Use "Testar conexão".</td></tr>
 <tr><td>IA: "modelo não encontrado"</td><td>No Ollama, rode <code>ollama pull &lt;modelo&gt;</code>. Nas APIs, confira o nome atual do modelo.</td></tr>
 <tr><td>IA: "chave de API recusada" / "limite de uso"</td><td>Confira a chave e o saldo de créditos no site do provedor.</td></tr>
-<tr><td>CLIP indisponível</td><td>Falta o PyTorch/transformers ou o download do modelo. O programa segue com a estimativa por cores. Reinstale as dependências conforme a seção 21.</td></tr>
+<tr><td>CLIP indisponível</td><td>Falta o PyTorch/transformers ou o download do modelo. O programa segue com a estimativa por cores. Rode o <code>Instalar_IA_Paisagens.bat</code> de novo (seção 21). Se você trocou de versão do programa, a versão do Python pode ter mudado: o instalador resolve isso.</td></tr>
 </table>
 
 <!-- ============================================================ -->
@@ -628,9 +628,22 @@ Tudo roda no seu computador: nenhum vídeo é enviado para a internet e não há
 </table>
 <ul>
   <li>Mantenha a pasta inteira (o <code>.exe</code> usa os arquivos de <code>_internal</code>). Para levar a outro PC, copie a pasta ou o <code>.zip</code>.</li>
-  <li>A edição padrão ("lite") não inclui o PyTorch: as paisagens são reconhecidas pela cor. A edição com CLIP (<code>build_exe.bat clip</code>) tem vários GB e ainda é experimental.</li>
+  <li>O <code>.exe</code> vem sem o PyTorch, para ficar leve: até você instalar a IA de paisagens (abaixo), as paisagens são reconhecidas pela cor.</li>
   <li>Pela AGPL, ao distribuir o <code>.exe</code> você deve oferecer também o código-fonte (por exemplo, o link do seu fork).</li>
 </ul>
+<h3>IA de paisagens (CLIP): Instalar_IA_Paisagens.bat</h3>
+<p>Na pasta do <code>.exe</code> vem o arquivo <b>Instalar_IA_Paisagens.bat</b>. Com o programa fechado, dê dois cliques nele: ele baixa o PyTorch e o transformers para a subpasta <code>packs\clip</code> e já baixa o modelo CLIP. Não é preciso ter Python instalado (o instalador usa um Python temporário e apaga depois). Na próxima vez que você abrir o DroneHighlighter, o registro mostra <b>"CLIP carregado na placa NVIDIA"</b> e <b>"Classificação de paisagem: clip"</b>.</p>
+<table>
+<tr><th>Item</th><th>Detalhe</th></tr>
+<tr><td>Placa de vídeo</td><td>Se houver placa NVIDIA (RTX 2060, 4060…), instala o PyTorch com CUDA (~2,5 GB). Sem NVIDIA, instala a versão para processador (~400 MB), que funciona mas é mais lenta. Para forçar a versão sem placa: <code>Instalar_IA_Paisagens.bat /cpu</code>.</td></tr>
+<tr><td>Espaço em disco</td><td>Deixe uns 6 GB livres durante a instalação; depois ficam ~3 GB (pacote) + ~600 MB (modelo, em <code>%USERPROFILE%\.cache\huggingface</code>).</td></tr>
+<tr><td>Internet</td><td>Só na instalação. Depois disso o CLIP roda 100% no seu PC, sem API.</td></tr>
+<tr><td>Atualizar o programa</td><td>Ao trocar a pasta do programa por uma versão nova, copie junto a pasta <code>packs</code> (ou rode o instalador de novo).</td></tr>
+<tr><td>Desinstalar</td><td>Apague a pasta <code>packs\clip</code>. O programa volta a usar as cores.</td></tr>
+<tr><td>Desligar sem desinstalar</td><td>Desmarque <b>Reconhecer paisagens com IA local (CLIP)</b> na janela (ou use <code>--sem-clip</code>).</td></tr>
+</table>
+<div class="pc"><div class="pro"><h5>Vantagens</h5><ul><li>Reconhece cachoeira, serra, cidade histórica, pôr do sol… com bem mais precisão</li><li>O Automático e os estilos que dependem da paisagem acertam mais</li><li>A análise fica salva no cache: cada vídeo é classificado uma vez só</li></ul></div><div class="con"><h5>Desvantagens</h5><ul><li>Download grande na instalação</li><li>Ocupa ~3 GB no disco</li><li>Sem placa NVIDIA, a primeira análise fica mais lenta</li></ul></div></div>
+
 <h3>Opção 2: rodar pelo Python</h3>
 <ol class="steps">
   <li>No GitHub, faça um <b>fork</b> de <code>Aseiel/VideoHighlighter</code> e clone o seu fork.</li>

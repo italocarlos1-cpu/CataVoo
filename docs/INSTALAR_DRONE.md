@@ -4,6 +4,7 @@
 Depois do passo 2 abaixo (copiar os arquivos para o fork), instale o Python 3.12 e dê dois cliques em
 `packaging\drone\build_exe.bat`. O programa fica em `dist\DroneHighlighter\DroneHighlighter.exe`.
 Outra opção: no GitHub, aba Actions → "Build DroneHighlighter.exe" → Run workflow. Detalhes em `packaging/drone/README.md`.
+Para a IA de paisagens (CLIP), rode depois o `Instalar_IA_Paisagens.bat` que fica na pasta do `.exe`.
 
 ## Jeito completo (rodar pelo Python)
 
