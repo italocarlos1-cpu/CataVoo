@@ -76,7 +76,7 @@
   <img src="{{IMG_ICONE}}" alt="Ícone do DroneHighlighter" style="width:96px;height:96px;float:right;margin:0 0 10px 16px">
   <h1>DroneHighlighter</h1>
   <p class="sub">Manual de uso: editor automático de vídeos de drone, 100% local</p>
-  <p class="meta">Versão do programa: 0.5.4 · Manual atualizado em 13/11/2026 · Licença AGPL-3.0</p>
+  <p class="meta">Versão do programa: 0.5.5 · Manual atualizado em 13/11/2026 · Licença AGPL-3.0</p>
 </header>
 
 <p>O DroneHighlighter transforma uma pasta de vídeos brutos de drone em vídeos prontos para publicar. Você escolhe a pasta, o estilo e a duração e clica em <b>GERAR VÍDEO</b>. O programa analisa as filmagens, escolhe os melhores trechos, descarta cenas tremidas, borradas ou repetidas, monta a sequência no ritmo da música e exporta nos formatos horizontal (16:9) e vertical (9:16).</p>
@@ -416,19 +416,21 @@ Tudo roda no seu computador: nenhum vídeo é enviado para a internet e não há
 </table>
 
 <!-- ============================================================ -->
-<h2 id="manual">13. Edição manual (timeline)</h2>
-<p>O botão <b>✂ Edição manual</b>, no fim da tela principal, abre uma janela de timeline. Nela você vê <b>os cortes que cada estilo faria, sem renderizar nada</b>, ajusta cada tomada até o quadro exato que quer e só então manda renderizar. A análise vem do cache: se a pasta já foi analisada, a janela abre em segundos.</p>
+<h2 id="manual">13. Edição manual (mini editor)</h2>
+<p>O botão <b>Edição manual</b>, no quadro "Não gostou?", abre um mini editor de vídeo, já maximizado (<kbd>F11</kbd> deixa em tela cheia). Ele tem um monitor que toca o vídeo final como está ficando, com a música, sem renderizar nada. Nela você vê <b>os cortes que cada estilo faria, sem renderizar nada</b>, ajusta cada tomada até o quadro exato que quer e só então manda renderizar. A análise vem do cache: se a pasta já foi analisada, a janela abre em segundos.</p>
 <figure><img src="{{IMG_EDITOR}}" alt="Janela de edição manual"><figcaption>A timeline: uma faixa por vídeo bruto (com miniaturas), tomadas usadas coloridas e numeradas, candidatos em cinza tracejado, a borda ativa em amarelo, as imagens de entrada e saída à direita e a sequência do vídeo embaixo.</figcaption></figure>
 
 <h3>O que aparece na janela</h3>
 <table>
 <tr><th style="width:26%">Parte</th><th>O que é</th></tr>
+<tr><td><b>Monitor (em cima, à esquerda)</b></td><td>Toca a <b>sequência final</b> (botão ▶ ou <kbd>Espaço</kbd>), começando na tomada selecionada, com a música (caixa <b>Música</b>). A barra embaixo dele mostra e muda a posição no vídeo; ⏮ ⏭ pulam de tomada. <b>Tocar tomada</b> (<kbd>T</kbd>) toca só a tomada selecionada; <b>Tocar clipe original</b> (<kbd>C</kbd>) toca o arquivo bruto inteiro. Na prévia as fusões aparecem como cortes secos no momento certo: elas só aparecem no vídeo renderizado.</td></tr>
+<tr><td><b>Linha vermelha</b></td><td>Durante a reprodução, mostra nas faixas de baixo qual trecho do vídeo bruto está tocando.</td></tr>
 <tr><td><b>Faixas (uma por vídeo)</b></td><td>Cada vídeo bruto inteiro, com miniaturas, nome, duração e quadros por segundo. A régua no alto mostra os segundos.</td></tr>
-<tr><td><b>Blocos coloridos numerados</b></td><td>As tomadas que estão no vídeo final. O número é a posição na sequência; a cor indica o tipo de paisagem.</td></tr>
+<tr><td><b>Blocos coloridos numerados</b></td><td>As tomadas que estão no vídeo final. O número é a posição na sequência; a cor indica o tipo de paisagem, sempre a mesma (cachoeira azul, rio ciano, mata verde, serra verde-oliva, pôr do sol laranja, cidade histórica terracota, cidade lilás, estrada cinza…). A legenda <b>Paisagens</b>, à direita, mostra as que aparecem no vídeo.</td></tr>
 <tr><td><b>Blocos cinza tracejados</b></td><td>Trechos bons que a análise encontrou, mas que o estilo não usou. Dá para trazê-los para o vídeo.</td></tr>
-<tr><td><b>Linha amarela</b></td><td>A borda ativa da tomada selecionada (entrada ou saída): é ela que as setas movem.</td></tr>
-<tr><td><b>Painel da direita</b></td><td>Detalhes da tomada (arquivo, paisagem, movimento, nota, entrada, saída, duração em segundos e em quadros, posição no vídeo, se está na batida, transição), as imagens exatas do <b>primeiro e do último quadro</b>, o botão <b>Tocar tomada</b> (prévia sem som) e o registro.</td></tr>
-<tr><td><b>Sequência (embaixo)</b></td><td>A ordem do vídeo final, com miniatura, duração, "⇢" quando há fusão para a próxima e "♪✗" quando a tomada está fora da batida.</td></tr>
+<tr><td><b>Linha branca</b></td><td>A borda ativa da tomada selecionada (entrada ou saída): é ela que as setas movem.</td></tr>
+<tr><td><b>Painel da direita</b></td><td>Detalhes da tomada (arquivo, paisagem, movimento, nota, entrada, saída, duração em segundos e em quadros, posição no vídeo, se está na batida, transição), as imagens exatas do <b>primeiro e do último quadro</b>, a legenda das paisagens e o registro.</td></tr>
+<tr><td><b>Sequência (no meio)</b></td><td>A ordem do vídeo final, com miniatura, a cor da paisagem, duração, "⇢" quando há fusão para a próxima e "♪✗" quando a tomada está fora da batida.</td></tr>
 <tr><td><b>Barra de cima</b></td><td>Grupo (quando você separa por voo/dia/local), <b>Estilo</b>, <b>Formato</b> (16:9 ou 9:16), <b>🧲 Ímã na batida</b>, zoom, botão <b>Ajustar</b> e a <b>duração total</b>, que se atualiza a cada mudança.</td></tr>
 </table>
 
@@ -450,7 +452,8 @@ Tudo roda no seu computador: nenhum vídeo é enviado para a internet e não há
 <tr><td>Adicionar um trecho cinza</td><td><b>Duplo clique</b> no bloco cinza: entra logo depois da tomada selecionada.</td></tr>
 <tr><td>Mais opções do trecho cinza</td><td>Botão direito: adicionar depois da selecionada, adicionar no final ou <b>substituir</b> a selecionada.</td></tr>
 <tr><td>Transição e remoção</td><td>Botão direito na tomada: corte seco ou fusão para a próxima, encaixar esta tomada na batida, remover.</td></tr>
-<tr><td>Reordenar</td><td>Arraste as miniaturas na <b>sequência</b> embaixo.</td></tr>
+<tr><td>Reordenar</td><td>Arraste uma miniatura da <b>sequência</b> e solte entre outras duas (metade esquerda de uma miniatura = antes dela, metade direita = depois).</td></tr>
+<tr><td>Ver um ponto do vídeo bruto</td><td>Clique num espaço vazio de uma faixa: o monitor mostra aquele quadro. <b>Duplo clique</b>: toca o vídeo bruto a partir dali.</td></tr>
 <tr><td>Zoom</td><td>Barra de zoom, ou o botão <b>Ajustar</b> para caber o vídeo mais longo na largura.</td></tr>
 </table>
 
@@ -464,7 +467,9 @@ Tudo roda no seu computador: nenhum vídeo é enviado para a internet e não há
 <tr><td><kbd>[</kbd> / <kbd>]</kbd> ou <kbd>Tab</kbd></td><td>Escolhe a borda ativa: entrada / saída (Tab alterna).</td></tr>
 <tr><td><kbd>↑</kbd> / <kbd>↓</kbd></td><td>Tomada anterior / próxima.</td></tr>
 <tr><td><kbd>Delete</kbd></td><td>Remove a tomada do vídeo (também funciona na sequência).</td></tr>
-<tr><td><kbd>Espaço</kbd></td><td>Toca a tomada da entrada até a saída (prévia sem som).</td></tr>
+<tr><td><kbd>Espaço</kbd></td><td>Toca / pausa o vídeo final a partir da tomada selecionada.</td></tr>
+<tr><td><kbd>T</kbd> / <kbd>C</kbd></td><td>Toca só a tomada selecionada / o vídeo bruto dela.</td></tr>
+<tr><td><kbd>F11</kbd></td><td>Tela cheia (<kbd>Esc</kbd> sai).</td></tr>
 </table>
 <p>As imagens de <b>Entrada</b> e <b>Saída</b> mostram o quadro exato de cada borda e se atualizam a cada ajuste, para você parar no ponto certo.</p>
 
@@ -480,7 +485,7 @@ Tudo roda no seu computador: nenhum vídeo é enviado para a internet e não há
 <h3>Salvar, restaurar e renderizar</h3>
 <table>
 <tr><th>Botão</th><th>O que faz</th></tr>
-<tr><td><b>💾 Salvar edição</b></td><td>Grava as edições em <code>_dh_editados\edicao_manual.json</code>. Elas também são salvas ao trocar de estilo, ao renderizar e ao fechar a janela. Na próxima vez que abrir a Edição manual da mesma pasta, elas voltam.</td></tr>
+<tr><td><b>💾 Salvar edição</b></td><td>Grava as edições em <code>_dh_editados\projeto\edicao_manual.json</code>. Elas também são salvas ao trocar de estilo, ao renderizar e ao fechar a janela. Na próxima vez que abrir a Edição manual da mesma pasta, elas voltam.</td></tr>
 <tr><td><b>↺ Restaurar automático</b></td><td>Descarta as edições do estilo e formato atuais e volta ao corte automático.</td></tr>
 <tr><td><b>RENDERIZAR ESTE ESTILO</b></td><td>Gera o vídeo do estilo e formato que estão na tela, com a música e o título. O arquivo leva <code>_manual_</code> no nome. Para gerar outro estilo ou o vertical, troque na barra de cima e renderize de novo, já com as edições daquele estilo.</td></tr>
 </table>
@@ -523,15 +528,15 @@ Tudo roda no seu computador: nenhum vídeo é enviado para a internet e não há
 
 <!-- ============================================================ -->
 <h2 id="saida">15. Arquivos gerados</h2>
-<p>Tudo vai para <code>&lt;pasta dos vídeos&gt;\_dh_editados\</code>. Os originais não são tocados.</p>
+<p>Os vídeos prontos vão para <code>&lt;pasta dos vídeos&gt;\_dh_editados\</code>, e os arquivos de trabalho ficam numa subpasta dela, <code>projeto\</code>, para a pasta principal mostrar só os vídeos. Os originais não são tocados.</p>
 <table>
 <tr><th>Arquivo</th><th>Para que serve</th></tr>
 <tr><td><code>Título[_grupo]_16x9_DATA.mp4</code> / <code>_9x16_</code></td><td>Os vídeos prontos.</td></tr>
-<tr><td><code>….edl.yaml</code></td><td>A "lista de cortes" do vídeo. Pode ser aberta no editor do VideoHighlighter (<code>python main.py</code>) para ajustes manuais e um novo render.</td></tr>
-<tr><td><code>…_musica.m4a</code></td><td>A música já cortada e com o volume abaixando no final, usada pelo vídeo e pelo arquivo de cortes.</td></tr>
+<tr><td><code>projeto\….edl.yaml</code></td><td>A "lista de cortes" do vídeo. Pode ser aberta no editor do VideoHighlighter (<code>python main.py</code>) para ajustes manuais e um novo render.</td></tr>
+<tr><td><code>projeto\…_musica.m4a</code></td><td>A música já cortada e com o volume abaixando no final, usada pelo vídeo e pelo arquivo de cortes.</td></tr>
 <tr><td><code>…_manual_16x9_DATA.mp4</code></td><td>Vídeos renderizados pela Edição manual (com o próprio <code>.edl.yaml</code>, música e relatório).</td></tr>
-<tr><td><code>edicao_manual.json</code></td><td>As suas edições na timeline, por grupo, estilo e formato. Apagar este arquivo descarta todas.</td></tr>
-<tr><td><code>…_relatorio.json</code></td><td>Tudo o que foi decidido: estilo e motivo, material disponível, música, cada tomada (arquivo, tempo de entrada e saída, paisagem, movimento e notas) e eventos da IA. É usado pelo REFAZER e serve para calibrar o programa.</td></tr>
+<tr><td><code>projeto\edicao_manual.json</code></td><td>As suas edições na timeline, por grupo, estilo e formato. Apagar este arquivo descarta todas.</td></tr>
+<tr><td><code>projeto\…_relatorio.json</code></td><td>Tudo o que foi decidido: estilo e motivo, material disponível, música, cada tomada (arquivo, tempo de entrada e saída, paisagem, movimento e notas) e eventos da IA. É usado pelo REFAZER e serve para calibrar o programa.</td></tr>
 </table>
 
 <!-- ============================================================ -->

@@ -220,3 +220,80 @@ def test_timeline_window_offscreen(session, tmp_path):
     w.save()
     assert "tudo|cinematografico|16x9" in json.load(open(store.path, encoding="utf-8"))["plans"]
     w.close()
+
+
+def test_mini_editor_reorder_preview_and_colours(session, tmp_path):
+    """Dragging a card moves the shot; the preview plays the film's pieces in
+    order and on time; landscape colours are fixed between runs."""
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    os.environ["DRONEHIGHLIGHTER_NO_VIDEO_PREVIEW"] = "1"
+    qtw = pytest.importorskip("PySide6.QtWidgets")
+    if not hasattr(qtw, "QApplication") or "Mock" in type(qtw.QApplication).__name__:
+        pytest.skip("real PySide6 required")
+    from PySide6.QtCore import QPoint
+    app = qtw.QApplication.instance() or qtw.QApplication([])
+    from drone import theme
+    from drone.editor_window import EditorWindow, _colour
+    theme.apply(app)
+    w = EditorWindow(session, style_key="cinematografico", tag="16x9",
+                     store=EditStore(str(tmp_path / "e.json")), title="T", main_style="cinematografico")
+    w.resize(1400, 900)
+    w.show()
+    app.processEvents()
+    uids = [s.uid for s in w.plan.shots]
+    assert len(uids) >= 3
+    # drop slot: left half of a card = before it, right half = after it
+    r1 = w.strip.visualItemRect(w.strip.item(1))
+    assert w.strip.drop_slot(QPoint(r1.left() + 2, r1.center().y())) == 1
+    assert w.strip.drop_slot(QPoint(r1.right() - 2, r1.center().y())) == 2
+    w.strip.moved.emit(0, 2)
+    app.processEvents()
+    assert [s.uid for s in w.plan.shots][:3] == [uids[1], uids[2], uids[0]] and w.sel == 2
+    assert w.plan.edited and w.strip.count() == len(uids)
+    pieces = w._sequence_pieces()
+    assert [p.path for p in pieces] == [s.path for s in w.plan.shots]
+    assert abs(pieces[-1].film_end - w.plan.total) < 1e-6
+    assert all(abs(pieces[i + 1].film_start - (pieces[i].film_start + w.plan.advance(i))) < 1e-6
+               for i in range(len(pieces) - 1))
+    assert w.preview.duration == pytest.approx(w.plan.total)
+    assert w.preview.piece_at(pieces[1].film_start + 0.01) == 1
+    assert _colour("waterfall").name() == theme.CATEGORY_COLOURS["waterfall"]
+    assert "floresta" in w.legend.text() or "■" in w.legend.text()
+    w.close()
+
+
+def test_working_files_go_to_the_projeto_folder(session):
+    gp, plan = session.plan("tudo", "cinematografico", "16x9")
+    out = session.render(gp, plan, "16x9")
+    folder = os.path.dirname(out["video"])
+    assert os.path.basename(folder) == os.path.basename(session.ctx.out_dir)
+    assert os.path.dirname(out["edl"]) == os.path.join(folder, "projeto")
+    assert os.path.dirname(out["report"]) == os.path.join(folder, "projeto")
+    assert [f for f in os.listdir(folder) if os.path.isfile(os.path.join(folder, f))
+            and not f.endswith(".mp4")] == []
+
+
+def test_edit_store_moves_to_projeto(tmp_path):
+    from drone.pipeline import edit_store_path
+    (tmp_path / "edicao_manual.json").write_text('{"version": 1, "plans": {}}', encoding="utf-8")
+    p = edit_store_path(str(tmp_path))
+    assert p == str(tmp_path / "projeto" / "edicao_manual.json") and os.path.exists(p)
+    assert not (tmp_path / "edicao_manual.json").exists()
+
+
+def test_hide_child_consoles_sets_the_flag(monkeypatch):
+    from drone import win_console
+    seen = {}
+
+    def fake_init(self, *a, **kw):
+        seen.update(kw)
+
+    monkeypatch.setattr(subprocess.Popen, "__init__", fake_init)
+    monkeypatch.setattr(win_console.os, "name", "nt")
+    monkeypatch.setattr(win_console, "_installed", False)
+    assert win_console.hide_child_consoles()
+    subprocess.Popen.__init__(object.__new__(subprocess.Popen), ["x"])
+    assert seen["creationflags"] & win_console.CREATE_NO_WINDOW
+    seen.clear()
+    subprocess.Popen.__init__(object.__new__(subprocess.Popen), ["x"], creationflags=0x10)
+    assert seen["creationflags"] == 0x10                     # asked for a console: left alone

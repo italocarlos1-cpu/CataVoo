@@ -58,6 +58,23 @@ ficam menos. A duração total e o encaixe na música não mudam.
   a sua seleção e, no modo Automático, o seu estilo.
 - **Música**: volume abaixando nos últimos ~4 s; uma faixa mais curta que o vídeo é repetida.
 
+## v0.5.5 — mini editor, tema escuro, arquivos de trabalho em `projeto/`
+
+- **Edição manual = mini editor.** Abre maximizada (F11 tela cheia). Monitor que toca a sequência
+  final com a música sem renderizar (`drone/preview_player.py`: dois QMediaPlayer alternando,
+  relógio próprio, música num terceiro player; pausado, o monitor mostra o quadro exato tirado com
+  ffmpeg). Tocar tomada (T), clipe original (C), clique/duplo clique numa faixa, barra de posição,
+  linha vermelha nas faixas durante a reprodução. Arrastar na sequência reordena de verdade
+  (`SequenceStrip.dropEvent`: o InternalMove do Qt em IconMode só mexia nos ícones).
+  Cores fixas por paisagem (`theme.CATEGORY_COLOURS`, antes vinham de `hash()`, que muda a cada
+  execução) e legenda.
+- **Tema** preto e cinza (`drone/theme.py`, uma folha de estilo para as duas janelas); tela
+  principal em duas colunas.
+- **Sem janelas de cmd piscando**: `drone/win_console.py` põe `CREATE_NO_WINDOW` como padrão em
+  todo `subprocess.Popen` da janela (inclui o motor do VideoHighlighter).
+- **`_dh_editados/projeto/`** guarda `.edl.yaml`, `_musica.m4a`, `_relatorio.json` e
+  `edicao_manual.json` (movido automaticamente da versão anterior).
+
 ## Base do VideoHighlighter
 
 A v0.5.4 roda sobre o VideoHighlighter **0.15.1** (merge de `upstream/main` no branch `drone`).

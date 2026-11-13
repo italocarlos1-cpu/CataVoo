@@ -232,9 +232,28 @@ def run(job: Job, cfg: DroneConfig | None = None, *, cache: AnalysisCache | None
     return res
 
 
+def project_dir(out_dir: str) -> str:
+    """Where the working files go: ``_dh_editados/projeto``."""
+    return os.path.join(out_dir, edl_adapter.PROJECT_DIR)
+
+
+def edit_store_path(out_dir: str) -> str:
+    """``projeto/edicao_manual.json`` — moved there from older versions' place."""
+    new = os.path.join(project_dir(out_dir), "edicao_manual.json")
+    old = os.path.join(out_dir, "edicao_manual.json")
+    if not os.path.exists(new) and os.path.exists(old):
+        try:
+            os.makedirs(os.path.dirname(new), exist_ok=True)
+            os.replace(old, new)
+        except OSError:
+            return old
+    return new
+
+
 def _write_report(report: dict, out_dir: str, safe: str, stamp: str) -> str:
-    os.makedirs(out_dir, exist_ok=True)
-    path = os.path.join(out_dir, f"{safe}_{stamp}_relatorio.json")
+    folder = project_dir(out_dir)
+    os.makedirs(folder, exist_ok=True)
+    path = os.path.join(folder, f"{safe}_{stamp}_relatorio.json")
     with open(path, "w", encoding="utf-8") as fh:
         json.dump(report, fh, indent=2, ensure_ascii=False)
     return path
@@ -398,7 +417,7 @@ def render_plan(ctx: _RunContext, gp: GroupPrep, plan, tag: str, vertical: bool,
         # Kept next to the video: the saved EDL points at it, so the cut can be
         # reopened and re-rendered in VideoHighlighter's editor.
         music_path = music_selector.prepare(
-            gp.music, plan.total, os.path.join(ctx.out_dir, f"{prefix}_{tag}_{ctx.stamp}_musica.m4a"))
+            gp.music, plan.total, edl_adapter.side_path(out, "_musica.m4a"))
     if vertical:
         return edl_adapter.render_vertical(
             plan, out, title=job.title, size=job.vertical_size, fps=job.fps, crf=job.crf,

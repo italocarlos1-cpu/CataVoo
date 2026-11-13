@@ -20,13 +20,25 @@ from drone.cinematic_director import Plan, to_edl
 from drone.media_io import _run, ffmpeg_bin  # _run hides console windows on Windows
 
 
+PROJECT_DIR = "projeto"
+
+
+def side_path(out_path: str, suffix: str) -> str:
+    """``<saída>/projeto/<nome do vídeo><suffix>``: the working files (EDL, music,
+    report) live one folder down, so ``_dh_editados`` shows only the videos."""
+    folder = os.path.join(os.path.dirname(out_path), PROJECT_DIR)
+    os.makedirs(folder, exist_ok=True)
+    return os.path.join(folder, os.path.splitext(os.path.basename(out_path))[0] + suffix)
+
+
+
 def render_horizontal(plan: Plan, out_path: str, *, title: str, size, fps: int, crf: int,
                       music_path: str, mode: str = "gpu", log_fn=print, progress_fn=None,
                       cancel_check=None) -> tuple[str, str]:
     from modules.media.edl import render_edl, save_edl
     edl = to_edl(plan, title=title, width=size[0], height=size[1], fps=fps, crf=crf,
                  music_path=music_path, fill="pad")
-    edl_path = os.path.splitext(out_path)[0] + ".edl.yaml"
+    edl_path = side_path(out_path, ".edl.yaml")
     save_edl(edl, edl_path)
     render_edl(edl, out_path, mode=mode, music_optional=True, log_fn=log_fn,
                progress_fn=progress_fn, cancel_check=cancel_check)
@@ -68,7 +80,7 @@ def render_vertical(plan: Plan, out_path: str, *, title: str, size, fps: int, cr
     from modules.media.transitions import ReelCancelled, Transition, build_reel
     edl = to_edl(plan, title=title, width=size[0], height=size[1], fps=fps, crf=crf,
                  music_path=music_path, fill="crop")
-    edl_path = os.path.splitext(out_path)[0] + ".edl.yaml"
+    edl_path = side_path(out_path, ".edl.yaml")
     save_edl(edl, edl_path)
     tmp = tempfile.mkdtemp(prefix="dh_vert_")
     try:

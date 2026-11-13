@@ -1,9 +1,9 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 """DroneHighlighter window: choose a folder, a style, click GERAR VÍDEO.
 
-Deliberately one screen with no tabs. Advanced tuning lives in config.json
-(see drone.config); manual editing is available afterwards by opening the
-saved ``.edl.yaml`` in VideoHighlighter.
+Deliberately one screen with no tabs: settings on the left, run/log/results
+on the right. Advanced tuning lives in config.json (see drone.config); the
+"Edição manual" button opens the mini editor (drone.editor_window).
 """
 from __future__ import annotations
 
@@ -16,15 +16,17 @@ import traceback
 from PySide6.QtCore import QObject, QSettings, Qt, QThread, QUrl, Signal
 from PySide6.QtGui import QDesktopServices, QFont
 from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QFileDialog, QFormLayout,
-                               QGroupBox, QHBoxLayout, QLabel, QLineEdit, QMainWindow,
+                               QFrame, QGroupBox, QHBoxLayout, QLabel, QLineEdit, QMainWindow,
                                QMessageBox, QPlainTextEdit, QProgressBar, QPushButton,
-                               QVBoxLayout, QWidget)
+                               QScrollArea, QVBoxLayout, QWidget)
 
 from drone import __version__
 from drone.ai_assist import PROVIDERS, AIClient, AIError
 from drone.config import STYLES, DroneConfig
 from drone.grouping import MODES
-from drone.pipeline import Job, Session, run
+from drone.theme import role
+from drone import theme
+from drone.pipeline import Job, Session, edit_store_path, run
 
 MUSIC_CHOICES = [("Automática (pelo estilo)", ""), ("Instrumental cinematográfica", "cinematografica"),
                  ("Instrumental", "instrumental"), ("Tranquila / natureza", "tranquila"),
@@ -116,36 +118,78 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(f"DroneHighlighter {__version__}")
-        self.resize(860, 960)
+        self.resize(1240, 820)
         self.settings = QSettings("DroneHighlighter", "DroneHighlighter")
         self.thread = None
         self.worker = None
         self.result = None
 
         root = QWidget()
-        lay = QVBoxLayout(root)
-        form_box = QGroupBox("O que editar")
-        form = QFormLayout(form_box)
+        outer = QVBoxLayout(root)
+        outer.setContentsMargins(28, 22, 28, 22)
+        outer.setSpacing(16)
 
+        # ---- header
+        head = QHBoxLayout()
+        title = role(QLabel("DroneHighlighter"), "title")
+        sub = role(QLabel(f"v{__version__}  ·  edição automática de vídeos de drone, 100% local"), "muted")
+        head.addWidget(title)
+        head.addSpacing(12)
+        head.addWidget(sub, 0, Qt.AlignBottom)
+        head.addStretch()
+        outer.addLayout(head)
+
+        cols = QHBoxLayout()
+        cols.setSpacing(20)
+        outer.addLayout(cols, 1)
+
+        # ---- left: settings (scrolls on small screens)
+        left = QWidget()
+        lay = QVBoxLayout(left)
+        lay.setContentsMargins(0, 0, 8, 0)
+        lay.setSpacing(8)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.NoFrame)
+        scroll.setWidget(left)
+        scroll.setMinimumWidth(520)
+        cols.addWidget(scroll, 5)
+
+        def card(name):
+            lay.addWidget(role(QLabel(name.upper()), "section"))
+            box = role(QFrame(), "card")
+            form = QFormLayout(box)
+            form.setContentsMargins(16, 14, 16, 14)
+            form.setHorizontalSpacing(14)
+            form.setVerticalSpacing(10)
+            form.setLabelAlignment(Qt.AlignRight | Qt.AlignVCenter)
+            lay.addWidget(box)
+            return form
+
+        form = card("Vídeos")
         self.folder = QLineEdit(self.settings.value("folder", ""))
-        b = QPushButton("Selecionar…")
+        self.folder.setPlaceholderText("Pasta com os vídeos brutos do drone")
+        b = QPushButton("Selecionar")
         b.clicked.connect(self._pick_folder)
         row = QHBoxLayout()
         row.addWidget(self.folder)
         row.addWidget(b)
-        form.addRow("Pasta dos vídeos:", row)
+        form.addRow("Pasta", row)
+        self.title = QLineEdit(self.settings.value("title", ""))
+        self.title.setPlaceholderText("Ex.: Pirenópolis — Goiás")
+        form.addRow("Título", self.title)
 
+        form = card("Edição")
         self.style = QComboBox()
         for key, st in STYLES.items():
             self.style.addItem(st.label, key)
             self.style.setItemData(self.style.count() - 1, st.description, Qt.ToolTipRole)
-        self.style_hint = QLabel()
+        self.style_hint = role(QLabel(), "muted")
         self.style_hint.setWordWrap(True)
-        self.style_hint.setStyleSheet("color: gray")
         self.style.currentIndexChanged.connect(
             lambda _i: self.style_hint.setText(STYLES[self.style.currentData()].description))
         self.style.setCurrentIndex(max(0, self.style.findData(self.settings.value("style", "cinematografico"))))
-        form.addRow("Estilo de edição:", self.style)
+        form.addRow("Estilo", self.style)
         form.addRow("", self.style_hint)
         self.style_hint.setText(STYLES[self.style.currentData()].description)
 
@@ -162,21 +206,23 @@ class MainWindow(QMainWindow):
             self.vduration.addItem(s)
         self.vduration.setCurrentText(str(self.settings.value("vduration", "45")))
         drow = QHBoxLayout()
-        drow.addWidget(QLabel("Horizontal (s):"))
-        drow.addWidget(self.duration)
-        drow.addWidget(QLabel("Vertical (s):"))
-        drow.addWidget(self.vduration)
-        drow.addStretch()
-        form.addRow("Duração:", drow)
+        drow.addWidget(role(QLabel("16:9"), "muted"))
+        drow.addWidget(self.duration, 1)
+        drow.addSpacing(10)
+        drow.addWidget(role(QLabel("9:16"), "muted"))
+        drow.addWidget(self.vduration, 1)
+        form.addRow("Duração (s)", drow)
         self.shortfall = QComboBox()
         for label, key in SHORTFALL:
             self.shortfall.addItem(label, key)
         self.shortfall.setCurrentIndex(max(0, self.shortfall.findData(self.settings.value("shortfall", "perguntar"))))
         self.shortfall.setToolTip("Quando os vídeos não têm material bom suficiente para a duração pedida.")
-        form.addRow("Se faltar material:", self.shortfall)
+        form.addRow("Se faltar material", self.shortfall)
 
+        form = card("Música")
         self.music_dir = QLineEdit(self.settings.value("music_dir", ""))
-        mb = QPushButton("Biblioteca…")
+        self.music_dir.setPlaceholderText("Pasta com as suas músicas")
+        mb = QPushButton("Selecionar")
         mb.clicked.connect(self._pick_music)
         self.music_kind = QComboBox()
         for label, key in MUSIC_CHOICES:
@@ -184,117 +230,122 @@ class MainWindow(QMainWindow):
         mrow = QHBoxLayout()
         mrow.addWidget(self.music_dir)
         mrow.addWidget(mb)
-        form.addRow("Músicas:", mrow)
-        form.addRow("Estilo da música:", self.music_kind)
+        form.addRow("Biblioteca", mrow)
+        form.addRow("Tipo", self.music_kind)
 
+        form = card("Saída")
         self.formats = QComboBox()
         for label, v in FORMATS:
             self.formats.addItem(label, v)
         self.resolution = QComboBox()
         for label, v in RESOLUTIONS:
             self.resolution.addItem(label, v)
-        frow = QHBoxLayout()
-        frow.addWidget(self.formats)
-        frow.addWidget(self.resolution)
-        form.addRow("Formato:", frow)
-
+        form.addRow("Formato", self.formats)
+        form.addRow("Resolução", self.resolution)
         self.group_by = QComboBox()
         for key, label in MODES.items():
             self.group_by.addItem(label, key)
         self.group_by.setCurrentIndex(max(0, self.group_by.findData(self.settings.value("group_by", "nada"))))
         self.summary = QCheckBox("Também um vídeo da viagem inteira")
         self.summary.setChecked(self.settings.value("summary", "false") == "true")
-        grow = QHBoxLayout()
-        grow.addWidget(self.group_by)
-        grow.addWidget(self.summary)
-        grow.addStretch()
         self.group_by.currentIndexChanged.connect(
             lambda _i: self.summary.setEnabled(self.group_by.currentData() != "nada"))
         self.summary.setEnabled(self.group_by.currentData() != "nada")
-        form.addRow("Organizar:", grow)
+        form.addRow("Organizar", self.group_by)
+        form.addRow("", self.summary)
 
-        self.title = QLineEdit(self.settings.value("title", ""))
-        self.title.setPlaceholderText("Ex.: Pirenópolis — Goiás")
-        form.addRow("Título:", self.title)
-
+        form = card("Ajuste fino")
         self.prompt = QPlainTextEdit()
         self.prompt.setPlaceholderText(
-            "Opcional. Ex.: Crie um vídeo cinematográfico de 90 segundos, priorizando "
+            "Opcional. Ex.: vídeo cinematográfico de 90 segundos, priorizando "
             "cachoeiras, serras e movimentos suaves, com música instrumental tranquila.")
-        self.prompt.setFixedHeight(70)
-        form.addRow("Instruções:", self.prompt)
-
+        self.prompt.setFixedHeight(76)
+        form.addRow("Instruções", self.prompt)
         self.use_clip = QCheckBox("Reconhecer paisagens com IA local (CLIP)")
         self.use_clip.setChecked(self.settings.value("use_clip", "true") == "true")
         form.addRow("", self.use_clip)
-        lay.addWidget(form_box)
         lay.addWidget(self._build_ai_box())
+        lay.addStretch()
 
-        self.go = QPushButton("GERAR VÍDEO")
-        f = QFont()
-        f.setPointSize(14)
-        f.setBold(True)
+        # ---- right: run, progress, log, results
+        right = QVBoxLayout()
+        right.setSpacing(10)
+        cols.addLayout(right, 4)
+        self.go = role(QPushButton("GERAR VÍDEO"), "primary")
+        self.go.setMinimumHeight(52)
+        f = self.go.font()
+        f.setPointSize(12)
         self.go.setFont(f)
-        self.go.setMinimumHeight(48)
         self.go.clicked.connect(lambda: self._start())
         self.cancel = QPushButton("Cancelar")
         self.cancel.setEnabled(False)
+        self.cancel.setMinimumHeight(52)
         self.cancel.clicked.connect(self._cancel)
         brow = QHBoxLayout()
         brow.addWidget(self.go, 4)
         brow.addWidget(self.cancel, 1)
-        lay.addLayout(brow)
+        right.addLayout(brow)
 
         self.bar = QProgressBar()
         self.bar.setRange(0, 1000)
-        self.status = QLabel("Pronto.")
-        lay.addWidget(self.bar)
-        lay.addWidget(self.status)
+        self.bar.setTextVisible(False)
+        self.status = role(QLabel("Pronto."), "muted")
+        right.addWidget(self.bar)
+        right.addWidget(self.status)
 
+        right.addWidget(role(QLabel("REGISTRO"), "section"))
         self.logbox = QPlainTextEdit()
         self.logbox.setReadOnly(True)
-        lay.addWidget(self.logbox, 1)
+        mono = QFont("Consolas")
+        mono.setStyleHint(QFont.Monospace)
+        mono.setPointSizeF(9)
+        self.logbox.setFont(mono)
+        right.addWidget(self.logbox, 1)
 
         orow = QHBoxLayout()
-        self.open_video = QPushButton("▶ Assistir resultado")
+        self.open_video = QPushButton("▶  Assistir")
         self.open_video.setEnabled(False)
         self.open_video.clicked.connect(self._open_video)
-        self.open_folder = QPushButton("📂 Abrir pasta de saída")
+        self.open_folder = QPushButton("Abrir pasta")
         self.open_folder.setEnabled(False)
         self.open_folder.clicked.connect(self._open_folder)
         orow.addWidget(self.open_video)
         orow.addWidget(self.open_folder)
-        lay.addLayout(orow)
+        right.addLayout(orow)
 
-        redo = QGroupBox("Não gostou? Refazer com ajustes, outra versão ou edição manual (usam a análise já feita)")
-        rl = QHBoxLayout(redo)
+        right.addWidget(role(QLabel("NÃO GOSTOU?"), "section"))
+        redo = role(QFrame(), "card")
+        rl = QVBoxLayout(redo)
+        rl.setContentsMargins(14, 12, 14, 12)
         self.feedback = QLineEdit()
-        self.feedback.setPlaceholderText("Ex.: mais cachoeira, menos cidade, cortes mais rápidos, "
-                                         "começar com uma revelação, trocar as tomadas")
-        self.redo_btn = QPushButton("REFAZER")
+        self.feedback.setPlaceholderText("Ex.: mais cachoeira, menos cidade, cortes mais rápidos")
+        self.redo_btn = QPushButton("Refazer")
+        self.redo_btn.setToolTip("Gera de novo com os ajustes escritos acima (usa a análise já feita)")
         self.redo_btn.clicked.connect(self._redo)
         self.variant_btn = QPushButton("Outra versão")
         self.variant_btn.setToolTip("Mesma configuração, outras tomadas e outra ordem")
         self.variant_btn.clicked.connect(self._variant)
         for b in (self.redo_btn, self.variant_btn):
             b.setEnabled(False)
-        self.manual_btn = QPushButton("✂ Edição manual")
-        self.manual_btn.setToolTip("Abre a timeline: veja os cortes de qualquer estilo sem renderizar, "
-                                   "ajuste cada tomada quadro a quadro e renderize quando quiser.")
+        self.manual_btn = QPushButton("Edição manual")
+        self.manual_btn.setToolTip("Abre o mini editor: veja e toque os cortes de qualquer estilo sem "
+                                   "renderizar, ajuste cada tomada quadro a quadro e renderize quando quiser.")
         self.manual_btn.clicked.connect(self._manual)
-        rl.addWidget(self.feedback, 1)
-        rl.addWidget(self.redo_btn)
-        rl.addWidget(self.variant_btn)
-        rl.addWidget(self.manual_btn)
+        rl.addWidget(self.feedback)
+        rrow = QHBoxLayout()
+        rrow.addWidget(self.redo_btn)
+        rrow.addWidget(self.variant_btn)
+        rrow.addWidget(self.manual_btn)
+        rl.addLayout(rrow)
+        right.addWidget(redo)
         self.editors = []
-        lay.addWidget(redo)
         self.variation = 0
         self.setCentralWidget(root)
 
     def _build_ai_box(self) -> QGroupBox:
         """Optional assistant — a checkable box that starts unchecked."""
         cfg = DroneConfig.load().ai
-        box = QGroupBox("Assistente de IA (opcional — desmarcado, tudo roda sem IA)")
+        box = QGroupBox("ASSISTENTE DE IA (OPCIONAL, DESLIGADO = TUDO SEM IA)")
         box.setCheckable(True)
         box.setChecked(cfg.enabled)
         self.ai_box = box
@@ -327,8 +378,24 @@ class MainWindow(QMainWindow):
         note = QLabel("A IA recebe só texto (instruções e uma tabela dos trechos). "
                       "Nunca imagens nem vídeo. A chave fica salva só neste PC.")
         note.setWordWrap(True)
+        note.setProperty("role", "muted")
         f.addRow("", note)
         self._provider_hints()
+        inner = [box.layout().itemAt(i).widget() for i in range(box.layout().count())]
+
+        def _fold(on):
+            for w in inner:
+                if w is not None:
+                    w.setVisible(on)
+            for i in range(box.layout().count()):
+                item = box.layout().itemAt(i)
+                if item.layout() is not None:
+                    for j in range(item.layout().count()):
+                        w = item.layout().itemAt(j).widget()
+                        if w is not None:
+                            w.setVisible(on)
+        box.toggled.connect(_fold)
+        _fold(box.isChecked())
         return box
 
     def _provider_hints(self):
@@ -398,13 +465,13 @@ class MainWindow(QMainWindow):
         self.bar.setValue(1000)
         self.status.setText("Edição manual aberta.")
         job = self._manual_job
-        store = EditStore(os.path.join(session.ctx.out_dir, "edicao_manual.json"))
+        store = EditStore(edit_store_path(session.ctx.out_dir))
         tag = "16x9" if job.horizontal else "9x16"
         ed = EditorWindow(session, style_key=job.style, tag=tag, store=store, title=job.title,
                           main_style=job.style)
         ed.rendered.connect(lambda out: self.logbox.appendPlainText(f"✅ Edição manual: {out['video']}"))
         self.editors.append(ed)
-        ed.show()
+        ed.showMaximized()
 
     def _redo(self):
         self._start(feedback=self.feedback.text().strip())
@@ -544,8 +611,11 @@ class MainWindow(QMainWindow):
 
 
 def main() -> int:
+    from drone.win_console import hide_child_consoles
+    hide_child_consoles()                  # no ffmpeg console windows flashing
     app = QApplication.instance() or QApplication(sys.argv)
     app.setApplicationName("DroneHighlighter")
+    theme.apply(app)
     try:
         from PySide6.QtGui import QIcon
         base = getattr(sys, "_MEIPASS", os.path.join(os.path.dirname(__file__), ".."))
