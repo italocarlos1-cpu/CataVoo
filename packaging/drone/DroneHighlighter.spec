@@ -6,7 +6,7 @@ Produces one folder ``dist/DroneHighlighter/`` with two programs sharing the
 same libraries:
 
     DroneHighlighter.exe       the window (no console)
-    DroneHighlighter-cli.exe   the command line (console)
+    _internal/DroneHighlighter-cli.exe   the command line (console)
 
 ffmpeg comes from the imageio-ffmpeg wheel (a static build), so nothing has to
 be installed on the PC that runs the program.
@@ -96,8 +96,10 @@ pyz_cli = PYZ(a_cli.pure)
 
 exe_gui = EXE(pyz_gui, a_gui.scripts, [], exclude_binaries=True, name="DroneHighlighter",
               console=False, icon=ICON, upx=False)
+# The command line lives *inside* _internal (out of the user's way), so it is
+# told that its support files are in its own folder.
 exe_cli = EXE(pyz_cli, a_cli.scripts, [], exclude_binaries=True, name="DroneHighlighter-cli",
-              console=True, icon=ICON, upx=False)
+              console=True, icon=ICON, upx=False, contents_directory=".")
 
 coll = COLLECT(exe_gui, exe_cli,
                a_gui.binaries, a_gui.datas, a_cli.binaries, a_cli.datas,
@@ -108,6 +110,9 @@ _out = os.path.join(DISTPATH, "DroneHighlighter")
 if os.path.isdir(_out):
     shutil.copy2(os.path.join(SPECPATH, "Instalar_IA_Paisagens.bat"), _out)
     shutil.copy2(os.path.join(SPECPATH, "LEIA-ME.txt"), _out)
+    for cli in ("DroneHighlighter-cli.exe", "DroneHighlighter-cli"):
+        if os.path.exists(os.path.join(_out, cli)):
+            os.replace(os.path.join(_out, cli), os.path.join(_out, "_internal", cli))
     # Inside _internal, out of the user's way; only the installer reads it.
     with open(os.path.join(_out, "_internal", "dh_python.txt"), "w", encoding="ascii") as fh:
         fh.write(f"{sys.version_info.major}.{sys.version_info.minor}")

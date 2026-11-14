@@ -60,8 +60,8 @@ jobs:
           Start-Process -Wait -FilePath "dist\DroneHighlighter\DroneHighlighter.exe"
           Get-Content $env:DRONEHIGHLIGHTER_SELFTEST
           Remove-Item Env:DRONEHIGHLIGHTER_SELFTEST
-          & dist\DroneHighlighter\DroneHighlighter-cli.exe --help | Select-Object -First 3
-          foreach ($f in 'LEIA-ME.txt', 'Instalar_IA_Paisagens.bat', '_internal\dh_python.txt') {
+          & dist\DroneHighlighter\_internal\DroneHighlighter-cli.exe --help | Select-Object -First 3
+          foreach ($f in 'LEIA-ME.txt', 'Instalar_IA_Paisagens.bat', '_internal\dh_python.txt', '_internal\DroneHighlighter-cli.exe') {
             if (-not (Test-Path "dist\DroneHighlighter\$f")) { throw "missing $f" } }
       # The download is named after the version (DroneHighlighter-0.5.5-win64.zip),
       # so several versions can sit side by side on the user's PC. The folder is
@@ -96,6 +96,6 @@ jobs:
           Get-Content "$t\packs\clip\pack.json"
           if (Test-Path "$t\packs\.instalador") { throw "installer left its temp folder" }
           python -c "import sys; sys.path.insert(0, 'tests'); import drone_fixtures as f; f.make_trip(sys.argv[1])" "$env:RUNNER_TEMP\trip"
-          $log = & "$t\DroneHighlighter-cli.exe" --pasta "$env:RUNNER_TEMP\trip" --so-analisar --saida "$env:RUNNER_TEMP\trip_out" 2>&1 | Out-String
+          $log = & "$t\_internal\DroneHighlighter-cli.exe" --pasta "$env:RUNNER_TEMP\trip" --so-analisar --saida "$env:RUNNER_TEMP\trip_out" 2>&1 | Out-String
           $log -split "`r?`n" | Select-String -Pattern 'CLIP|paisagem|Traceback|Error'
           if ($log -notmatch 'paisagem: clip') { $log; throw "CLIP was not used after the installer" }

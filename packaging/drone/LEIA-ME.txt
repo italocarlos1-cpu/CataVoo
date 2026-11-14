@@ -27,7 +27,6 @@ nem ffmpeg no computador.
 
       DroneHighlighter.exe ........ O PROGRAMA (é este que você abre)
       Instalar_IA_Paisagens.bat ... instala a IA de paisagens (1 vez só)
-      DroneHighlighter-cli.exe .... versão por linha de comando (opcional)
       LEIA-ME.txt ................. este arquivo
       _internal ................... arquivos do programa (não mexa)
 
@@ -73,15 +72,15 @@ nem ffmpeg no computador.
  4. Não gostou? Use REFAZER, "Outra versão" ou "Edição manual".
 
  Os vídeos originais nunca são alterados nem apagados.
- O manual completo é o arquivo DroneHighlighter_Manual.pdf.
+ O manual completo (DroneHighlighter_Manual.pdf) fica no GitHub,
+ na pasta "docs" do projeto.
 
 
 --------------------------------------------------------------
  E O "DroneHighlighter-cli.exe"?
 --------------------------------------------------------------
- NÃO precisa abrir. Ele é a mesma coisa, mas sem janela, para
- quem gosta de digitar comandos. Se der dois cliques nele, só
- vai abrir e fechar uma tela preta. Pode ignorar.
+ Fica guardado dentro de _internal. Não precisa abrir: é a
+ mesma coisa sem janela, para quem gosta de digitar comandos.
 
 
 --------------------------------------------------------------

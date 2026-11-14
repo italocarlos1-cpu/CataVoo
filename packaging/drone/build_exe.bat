@@ -63,7 +63,7 @@ if exist "%TEMP%\dronehighlighter_selftest.txt" (
 ) else (
   echo [AVISO] O autoteste da janela nao confirmou. Tente abrir o .exe manualmente.
 )
-"dist\DroneHighlighter\DroneHighlighter-cli.exe" --help >nul || goto :erro
+"dist\DroneHighlighter\_internal\DroneHighlighter-cli.exe" --help >nul || goto :erro
 
 echo Compactando a pasta para compartilhar ...
 for /f "tokens=2 delims==" %%V in ('findstr /b "__version__" drone\__init__.py') do set "DHV=%%~V"
