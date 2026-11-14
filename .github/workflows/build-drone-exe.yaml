@@ -61,6 +61,8 @@ jobs:
           Get-Content $env:DRONEHIGHLIGHTER_SELFTEST
           Remove-Item Env:DRONEHIGHLIGHTER_SELFTEST
           & dist\DroneHighlighter\DroneHighlighter-cli.exe --help | Select-Object -First 3
+          foreach ($f in 'LEIA-ME.txt', 'Instalar_IA_Paisagens.bat', '_internal\dh_python.txt') {
+            if (-not (Test-Path "dist\DroneHighlighter\$f")) { throw "missing $f" } }
       # The download is named after the version (DroneHighlighter-0.5.5-win64.zip),
       # so several versions can sit side by side on the user's PC. The folder is
       # uploaded as it is: GitHub zips it once, and "Extrair tudo" gives a folder

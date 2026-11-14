@@ -103,9 +103,11 @@ coll = COLLECT(exe_gui, exe_cli,
                a_gui.binaries, a_gui.datas, a_cli.binaries, a_cli.datas,
                strip=False, upx=False, name="DroneHighlighter")
 
-# Next to the .exe: the CLIP installer and the Python X.Y the pack must match.
+# Next to the .exe: the CLIP installer and the LEIA-ME; the Python X.Y the pack must match.
 _out = os.path.join(DISTPATH, "DroneHighlighter")
 if os.path.isdir(_out):
     shutil.copy2(os.path.join(SPECPATH, "Instalar_IA_Paisagens.bat"), _out)
-    with open(os.path.join(_out, "dh_python.txt"), "w", encoding="ascii") as fh:
+    shutil.copy2(os.path.join(SPECPATH, "LEIA-ME.txt"), _out)
+    # Inside _internal, out of the user's way; only the installer reads it.
+    with open(os.path.join(_out, "_internal", "dh_python.txt"), "w", encoding="ascii") as fh:
         fh.write(f"{sys.version_info.major}.{sys.version_info.minor}")

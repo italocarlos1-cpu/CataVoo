@@ -86,7 +86,7 @@ rodar os testes `tests/test_drone_*.py` (o workflow do Windows faz isso a cada p
 O `.exe` sai sem PyTorch. O `Instalar_IA_Paisagens.bat`, copiado ao lado dele pelo
 `DroneHighlighter.spec`, baixa um Python embutido temporário + `pip.pyz` e instala `torch`
 (índice `cu126` se `nvidia-smi -L` responder, senão `cpu`) e `transformers` em
-`packs\clip\site-packages`, com `--python-version` igual ao do build (`dh_python.txt`).
+`packs\clip\site-packages`, com `--python-version` igual ao do build (`_internal\dh_python.txt`).
 Grava `packs\clip\pack.json` (`dep: torch`) e já baixa `openai/clip-vit-base-patch32`.
 
 No arranque, o runtime hook do upstream (`packaging/packs/rthook_packs.py`) acrescenta o pack

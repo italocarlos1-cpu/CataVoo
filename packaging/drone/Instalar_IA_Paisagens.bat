@@ -36,6 +36,7 @@ if not exist "DroneHighlighter.exe" (
 )
 
 set "PYXY=3.12"
+if exist "_internal\dh_python.txt" set /p PYXY=<"_internal\dh_python.txt"
 if exist "dh_python.txt" set /p PYXY=<dh_python.txt
 set "PYTAG=%PYXY:.=%"
 set "EMBED_VER=3.12.10"

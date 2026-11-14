@@ -1,0 +1,104 @@
+﻿==============================================================
+  DRONEHIGHLIGHTER - COMO INSTALAR E ABRIR
+==============================================================
+
+O DroneHighlighter NÃO precisa ser instalado como os programas
+comuns. É só extrair a pasta e abrir. Não precisa ter Python
+nem ffmpeg no computador.
+
+
+--------------------------------------------------------------
+ PASSO 1 - Baixar
+--------------------------------------------------------------
+ 1. Entre no GitHub (logado) na página do build:
+    https://github.com/italocarlos1-cpu/VideoHighlighter/actions
+    Clique no build mais recente com o sinal verde.
+ 2. No fim da página, em "Artifacts", clique em
+    "DroneHighlighter-X.X.X-win64" (o número é a versão) para
+    baixar o .zip.
+
+
+--------------------------------------------------------------
+ PASSO 2 - Extrair
+--------------------------------------------------------------
+ 1. Clique com o botão direito no .zip > "Extrair tudo".
+ 2. Escolha um lugar fixo, por exemplo:  C:\DroneHighlighter
+ 3. Dentro dela vai aparecer a pasta "DroneHighlighter" com:
+
+      DroneHighlighter.exe ........ O PROGRAMA (é este que você abre)
+      Instalar_IA_Paisagens.bat ... instala a IA de paisagens (1 vez só)
+      DroneHighlighter-cli.exe .... versão por linha de comando (opcional)
+      LEIA-ME.txt ................. este arquivo
+      _internal ................... arquivos do programa (não mexa)
+
+ IMPORTANTE: não tire o .exe de dentro da pasta. Ele precisa
+ da pasta "_internal" ao lado dele.
+
+
+--------------------------------------------------------------
+ PASSO 3 - Instalar a IA de paisagens (recomendado, 1 vez só)
+--------------------------------------------------------------
+ 1. Dê dois cliques em  Instalar_IA_Paisagens.bat
+ 2. Aperte uma tecla quando ele pedir e espere terminar.
+    Ele baixa uns 3 GB, então pode demorar dependendo da internet.
+ 3. No fim aparece "Pronto! IA de paisagens instalada".
+    Aperte uma tecla para fechar.
+
+ Isso cria a pasta "packs" ao lado do programa. Depois disso
+ a IA roda no seu computador, sem internet e sem pagar nada.
+
+ Se pular este passo, o programa funciona do mesmo jeito,
+ mas reconhece as paisagens só pelas cores (menos preciso).
+
+
+--------------------------------------------------------------
+ PASSO 4 - Abrir o programa
+--------------------------------------------------------------
+ 1. Dê dois cliques em  DroneHighlighter.exe
+ 2. Dica: clique com o botão direito nele > "Enviar para" >
+    "Área de trabalho (criar atalho)" para ter o ícone na tela.
+
+ Na primeira vez o Windows pode mostrar "O Windows protegeu
+ o computador". Clique em "Mais informações" > "Executar assim
+ mesmo". Isso acontece porque o programa não é assinado, e não
+ aparece de novo.
+
+
+--------------------------------------------------------------
+ PASSO 5 - Usar
+--------------------------------------------------------------
+ 1. "Selecionar pasta": escolha a pasta com os vídeos do drone.
+ 2. Escolha o estilo (ou deixe no "Automático") e a duração.
+ 3. Clique em GERAR VÍDEO e espere.
+ 4. Não gostou? Use REFAZER, "Outra versão" ou "Edição manual".
+
+ Os vídeos originais nunca são alterados nem apagados.
+ O manual completo é o arquivo DroneHighlighter_Manual.pdf.
+
+
+--------------------------------------------------------------
+ E O "DroneHighlighter-cli.exe"?
+--------------------------------------------------------------
+ NÃO precisa abrir. Ele é a mesma coisa, mas sem janela, para
+ quem gosta de digitar comandos. Se der dois cliques nele, só
+ vai abrir e fechar uma tela preta. Pode ignorar.
+
+
+--------------------------------------------------------------
+ ATUALIZAR PARA UMA VERSÃO NOVA
+--------------------------------------------------------------
+ 1. Baixe e extraia o .zip novo (passos 1 e 2).
+ 2. Copie a pasta "packs" da versão antiga para a nova
+    (assim não precisa baixar a IA de novo).
+ 3. Pode apagar a pasta antiga.
+ Suas configurações e a análise dos vídeos já feita ficam
+ guardadas e continuam valendo.
+
+
+--------------------------------------------------------------
+ DESINSTALAR
+--------------------------------------------------------------
+ Apague a pasta do programa. Só isso.
+ (Só a IA: apague a pasta "packs\clip".)
+
+==============================================================
