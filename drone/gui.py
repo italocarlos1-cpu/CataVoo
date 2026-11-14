@@ -16,7 +16,7 @@ import traceback
 from PySide6.QtCore import QObject, QSettings, Qt, QThread, QUrl, Signal
 from PySide6.QtGui import QDesktopServices, QFont
 from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QFileDialog, QFormLayout,
-                               QFrame, QGroupBox, QHBoxLayout, QLabel, QLineEdit, QMainWindow,
+                               QFrame, QHBoxLayout, QLabel, QLineEdit, QMainWindow,
                                QMessageBox, QPlainTextEdit, QProgressBar, QPushButton,
                                QScrollArea, QVBoxLayout, QWidget)
 
@@ -264,7 +264,6 @@ class MainWindow(QMainWindow):
         self.use_clip = QCheckBox("Reconhecer paisagens com IA local (CLIP)")
         self.use_clip.setChecked(self.settings.value("use_clip", "true") == "true")
         form.addRow("", self.use_clip)
-        lay.addWidget(self._build_ai_box())
         lay.addStretch()
 
         # ---- right: run, progress, log, results
@@ -313,6 +312,9 @@ class MainWindow(QMainWindow):
         orow.addWidget(self.open_folder)
         right.addLayout(orow)
 
+        right.addSpacing(4)
+        right.addWidget(self._build_ai_box())
+        right.addSpacing(4)
         right.addWidget(role(QLabel("NÃO GOSTOU?"), "section"))
         redo = role(QFrame(), "card")
         rl = QVBoxLayout(redo)
@@ -342,14 +344,20 @@ class MainWindow(QMainWindow):
         self.variation = 0
         self.setCentralWidget(root)
 
-    def _build_ai_box(self) -> QGroupBox:
-        """Optional assistant — a checkable box that starts unchecked."""
+    def _build_ai_box(self) -> QWidget:
+        """Optional assistant: one switch; its settings card appears only when on."""
         cfg = DroneConfig.load().ai
-        box = QGroupBox("ASSISTENTE DE IA (OPCIONAL, DESLIGADO = TUDO SEM IA)")
-        box.setCheckable(True)
-        box.setChecked(cfg.enabled)
-        self.ai_box = box
-        f = QFormLayout(box)
+        wrap = QWidget()
+        wl = QVBoxLayout(wrap)
+        wl.setContentsMargins(0, 0, 0, 0)
+        wl.setSpacing(6)
+        self.ai_box = QCheckBox("Assistente de IA (opcional; desligado, tudo roda sem IA)")
+        self.ai_box.setChecked(cfg.enabled)
+        wl.addWidget(self.ai_box)
+        card = role(QFrame(), "card")
+        f = QFormLayout(card)
+        f.setContentsMargins(14, 12, 14, 12)
+        f.setLabelAlignment(Qt.AlignRight | Qt.AlignVCenter)
         self.ai_provider = QComboBox()
         for key, p in PROVIDERS.items():
             self.ai_provider.addItem(p.label, key)
@@ -365,38 +373,25 @@ class MainWindow(QMainWindow):
         test = QPushButton("Testar conexão")
         test.clicked.connect(self._test_ai)
         self.ai_provider.currentIndexChanged.connect(self._provider_hints)
-        f.addRow("Provedor:", self.ai_provider)
-        f.addRow("Modelo:", self.ai_model)
-        f.addRow("Endereço:", self.ai_url)
-        f.addRow("Chave da API:", self.ai_key)
+        f.addRow("Provedor", self.ai_provider)
+        f.addRow("Modelo", self.ai_model)
+        f.addRow("Endereço", self.ai_url)
+        f.addRow("Chave da API", self.ai_key)
+        f.addRow("", self.ai_interpret)
+        f.addRow("", self.ai_direct)
         row = QHBoxLayout()
-        row.addWidget(self.ai_interpret)
-        row.addWidget(self.ai_direct)
-        row.addStretch()
         row.addWidget(test)
+        row.addStretch()
         f.addRow("", row)
-        note = QLabel("A IA recebe só texto (instruções e uma tabela dos trechos). "
-                      "Nunca imagens nem vídeo. A chave fica salva só neste PC.")
+        note = role(QLabel("A IA recebe só texto (instruções e uma tabela dos trechos), nunca imagens "
+                           "nem vídeo. A chave fica salva só neste PC."), "muted")
         note.setWordWrap(True)
-        note.setProperty("role", "muted")
         f.addRow("", note)
+        wl.addWidget(card)
         self._provider_hints()
-        inner = [box.layout().itemAt(i).widget() for i in range(box.layout().count())]
-
-        def _fold(on):
-            for w in inner:
-                if w is not None:
-                    w.setVisible(on)
-            for i in range(box.layout().count()):
-                item = box.layout().itemAt(i)
-                if item.layout() is not None:
-                    for j in range(item.layout().count()):
-                        w = item.layout().itemAt(j).widget()
-                        if w is not None:
-                            w.setVisible(on)
-        box.toggled.connect(_fold)
-        _fold(box.isChecked())
-        return box
+        self.ai_box.toggled.connect(card.setVisible)
+        card.setVisible(self.ai_box.isChecked())
+        return wrap
 
     def _provider_hints(self):
         p = PROVIDERS[self.ai_provider.currentData()]

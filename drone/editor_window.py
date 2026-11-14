@@ -225,8 +225,8 @@ class SequenceStrip(QListWidget):
             return
         dst = slot - 1 if slot > src else slot
         dst = max(0, min(self.count() - 1, dst))
-        if dst != src:
-            self.moved.emit(src, dst)
+        if dst != src:                        # after the drop returns: the cards get rebuilt
+            QTimer.singleShot(0, lambda: self.moved.emit(src, dst))
 
 
 def _pixmap_from_jpeg(data: bytes) -> QPixmap:
@@ -403,11 +403,13 @@ class ShotItem(QGraphicsRectItem):
     def mouseReleaseEvent(self, e):
         if self._mode is not None:
             self._mode = None
-            self.editor.commit_drag()
+            # later, not now: the rebuild deletes this very item while Qt is still inside its handler
+            QTimer.singleShot(0, self.editor.commit_drag)
         e.accept()
 
     def contextMenuEvent(self, e):
-        self.editor.shot_menu(self.index, e.screenPos())
+        i, pos = self.index, e.screenPos()
+        QTimer.singleShot(0, lambda: self.editor.shot_menu(i, pos))
 
 
 class CandidateItem(QGraphicsRectItem):
@@ -426,10 +428,12 @@ class CandidateItem(QGraphicsRectItem):
                         f"selecionada · botão direito: mais opções")
 
     def mouseDoubleClickEvent(self, e):
-        self.editor.add_candidate(self.cand)
+        cand = self.cand
+        QTimer.singleShot(0, lambda: self.editor.add_candidate(cand))
 
     def contextMenuEvent(self, e):
-        self.editor.candidate_menu(self.cand, e.screenPos())
+        cand, pos = self.cand, e.screenPos()
+        QTimer.singleShot(0, lambda: self.editor.candidate_menu(cand, pos))
 
 
 class TimelineView(QGraphicsView):

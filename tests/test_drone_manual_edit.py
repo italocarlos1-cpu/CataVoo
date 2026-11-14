@@ -330,6 +330,7 @@ def test_dragging_a_block_with_the_mouse(session, tmp_path):
         QTest.mouseMove(w.view.viewport(), c + QPoint(dx, 0))
     QTest.mouseRelease(w.view.viewport(), Qt.LeftButton, Qt.NoModifier, c + QPoint(40, 0))
     app.processEvents()
+    app.processEvents()
     assert w.plan.shots[0].start > s0 + 20 / w.pps          # moved with the mouse
     r = w.shot_items[0].rect()
     e = w.view.mapFromScene(r.right() - 2, r.center().y())
