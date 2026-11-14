@@ -11,6 +11,10 @@ on:
         description: 'Bundle PyTorch + CLIP inside the .exe (huge; normally Instalar_IA_Paisagens.bat installs it later)'
         type: boolean
         default: false
+      release:
+        description: 'Publish this build as a GitHub Release (public download link)'
+        type: boolean
+        default: false
   push:
     tags: ['drone-v*']
     # Also on every update of the drone branch that touches the program.
@@ -21,6 +25,9 @@ on:
       - 'tests/test_drone_*.py'
       - 'tests/drone_fixtures.py'
       - '.github/workflows/build-drone-exe.yaml'
+
+permissions:
+  contents: write
 
 jobs:
   windows-exe:
@@ -99,3 +106,15 @@ jobs:
           $log = & "$t\_internal\DroneHighlighter-cli.exe" --pasta "$env:RUNNER_TEMP\trip" --so-analisar --saida "$env:RUNNER_TEMP\trip_out" 2>&1 | Out-String
           $log -split "`r?`n" | Select-String -Pattern 'CLIP|paisagem|Traceback|Error'
           if ($log -notmatch 'paisagem: clip') { $log; throw "CLIP was not used after the installer" }
+      # Public download: only when asked (Run workflow → release), after every check passed.
+      - name: Publish release
+        if: ${{ inputs.release && !inputs.with_clip }}
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $v = "${{ steps.ver.outputs.version }}"
+          $zip = "dist\DroneHighlighter-$v-win64.zip"
+          Compress-Archive -Path dist\DroneHighlighter\* -DestinationPath $zip -Force
+          $notes = "DroneHighlighter $v para Windows 64 bits.`n`nBaixe o .zip, extraia e abra o DroneHighlighter.exe. Para a IA de paisagens, rode uma vez o Instalar_IA_Paisagens.bat. O LEIA-ME.txt explica passo a passo."
+          gh release create "drone-v$v" $zip --repo "${{ github.repository }}" --target "${{ github.sha }}" --title "DroneHighlighter $v" --notes $notes --latest
