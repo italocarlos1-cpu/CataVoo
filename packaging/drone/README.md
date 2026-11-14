@@ -7,7 +7,7 @@ Existem dois caminhos, e os dois usam a mesma receita (`DroneHighlighter.spec`).
 1. Instale o **Python 3.12** em python.org, marcando *Add python.exe to PATH*.
 2. Dê dois cliques em `packaging\drone\build_exe.bat`. Ele cria um ambiente isolado (`.venv-build`),
    instala as dependências, gera o programa, faz um autoteste e compacta tudo.
-3. O resultado fica em `dist\DroneHighlighter\DroneHighlighter.exe` e `dist\DroneHighlighter-win64.zip`.
+3. O resultado fica em `dist\DroneHighlighter\DroneHighlighter.exe` e `dist\DroneHighlighter-VERSÃO-win64.zip`.
 
 ## IA de paisagens (CLIP) depois, sem gerar de novo
 Ao lado do `.exe` vai o **`Instalar_IA_Paisagens.bat`**. Com o programa fechado, dois cliques nele baixam o
@@ -24,7 +24,7 @@ que o `DroneHighlighter-cli.exe` classifica as paisagens com o CLIP.
 ## B) No GitHub (sem instalar nada)
 1. Envie o projeto para o seu fork no GitHub.
 2. Na aba **Actions**, escolha **Build DroneHighlighter.exe** e clique em **Run workflow**.
-3. No fim, baixe o artefato **DroneHighlighter-win64** (um .zip). Antes de gerar o programa, o workflow
+3. No fim, baixe o artefato **DroneHighlighter-VERSÃO-win64** (ex.: `DroneHighlighter-0.5.5-win64`, um .zip; extraído, vira uma pasta com o mesmo nome, então versões diferentes não se misturam). Antes de gerar o programa, o workflow
    também roda os testes do DroneHighlighter no Windows.
 
 ## O que vai dentro

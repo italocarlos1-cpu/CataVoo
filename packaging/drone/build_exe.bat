@@ -11,7 +11,7 @@ REM    build_exe.bat clip     com o CLIP DENTRO do .exe (varios GB; o normal e
 REM                           usar o Instalar_IA_Paisagens.bat ao lado do .exe)
 REM
 REM  Resultado: dist\DroneHighlighter\DroneHighlighter.exe
-REM             dist\DroneHighlighter-win64.zip  (a pasta inteira, para copiar/compartilhar)
+REM             dist\DroneHighlighter-VERSAO-win64.zip  (a pasta inteira, para copiar/compartilhar)
 REM ===================================================================
 setlocal EnableExtensions
 cd /d "%~dp0\..\.."
@@ -66,13 +66,16 @@ if exist "%TEMP%\dronehighlighter_selftest.txt" (
 "dist\DroneHighlighter\DroneHighlighter-cli.exe" --help >nul || goto :erro
 
 echo Compactando a pasta para compartilhar ...
-powershell -NoProfile -Command "Compress-Archive -Path 'dist\DroneHighlighter' -DestinationPath 'dist\DroneHighlighter-win64.zip' -Force"
+for /f "tokens=2 delims==" %%V in ('findstr /b "__version__" drone\__init__.py') do set "DHV=%%~V"
+set "DHV=%DHV: =%"
+set "DHV=%DHV:"=%"
+powershell -NoProfile -Command "Compress-Archive -Path 'dist\DroneHighlighter\*' -DestinationPath 'dist\DroneHighlighter-%DHV%-win64.zip' -Force"
 
 echo.
 echo ===================================================================
 echo  PRONTO!
 echo    Programa:  %CD%\dist\DroneHighlighter\DroneHighlighter.exe
-echo    Pacote:    %CD%\dist\DroneHighlighter-win64.zip
+echo    Pacote:    %CD%\dist\DroneHighlighter-%DHV%-win64.zip
 echo  Para usar em outro PC: copie a pasta inteira (ou o .zip). Nao precisa
 echo  instalar Python nem ffmpeg.
 echo ===================================================================
