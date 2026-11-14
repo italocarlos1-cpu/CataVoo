@@ -82,6 +82,92 @@ def _card_icon(pm: QPixmap | None, colour: QColor, w: int = 128, h: int = 72) ->
     return QIcon(out)
 
 
+class ProgramTimeline(QWidget):
+    """The whole film on one line: a block per shot (width = time on screen,
+    colour = landscape), a time ruler and the playhead. Click or drag to go
+    anywhere; the monitor follows."""
+    seek = Signal(float)
+
+    def __init__(self):
+        super().__init__()
+        self.setMinimumHeight(54)
+        self.setMaximumHeight(54)
+        self.setMouseTracking(True)
+        self.setCursor(Qt.PointingHandCursor)
+        self.blocks: list = []          # (start, length, colour, label)
+        self.total = 0.0
+        self.t = 0.0
+        self.sel = None
+        self._hover = None
+
+    def set_blocks(self, blocks: list, total: float, sel=None) -> None:
+        self.blocks, self.total, self.sel = blocks, max(0.0, total), sel
+        self.update()
+
+    def set_time(self, t: float) -> None:
+        self.t = t
+        self.update()
+
+    def _x(self, t: float) -> float:
+        return 8 + (self.width() - 16) * (t / self.total if self.total > 0 else 0.0)
+
+    def _t(self, x: float) -> float:
+        w = max(1, self.width() - 16)
+        return max(0.0, min(self.total, (x - 8) / w * self.total))
+
+    def paintEvent(self, _e):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.Antialiasing)
+        p.fillRect(self.rect(), QColor(10, 10, 10))
+        top, h = 18, 26
+        f = p.font()
+        f.setPointSizeF(7.5)
+        p.setFont(f)
+        if self.total > 0:
+            step = next(s for s in (1, 2, 5, 10, 15, 30, 60) if (self.width() - 16) * s / self.total >= 48)
+            p.setPen(QColor(90, 90, 90))
+            k = 0.0
+            while k <= self.total + 1e-6:
+                x = self._x(k)
+                p.drawLine(int(x), 12, int(x), 16)
+                p.drawText(int(x) + 3, 11, f"{int(k // 60)}:{int(k % 60):02d}")
+                k += step
+        for i, (start, length, colour, label) in enumerate(self.blocks):
+            x0, x1 = self._x(start), self._x(start + length)
+            c = QColor(colour)
+            c.setAlpha(230 if i == self.sel else 150)
+            p.fillRect(QRectF(x0 + 0.5, top, max(1.0, x1 - x0 - 1), h), c)
+            if i == self.sel:
+                p.setPen(QPen(QColor(255, 255, 255), 2))
+                p.drawRect(QRectF(x0 + 0.5, top, max(1.0, x1 - x0 - 1), h))
+            if x1 - x0 > 22:
+                p.setPen(QColor(10, 10, 10))
+                p.drawText(QRectF(x0 + 4, top, x1 - x0 - 6, h), Qt.AlignVCenter | Qt.AlignLeft, label)
+        if self._hover is not None and self.total > 0:
+            p.setPen(QPen(QColor(255, 255, 255, 70), 1))
+            p.drawLine(int(self._hover), top - 2, int(self._hover), top + h + 2)
+        x = self._x(self.t)
+        p.setPen(QPen(QColor(255, 80, 80), 2))
+        p.drawLine(int(x), 8, int(x), top + h + 4)
+        p.setBrush(QColor(255, 80, 80))
+        p.drawEllipse(QRectF(x - 4, 4, 8, 8))
+        p.end()
+
+    def mousePressEvent(self, e):
+        if e.button() == Qt.LeftButton and self.total > 0:
+            self.seek.emit(self._t(e.position().x()))
+
+    def mouseMoveEvent(self, e):
+        self._hover = e.position().x()
+        if e.buttons() & Qt.LeftButton and self.total > 0:
+            self.seek.emit(self._t(e.position().x()))
+        self.update()
+
+    def leaveEvent(self, _e):
+        self._hover = None
+        self.update()
+
+
 class SequenceStrip(QListWidget):
     """The film's order as cards. Dragging a card emits ``moved(from, to)``.
 
@@ -175,6 +261,29 @@ class _FrameJob(QRunnable):
             pass
 
 
+# ------------------------------------------------------------- proxies
+_KEEP_ALIVE: list = []
+class _ProxySignals(QObject):
+    ready = Signal(str, str)             # raw clip, proxy
+
+
+class _ProxyJob(QRunnable):
+    def __init__(self, path: str, content_hash: str, signals: _ProxySignals, cancelled):
+        super().__init__()
+        self.path, self.hash, self.signals, self.cancelled = path, content_hash, signals, cancelled
+
+    def run(self):
+        if self.cancelled():
+            return
+        try:
+            from drone import proxy
+            out = proxy.make(self.path, self.hash, cancel_check=self.cancelled)
+            if out:
+                self.signals.ready.emit(self.path, out)
+        except Exception:
+            pass
+
+
 # ------------------------------------------------------------- render worker
 class _RenderWorker(QObject):
     log = Signal(str)
@@ -201,6 +310,30 @@ class _RenderWorker(QObject):
             self.failed.emit(str(exc))
         finally:
             self.session.set_log(old)
+
+
+class _CapCutWorker(QObject):
+    log = Signal(str)
+    progress = Signal(float, str)
+    finished = Signal(object)
+    failed = Signal(str)
+
+    def __init__(self, plan, kwargs):
+        super().__init__()
+        self.plan, self.kwargs = plan, kwargs
+        self.cancelled = False
+
+    def run(self):
+        try:
+            from drone import capcut_export
+            folder = capcut_export.export(
+                self.plan, log_fn=self.log.emit, cancel_check=lambda: self.cancelled,
+                progress_fn=lambda i, n: self.progress.emit(100.0 * i / max(1, n), "CapCut"),
+                **self.kwargs)
+            self.finished.emit(folder)
+        except Exception as exc:  # noqa: BLE001 — shown to the user
+            self.log.emit(traceback.format_exc())
+            self.failed.emit(str(exc))
 
 
 # ------------------------------------------------------------- timeline items
@@ -230,6 +363,8 @@ class ShotItem(QGraphicsRectItem):
         tag.setBrush(QBrush(colour))
         tag.setPen(QPen(Qt.NoPen))
         tag.setZValue(-1)
+        tag.setAcceptedMouseButtons(Qt.NoButton)
+        t.setAcceptedMouseButtons(Qt.NoButton)
         t.setBrush(QBrush(QColor(10, 10, 10)))
 
     def _zone(self, x: float) -> str:
@@ -311,8 +446,14 @@ class TimelineView(QGraphicsView):
             super().keyPressEvent(e)
 
     def _blank(self, e) -> bool:
-        return not isinstance(self.itemAt(e.position().toPoint() if hasattr(e, "position") else e.pos()),
-                              (ShotItem, CandidateItem, QGraphicsSimpleTextItem))
+        """No shot or candidate block under the mouse (overlays don't count)."""
+        pos = e.position().toPoint() if hasattr(e, "position") else e.pos()
+        for it in self.items(pos):
+            while it is not None:
+                if isinstance(it, (ShotItem, CandidateItem)):
+                    return False
+                it = it.parentItem()
+        return True
 
     def mousePressEvent(self, e):
         self.setFocus()
@@ -346,8 +487,9 @@ class EditorWindow(QMainWindow):
         self.edge = "end"
         self.pps = 12.0
         self._thumbs: dict = {}
+        self._scaled: dict = {}
         self._frames: dict = {}
-        self._pool = QThreadPool.globalInstance()
+        self._pool = QThreadPool(self)          # own pool: closing waits for its frame grabs
         self._fsig = _FrameSignals()
         self._fsig.ready.connect(self._frame_ready)
         self._preview_timer = QTimer(self, singleShot=True, interval=140)
@@ -357,6 +499,14 @@ class EditorWindow(QMainWindow):
         session.set_log(self.log)
 
         self.mode = "seq"                    # what the monitor plays: seq | shot | clip
+        self._proxies: dict = {}             # raw clip → light copy for the preview
+        self._proxy_queued: set = set()
+        self._proxy_pool = QThreadPool(self)
+        self._proxy_pool.setMaxThreadCount(1)  # one at a time: the PC stays responsive
+        self._proxy_sig = _ProxySignals()
+        _KEEP_ALIVE.append(self._proxy_sig)    # a proxy may finish after the window is gone
+        self._proxy_sig.ready.connect(self._proxy_ready)
+        self._closing = False
         self._clip_path = ""
         self.lane_y: dict = {}
         self.playhead = None
@@ -410,16 +560,23 @@ class EditorWindow(QMainWindow):
         ml = QVBoxLayout(mon)
         ml.setContentsMargins(0, 0, 0, 0)
         ml.setSpacing(6)
+        mh = QHBoxLayout()
         self.monitor_title = role(QLabel("SEQUÊNCIA FINAL"), "section")
-        ml.addWidget(self.monitor_title)
+        self.proxy_lbl = role(QLabel(""), "muted")
+        self.proxy_lbl.setToolTip("Cópias leves (540p) dos vídeos, só para a prévia rodar lisa.\n"
+                                  "Feitas uma vez por vídeo; o vídeo final usa sempre os originais.")
+        mh.addWidget(self.monitor_title)
+        mh.addStretch()
+        mh.addWidget(self.proxy_lbl)
+        ml.addLayout(mh)
         self.preview = PreviewPlayer(self)
+        self.preview.resolve = self._play_source
         self._can_play = self.preview.available
         self.video = self.preview.widget if self._can_play else None
         ml.addWidget(self.preview.widget, 1)
-        self.scrub = QSlider(Qt.Horizontal)
-        self.scrub.setRange(0, 1000)
-        self.scrub.sliderMoved.connect(self._scrubbed)
-        self.scrub.sliderPressed.connect(lambda: self._scrubbed(self.scrub.value()))
+        self.scrub = ProgramTimeline()
+        self.scrub.setToolTip("O vídeo final inteiro: clique ou arraste para ir a qualquer ponto")
+        self.scrub.seek.connect(self._seek_program)
         ml.addWidget(self.scrub)
         tr = QHBoxLayout()
         tr.setSpacing(8)
@@ -429,6 +586,8 @@ class EditorWindow(QMainWindow):
         self.play_seq_btn.setToolTip("Tocar / pausar o vídeo final (Espaço)")
         self.next_btn = role(QPushButton("⏭"), "icon")
         self.next_btn.setToolTip("Próxima tomada")
+        self.stop_btn = role(QPushButton("■"), "icon")
+        self.stop_btn.setToolTip("Parar e voltar ao início")
         self.play_btn = QPushButton("Tocar tomada")
         self.play_btn.setToolTip("Só a tomada selecionada, da entrada à saída (T)")
         self.clip_btn = QPushButton("Tocar clipe original")
@@ -437,7 +596,7 @@ class EditorWindow(QMainWindow):
         self.music_chk = QCheckBox("Música")
         self.music_chk.setChecked(True)
         self.music_chk.setToolTip("Tocar a música junto na prévia da sequência")
-        for w in (self.prev_btn, self.play_seq_btn, self.next_btn):
+        for w in (self.stop_btn, self.prev_btn, self.play_seq_btn, self.next_btn):
             tr.addWidget(w)
         tr.addSpacing(6)
         tr.addWidget(self.time_lbl)
@@ -446,8 +605,9 @@ class EditorWindow(QMainWindow):
         tr.addWidget(self.play_btn)
         tr.addWidget(self.clip_btn)
         ml.addLayout(tr)
-        for w in (self.play_seq_btn, self.play_btn, self.clip_btn, self.scrub):
+        for w in (self.play_seq_btn, self.play_btn, self.clip_btn, self.stop_btn):
             w.setEnabled(self._can_play)
+        self.stop_btn.clicked.connect(self.stop)
         self.prev_btn.clicked.connect(lambda: self._step(-1))
         self.next_btn.clicked.connect(lambda: self._step(1))
         self.play_seq_btn.clicked.connect(self.play_sequence)
@@ -549,6 +709,9 @@ class EditorWindow(QMainWindow):
         self.restore_btn.setToolTip("Descarta as edições deste estilo/formato e volta ao corte automático")
         self.snap_btn = QPushButton("Encaixar tudo na batida")
         self.save_btn = QPushButton("Salvar edição")
+        self.capcut_btn = QPushButton("Enviar para o CapCut")
+        self.capcut_btn.setToolTip("Corta cada tomada no quadro exato, numera na ordem do vídeo, junta a música\n"
+                                   "e abre a pasta (e o CapCut, se estiver instalado) para o acabamento.")
         self.render_btn = role(QPushButton("RENDERIZAR"), "primary")
         self.render_btn.setMinimumHeight(38)
         self.render_btn.setMinimumWidth(180)
@@ -563,6 +726,7 @@ class EditorWindow(QMainWindow):
         bot.addWidget(self.bar, 1)
         bot.addSpacing(10)
         bot.addWidget(self.cancel_btn)
+        bot.addWidget(self.capcut_btn)
         bot.addWidget(self.render_btn)
         lay.addLayout(bot)
         self.setCentralWidget(root)
@@ -571,6 +735,7 @@ class EditorWindow(QMainWindow):
         self.snap_btn.clicked.connect(self.snap_all)
         self.save_btn.clicked.connect(self.save)
         self.render_btn.clicked.connect(self.render)
+        self.capcut_btn.clicked.connect(self.send_to_capcut)
         self.cancel_btn.clicked.connect(self._cancel_render)
         self.zoom.valueChanged.connect(self._zoom)
         self.magnet.toggled.connect(self._magnet_toggled)
@@ -673,6 +838,7 @@ class EditorWindow(QMainWindow):
         self.log(f"Estilo {STYLES[st].label}{auto}: {len(plan.shots)} tomadas, {plan.total:.1f} s")
         self.sel = 0 if plan.shots else None
         self.rebuild()
+        self._queue_proxies()
         self.preview.t = 0.0
         self._load_program()
 
@@ -735,7 +901,10 @@ class EditorWindow(QMainWindow):
                     if tt + 1e-6 < next_t or pm.isNull():
                         continue
                     x = self.t_to_x(tt)
-                    scaled = pm.scaledToHeight(int(th), Qt.SmoothTransformation)
+                    skey = (clip.path, tt, int(th))
+                    scaled = self._scaled.get(skey)
+                    if scaled is None:          # scaling every thumbnail on each redraw was slow
+                        scaled = self._scaled[skey] = pm.scaledToHeight(int(th), Qt.SmoothTransformation)
                     room = int(lane_end - x)
                     if room <= 2:
                         break
@@ -747,8 +916,14 @@ class EditorWindow(QMainWindow):
                     item.setZValue(1)
                     next_t = tt + every
         used = {(s.path, round(s.start, 2)) for s in self.plan.shots}
+
+        def covered(c) -> bool:
+            """Mostly inside a shot already in the film: drawing it would only clutter."""
+            n = c["end"] - c["start"]
+            return any(s.path == c["path"] and min(s.end, c["end"]) - max(s.start, c["start"]) > 0.5 * n
+                       for s in self.plan.shots)
         for c in self.plan.candidates:
-            if c["path"] not in lane_y or (c["path"], round(c["start"], 2)) in used:
+            if c["path"] not in lane_y or (c["path"], round(c["start"], 2)) in used or covered(c):
                 continue
             y = lane_y[c["path"]]
             self.scene.addItem(CandidateItem(self, c, QRectF(self.t_to_x(c["start"]), y + 14,
@@ -766,20 +941,49 @@ class EditorWindow(QMainWindow):
                             "Arraste as bordas para aparar, o meio para deslizar.")
             self.scene.addItem(item)
             self.shot_items.append(item)
-            if i == self.sel:
-                hl = QGraphicsRectItem(item.rect().adjusted(-2, -2, 2, 2))
-                hl.setPen(QPen(QColor(255, 255, 255), 2))
-                hl.setBrush(Qt.NoBrush)
-                hl.setZValue(4)
-                self.scene.addItem(hl)
-                ex = self.t_to_x(s.start if self.edge == "start" else s.end)
-                edge = self.scene.addLine(ex, y, ex, y + LANE_H, QPen(QColor(255, 255, 255), 3))
-                edge.setZValue(5)
+        # selection overlays: moved, never recreated, so a drag in progress survives
+        self.sel_box = QGraphicsRectItem()
+        self.sel_box.setPen(QPen(QColor(255, 255, 255), 2))
+        self.sel_box.setBrush(Qt.NoBrush)
+        self.sel_box.setZValue(4)
+        self.sel_box.setAcceptedMouseButtons(Qt.NoButton)      # the drag must reach the shot underneath
+        self.scene.addItem(self.sel_box)
+        self.sel_edge = self.scene.addLine(0, 0, 0, 0, QPen(QColor(255, 255, 255), 3))
+        self.sel_edge.setZValue(5)
+        self.sel_edge.setAcceptedMouseButtons(Qt.NoButton)
+        self._place_selection()
         self.playhead = self.scene.addLine(0, 0, 0, LANE_H, QPen(QColor(255, 80, 80), 2))
         self.playhead.setZValue(10)
+        self.playhead.setAcceptedMouseButtons(Qt.NoButton)
         self.playhead.setVisible(False)
         self._fill_strip()
         self._fill_legend()
+        self._program_blocks()
+        self._update_info()
+
+    def _place_selection(self) -> None:
+        box, edge = getattr(self, "sel_box", None), getattr(self, "sel_edge", None)
+        if box is None:
+            return
+        ok = self.plan is not None and self.sel is not None and self.sel < len(self.shot_items)
+        box.setVisible(ok)
+        edge.setVisible(ok)
+        if not ok:
+            return
+        r = self.shot_items[self.sel].rect()
+        box.setRect(r.adjusted(-2, -2, 2, 2))
+        s = self.plan.shots[self.sel]
+        ex = self.t_to_x(s.start if self.edge == "start" else s.end)
+        edge.setLine(ex, r.top() - 4, ex, r.bottom() + 4)
+
+    def _refresh_selection(self) -> None:
+        """Selection changed without the cut changing: no scene rebuild."""
+        self._place_selection()
+        self._program_blocks()
+        self.strip.blockSignals(True)
+        if self.sel is not None and self.sel < self.strip.count():
+            self.strip.setCurrentRow(self.sel)
+        self.strip.blockSignals(False)
         self._update_info()
 
     def _fill_legend(self) -> None:
@@ -860,7 +1064,7 @@ class EditorWindow(QMainWindow):
         else:
             self._pending = getattr(self, "_pending", {})
             self._pending[key] = "monitor"
-            job = _FrameJob(key, path, t, self._fsig)
+            job = _FrameJob(key, self._proxies.get(path, path), t, self._fsig)
             job.width = 960
             self._pool.start(job)
 
@@ -881,6 +1085,40 @@ class EditorWindow(QMainWindow):
         lbl.setPixmap(QPixmap.fromImage(img).scaled(lbl.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation))
 
     # ================================================================ playback
+    def _play_source(self, path: str) -> str:
+        return self._proxies.get(path, path)
+
+    def _queue_proxies(self) -> None:
+        """Light copies for the preview: the film's clips first, then the rest."""
+        if self.plan is None or not self._can_play:
+            return
+        from drone import proxy
+        used = [s.path for s in self.plan.shots]
+        order = sorted(self.plan.clips.values(), key=lambda c: (c.path not in used, c.order))
+        for c in order:
+            if c.path in self._proxies or c.path in self._proxy_queued:
+                continue
+            ready = proxy.existing(c.content_hash)
+            if ready:
+                self._proxies[c.path] = ready
+                continue
+            self._proxy_queued.add(c.path)
+            self._proxy_pool.start(_ProxyJob(c.path, c.content_hash, self._proxy_sig,
+                                             lambda: self._closing))
+        self._proxy_status()
+
+    def _proxy_ready(self, path: str, out: str) -> None:
+        if self._closing:
+            return
+        self._proxies[path] = out
+        self._proxy_queued.discard(path)
+        self._proxy_status()
+
+    def _proxy_status(self) -> None:
+        n = len(self.plan.clips) if self.plan is not None else 0
+        done = sum(1 for c in (self.plan.clips if self.plan else {}) if c in self._proxies)
+        self.proxy_lbl.setText("" if done >= n else f"preparando prévia leve {done}/{n}…")
+
     def _sequence_pieces(self) -> list:
         p, out = self.plan, []
         cuts = p.cut_times()
@@ -973,21 +1211,51 @@ class EditorWindow(QMainWindow):
                     self.preview.seek(t)
                 return
 
-    def _scrubbed(self, v: int) -> None:
-        d = self.preview.duration
-        if d > 0:
-            self.preview.seek(d * v / 1000.0)
+    def _seek_program(self, t: float) -> None:
+        """Click on the film's line: back to the film if a shot/clip was playing."""
+        if self.plan is None:
+            return
+        if self.mode != "seq":
+            playing = self.preview.playing
+            self._load_program()
+            if playing:
+                self.preview.play(t)
+                return
+        self.preview.seek(t)
+        i = self.preview.piece_at(t)
+        if not self.preview.playing and i != self.sel:
+            self.sel = i
+            self._refresh_selection()
+            self._scroll_to_sel()
+
+    def stop(self) -> None:
+        """Stop and go back to the start of the film."""
+        self.preview.pause()
+        self._load_program()
+        self.preview.seek(0.0)
+        if self.plan is not None and self.plan.shots:
+            self.sel = 0
+            self._refresh_selection()
+            self._scroll_to_sel()
+
+    def _program_blocks(self) -> None:
+        if self.plan is None:
+            return
+        p, cuts = self.plan, self.plan.cut_times()
+        blocks = [(cuts[i], p.advance(i) if i < len(p.shots) - 1 else s.length,
+                   category_colour(s.category), f"{i + 1}") for i, s in enumerate(p.shots)]
+        self.scrub.set_blocks(blocks, p.total, self.sel)
 
     def _play_pos(self, t: float) -> None:
         d = self.preview.duration
-        if not self.scrub.isSliderDown():
-            self.scrub.blockSignals(True)
-            self.scrub.setValue(int(1000 * t / d) if d > 0 else 0)
-            self.scrub.blockSignals(False)
+        if self.mode == "seq":
+            self.scrub.set_time(t)
         self.time_lbl.setText(f"{_clock(t)} / {_clock(d)}")
         self._move_playhead(t)
 
     def _play_piece(self, i: int) -> None:
+        if self.mode == "seq":
+            self.scrub.sel = i
         if self.mode == "seq" and 0 <= i < self.strip.count():
             self.strip.blockSignals(True)
             self.strip.setCurrentRow(i)
@@ -1022,7 +1290,7 @@ class EditorWindow(QMainWindow):
             return
         i = 0 if self.sel is None else max(0, min(len(self.plan.shots) - 1, self.sel + d))
         self.sel = i
-        self.rebuild()
+        self._refresh_selection()
         self._scroll_to_sel()
         if self.mode == "seq":
             self.preview.seek(self.plan.cut_times()[i])
@@ -1033,7 +1301,7 @@ class EditorWindow(QMainWindow):
         self.sel = i
         if edge in ("start", "end"):
             self.edge = edge
-        self.rebuild()
+        self._refresh_selection()
         if changed:
             self._cue_selected()
 
@@ -1051,6 +1319,12 @@ class EditorWindow(QMainWindow):
             it = self.shot_items[i]
             r = it.rect()
             it.setRect(QRectF(self.t_to_x(s.start), r.y(), max(3.0, s.length * self.pps), r.height()))
+            for child in it.childItems():          # the number tag follows the block
+                if isinstance(child, QGraphicsRectItem):
+                    child.setRect(QRectF(self.t_to_x(s.start) + 2, r.y() + 2, child.rect().width(), 16))
+                else:
+                    child.setPos(self.t_to_x(s.start) + 5, r.y() + 3)
+        self._place_selection()
         self._update_info()
 
     def commit_drag(self) -> None:
@@ -1117,7 +1391,8 @@ class EditorWindow(QMainWindow):
             return True
         else:
             return False
-        self.rebuild()
+        self._refresh_selection()
+        self._scroll_to_sel()
         return True
 
     def eventFilter(self, obj, e):
@@ -1186,7 +1461,7 @@ class EditorWindow(QMainWindow):
     def _strip_selected(self, row: int) -> None:
         if row >= 0 and row != self.sel:
             self.sel = row
-            self.rebuild()
+            self._refresh_selection()
             self._scroll_to_sel()
             self._cue_selected()
 
@@ -1257,6 +1532,7 @@ class EditorWindow(QMainWindow):
         plan = self.plan.to_plan(self.gp.music, self.title_text)
         self.bar.setValue(0)
         self.render_btn.setEnabled(False)
+        self.capcut_btn.setEnabled(False)
         self.cancel_btn.setEnabled(True)
         self._render_thread = QThread()
         self._render_worker = _RenderWorker(self.session, self.gp, plan, self.plan.tag)
@@ -1274,9 +1550,58 @@ class EditorWindow(QMainWindow):
         if self._render_worker is not None:
             self._render_worker.cancelled = True
 
+    def send_to_capcut(self) -> None:
+        """Cut the shots (frame-exact, full quality) into a numbered folder for CapCut."""
+        if self.plan is None or not self.plan.shots or self._render_thread is not None \
+                and self._render_thread.isRunning():
+            return
+        self.save()
+        self.preview.pause()
+        cfg = getattr(self.session.ctx, "cfg", None)
+        kwargs = {"out_dir": self.session.ctx.out_dir, "music": self.gp.music,
+                  "src_sizes": getattr(self.gp, "src_sizes", None), "title": self.title_text,
+                  "mode": getattr(cfg, "render_mode", "gpu")}
+        self.bar.setValue(0)
+        self.render_btn.setEnabled(False)
+        self.capcut_btn.setEnabled(False)
+        self.cancel_btn.setEnabled(True)
+        self._render_thread = QThread()
+        self._render_worker = _CapCutWorker(self.plan, kwargs)
+        self._render_worker.moveToThread(self._render_thread)
+        self._render_thread.started.connect(self._render_worker.run)
+        self._render_worker.log.connect(self.log)
+        self._render_worker.progress.connect(lambda p, t: self.bar.setValue(int(p * 10)))
+        self._render_worker.finished.connect(self._capcut_done)
+        self._render_worker.failed.connect(self._render_failed)
+        self._render_worker.finished.connect(self._render_thread.quit)
+        self._render_worker.failed.connect(self._render_thread.quit)
+        self._render_thread.start()
+
+    def _capcut_done(self, folder: str) -> None:
+        from PySide6.QtGui import QDesktopServices
+        from drone.capcut_export import find_capcut
+        self.bar.setValue(1000)
+        self.render_btn.setEnabled(True)
+        self.capcut_btn.setEnabled(True)
+        self.cancel_btn.setEnabled(False)
+        QDesktopServices.openUrl(QUrl.fromLocalFile(folder))
+        exe = find_capcut()
+        if exe:
+            try:
+                os.startfile(exe)  # noqa: S606 — the user's own CapCut
+            except OSError:
+                exe = ""
+        where = "O CapCut está abrindo." if exe else "Abra o CapCut (não o encontrei instalado neste PC)."
+        QMessageBox.information(
+            self, "Enviar para o CapCut",
+            f"Pasta pronta, já aberta:\n{folder}\n\n{where}\n\nNo CapCut: Novo projeto → Importar → "
+            "selecione todos os arquivos da pasta → arraste para a linha do tempo (entram na ordem pelo "
+            "número) → arraste a 00_musica.m4a para a faixa de áudio. A ordem e os tempos estão em ORDEM.txt.")
+
     def _rendered(self, out: dict) -> None:
         self.bar.setValue(1000)
         self.render_btn.setEnabled(True)
+        self.capcut_btn.setEnabled(True)
         self.cancel_btn.setEnabled(False)
         self.rendered.emit(out)
         box = QMessageBox(self)
@@ -1291,11 +1616,16 @@ class EditorWindow(QMainWindow):
 
     def _render_failed(self, msg: str) -> None:
         self.render_btn.setEnabled(True)
+        self.capcut_btn.setEnabled(True)
         self.cancel_btn.setEnabled(False)
         if "cancel" not in msg:
             QMessageBox.critical(self, "Edição manual", msg)
 
     def closeEvent(self, e):
+        self._closing = True
+        self._proxy_pool.clear()
+        self._pool.clear()
+        self._pool.waitForDone(5000)
         self._remember()
         if any(p.edited for p in self.plans.values()):
             self.store.save()

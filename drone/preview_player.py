@@ -130,6 +130,8 @@ class PreviewPlayer(QObject):
         self._tick.timeout.connect(self._on_tick)
         self._resync = 0
         self.available = False
+        # raw clip → the file actually played (a light proxy once it exists)
+        self.resolve = lambda path: path
         if os.environ.get("DRONEHIGHLIGHTER_NO_VIDEO_PREVIEW"):
             self.still.setText("Prévia em vídeo desligada")
             return
@@ -263,7 +265,8 @@ class PreviewPlayer(QObject):
         nxt = (self._active + 1) % 2
         deck = self._decks[self._active]
         other = self._decks[nxt]
-        if other.piece == i and other.path == self.pieces[i].path and i != self.cur:
+        src = self.resolve(self.pieces[i].path)
+        if other.piece == i and other.path == src and i != self.cur:
             self._active = nxt
             deck, other = other, deck
             want = self._src_time(i, self.t)
@@ -272,14 +275,14 @@ class PreviewPlayer(QObject):
             elif play:
                 deck.play()
         else:
-            deck.load(self.pieces[i].path, self._src_time(i, self.t), i, play)
+            deck.load(src, self._src_time(i, self.t), i, play)
         self.stack.setCurrentWidget(deck.widget)
         other.pause()
         self.cur = i
         self.piece_changed.emit(i)
         if i + 1 < len(self.pieces):
             p = self.pieces[i + 1]
-            other.load(p.path, p.src_start, i + 1, play=False)
+            other.load(self.resolve(p.path), p.src_start, i + 1, play=False)
 
     def _on_tick(self) -> None:
         self.t = self._t0 + self._clock.elapsed() / 1000.0

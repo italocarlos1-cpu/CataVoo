@@ -58,6 +58,21 @@ ficam menos. A duração total e o encaixe na música não mudam.
   a sua seleção e, no modo Automático, o seu estilo.
 - **Música**: volume abaixando nos últimos ~4 s; uma faixa mais curta que o vídeo é repetida.
 
+## v0.5.6 — editor mais fluido, linha do vídeo final, CapCut
+
+- Arrastar blocos funcionava mal: o clique selecionava e reconstruía a cena inteira, apagando o
+  bloco que estava sendo arrastado (e o contorno da seleção ficava por cima e pegava o clique).
+  Agora a seleção só move sobreposições (`_refresh_selection`), sem reconstruir.
+- `ProgramTimeline`: o vídeo final numa linha (bloco por tomada, régua, marca de reprodução,
+  clicar/arrastar). Botão ■ (parar e voltar ao início).
+- Prévia leve: `drone/proxy.py` faz cópias 540p H.264 GOP 15 (sem áudio) em segundo plano, uma
+  por vídeo, em `<cache>/proxies/<hash>`; o monitor e os quadros parados usam a cópia.
+- `drone/capcut_export.py`: pasta numerada com as tomadas cortadas no quadro exato (resolução
+  original, encoder da GPU), `00_musica.m4a` e `ORDEM.txt`; abre a pasta e o CapCut se achar.
+  O CapCut não importa EDL/XML/projetos de terceiros (ajuda oficial do CapCut, jan/2026).
+- `ingest.is_derived`: ignora `*_highlight.mp4` e afins (saídas de editores na pasta dos brutos).
+- Caixas marcadas mostram uma bolinha branca (a caixa toda branca parecia vazia).
+
 ## v0.5.5 — mini editor, tema escuro, arquivos de trabalho em `projeto/`
 
 - **Edição manual = mini editor.** Abre maximizada (F11 tela cheia). Monitor que toca a sequência

@@ -90,6 +90,17 @@ def _sidecar(path: str) -> str:
     return ""
 
 
+# Outputs of editors, not footage: VideoHighlighter writes "<video>_highlight.mp4"
+# next to the original, and those copies would otherwise be analysed as new
+# clips and their scenes used twice.
+_DERIVED = re.compile(r"(_highlights?|_highlight_\d+|_edit(ado)?|_dh_\w+)$", re.IGNORECASE)
+
+
+def is_derived(path: str) -> bool:
+    """True for a video another editor made from the footage (not raw material)."""
+    return bool(_DERIVED.search(os.path.splitext(os.path.basename(path))[0]))
+
+
 def scan_folder(folder: str, *, recursive: bool = False, log_fn=print,
                 progress_fn=None) -> list[DroneClip]:
     if not os.path.isdir(folder):
@@ -104,6 +115,11 @@ def scan_folder(folder: str, *, recursive: bool = False, log_fn=print,
     paths = sorted(p for p in paths if os.path.isfile(p)
                    and os.path.splitext(p)[1].lower() in VIDEO_EXTS
                    and not os.path.basename(p).startswith("."))
+    derived = [p for p in paths if is_derived(p)]
+    if derived:
+        paths = [p for p in paths if p not in derived]
+        log_fn(f"ℹ️ {len(derived)} vídeo(s) já editado(s) por outro programa ignorado(s) "
+               f"(ex.: {os.path.basename(derived[0])}); só os originais entram na análise")
 
     clips: list[DroneClip] = []
     for i, p in enumerate(paths):

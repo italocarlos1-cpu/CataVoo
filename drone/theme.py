@@ -79,7 +79,11 @@ QPushButton[role="icon"]:hover {{ background: {HOVER}; }}
 QCheckBox {{ spacing: 8px; background: transparent; }}
 QCheckBox::indicator {{ width: 16px; height: 16px; border: 1px solid #4a4a4a;
     border-radius: 4px; background: {FIELD}; }}
-QCheckBox::indicator:checked {{ background: {ACCENT}; border-color: {ACCENT}; }}
+QCheckBox::indicator:checked, QGroupBox::indicator:checked {{ background: {FIELD};
+    border: 1px solid {ACCENT}; image: url(@DOT@); }}
+QGroupBox::indicator:unchecked {{ border: 1px solid #4a4a4a; border-radius: 4px; background: {FIELD}; }}
+QGroupBox::indicator:checked {{ border-radius: 4px; }}
+QCheckBox::indicator:hover {{ border-color: #8a8a8a; }}
 
 QProgressBar {{ background: {FIELD}; border: 0; border-radius: 2px; height: 4px;
                max-height: 4px; text-align: center; color: transparent; }}
@@ -138,7 +142,25 @@ def apply(app) -> None:
     f.setStyleHint(QFont.SansSerif)
     f.setPointSizeF(10)
     app.setFont(f)
-    app.setStyleSheet(QSS.replace("@ARROW@", _arrow_png()))
+    app.setStyleSheet(QSS.replace("@ARROW@", _arrow_png()).replace("@DOT@", _dot_png()))
+
+
+def _dot_png() -> str:
+    """Checked boxes show a white dot: a fully white box read as empty."""
+    path = os.path.join(tempfile.gettempdir(), "dronehighlighter_dot.png")
+    try:
+        pm = QPixmap(32, 32)
+        pm.fill(Qt.transparent)
+        p = QPainter(pm)
+        p.setRenderHint(QPainter.Antialiasing)
+        p.setPen(Qt.NoPen)
+        p.setBrush(QColor(ACCENT))
+        p.drawEllipse(QPointF(16, 16), 8, 8)
+        p.end()
+        pm.save(path, "PNG")
+    except Exception:  # noqa: BLE001 — cosmetic only
+        pass
+    return path.replace("\\", "/")
 
 
 def _arrow_png() -> str:

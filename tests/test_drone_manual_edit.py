@@ -297,3 +297,82 @@ def test_hide_child_consoles_sets_the_flag(monkeypatch):
     seen.clear()
     subprocess.Popen.__init__(object.__new__(subprocess.Popen), ["x"], creationflags=0x10)
     assert seen["creationflags"] == 0x10                     # asked for a console: left alone
+
+
+def test_dragging_a_block_with_the_mouse(session, tmp_path):
+    """A real press-move-release on a block slides it, and on its edge trims it —
+    also on the block that is already selected (its outline used to eat the click)."""
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    os.environ["DRONEHIGHLIGHTER_NO_VIDEO_PREVIEW"] = "1"
+    qtw = pytest.importorskip("PySide6.QtWidgets")
+    if not hasattr(qtw, "QApplication") or "Mock" in type(qtw.QApplication).__name__:
+        pytest.skip("real PySide6 required")
+    from PySide6.QtCore import QPoint, Qt
+    from PySide6.QtTest import QTest
+    app = qtw.QApplication.instance() or qtw.QApplication([])
+    from drone.editor_window import EditorWindow
+    w = EditorWindow(session, style_key="cinematografico", tag="16x9",
+                     store=EditStore(str(tmp_path / "d.json")), title="T", main_style="cinematografico")
+    w.resize(1600, 960)
+    w.show()
+    app.processEvents()
+    w._initial_sizes()
+    app.processEvents()
+    w.magnet.setChecked(False)
+    assert w.sel == 0
+    it = w.shot_items[0]
+    w.view.ensureVisible(it)
+    app.processEvents()
+    s0 = w.plan.shots[0].start
+    c = w.view.mapFromScene(it.rect().center())
+    QTest.mousePress(w.view.viewport(), Qt.LeftButton, Qt.NoModifier, c)
+    for dx in range(5, 45, 5):
+        QTest.mouseMove(w.view.viewport(), c + QPoint(dx, 0))
+    QTest.mouseRelease(w.view.viewport(), Qt.LeftButton, Qt.NoModifier, c + QPoint(40, 0))
+    app.processEvents()
+    assert w.plan.shots[0].start > s0 + 20 / w.pps          # moved with the mouse
+    r = w.shot_items[0].rect()
+    e = w.view.mapFromScene(r.right() - 2, r.center().y())
+    end0 = w.plan.shots[0].end
+    QTest.mousePress(w.view.viewport(), Qt.LeftButton, Qt.NoModifier, e)
+    for dx in range(-5, -35, -5):
+        QTest.mouseMove(w.view.viewport(), e + QPoint(dx, 0))
+    QTest.mouseRelease(w.view.viewport(), Qt.LeftButton, Qt.NoModifier, e + QPoint(-30, 0))
+    app.processEvents()
+    assert w.plan.shots[0].end < end0 - 15 / w.pps
+    # the film's line: a click jumps the monitor there
+    w._seek_program(w.plan.cut_times()[1] + 0.1)
+    assert w.preview.piece_at(w.preview.t) == 1 and w.sel == 1
+    w.stop()
+    assert w.preview.t == 0.0 and w.sel == 0
+    w.close()
+
+
+def test_capcut_folder_has_every_shot_cut_in_order(session, tmp_path):
+    from drone import capcut_export
+    ep = _edit(session)
+    gp = session.prepare("tudo", "cinematografico")
+    folder = capcut_export.export(ep, out_dir=str(tmp_path), music=gp.music, src_sizes=gp.src_sizes,
+                                  title="T", mode="cpu", log_fn=lambda *_: None)
+    clips = sorted(f for f in os.listdir(folder) if f.endswith(".mp4"))
+    assert len(clips) == len(ep.shots) and clips[0].startswith("01_")
+    for f, s in zip(clips, ep.shots):
+        assert abs(_duration(os.path.join(folder, f)) - s.length) < 0.12
+    assert os.path.exists(os.path.join(folder, "ORDEM.txt"))
+    if gp.music is not None:
+        assert abs(_duration(os.path.join(folder, "00_musica.m4a")) - ep.total) < 0.3
+
+
+def test_proxy_is_small_and_same_length(session, tmp_path, monkeypatch):
+    from drone import proxy
+    monkeypatch.setenv("DRONEHIGHLIGHTER_CACHE", str(tmp_path))
+    clip = next(iter(_edit(session).clips.values()))
+    out = proxy.make(clip.path, clip.content_hash or "abc")
+    assert out and proxy.existing(clip.content_hash or "abc") == out
+    assert abs(_duration(out) - _duration(clip.path)) < 0.1
+
+
+def test_videos_made_by_editors_are_not_footage(tmp_path):
+    from drone.ingest import is_derived
+    assert is_derived("DJI_0420_DJI_0419_highlight.mp4") and is_derived("DJI_0421_highlight.MP4")
+    assert not is_derived("DJI_0421.MP4") and not is_derived("highlights_da_serra.mp4")

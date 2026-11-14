@@ -76,7 +76,7 @@
   <img src="{{IMG_ICONE}}" alt="Ícone do DroneHighlighter" style="width:96px;height:96px;float:right;margin:0 0 10px 16px">
   <h1>DroneHighlighter</h1>
   <p class="sub">Manual de uso: editor automático de vídeos de drone, 100% local</p>
-  <p class="meta">Versão do programa: 0.5.5 · Manual atualizado em 13/11/2026 · Licença AGPL-3.0</p>
+  <p class="meta">Versão do programa: 0.5.6 · Manual atualizado em 13/11/2026 · Licença AGPL-3.0</p>
 </header>
 
 <p>O DroneHighlighter transforma uma pasta de vídeos brutos de drone em vídeos prontos para publicar. Você escolhe a pasta, o estilo e a duração e clica em <b>GERAR VÍDEO</b>. O programa analisa as filmagens, escolhe os melhores trechos, descarta cenas tremidas, borradas ou repetidas, monta a sequência no ritmo da música e exporta nos formatos horizontal (16:9) e vertical (9:16).</p>
@@ -423,7 +423,7 @@ Tudo roda no seu computador: nenhum vídeo é enviado para a internet e não há
 <h3>O que aparece na janela</h3>
 <table>
 <tr><th style="width:26%">Parte</th><th>O que é</th></tr>
-<tr><td><b>Monitor (em cima, à esquerda)</b></td><td>Toca a <b>sequência final</b> (botão ▶ ou <kbd>Espaço</kbd>), começando na tomada selecionada, com a música (caixa <b>Música</b>). A barra embaixo dele mostra e muda a posição no vídeo; ⏮ ⏭ pulam de tomada. <b>Tocar tomada</b> (<kbd>T</kbd>) toca só a tomada selecionada; <b>Tocar clipe original</b> (<kbd>C</kbd>) toca o arquivo bruto inteiro. Na prévia as fusões aparecem como cortes secos no momento certo: elas só aparecem no vídeo renderizado.</td></tr>
+<tr><td><b>Monitor (em cima, à esquerda)</b></td><td>Toca a <b>sequência final</b> (botão ▶ ou <kbd>Espaço</kbd>), começando na tomada selecionada, com a música (caixa <b>Música</b>). Embaixo dele fica a <b>linha do vídeo final</b>: um bloco por tomada, do tamanho do tempo que ela fica na tela, na cor da paisagem, com a marca vermelha onde está tocando. Clique ou arraste nela para ir a qualquer ponto. ⏮ ⏭ pulam de tomada e ■ para e volta ao início. <b>Tocar tomada</b> (<kbd>T</kbd>) toca só a tomada selecionada; <b>Tocar clipe original</b> (<kbd>C</kbd>) toca o arquivo bruto inteiro. Na prévia as fusões aparecem como cortes secos no momento certo: elas só aparecem no vídeo renderizado. Para a prévia rodar lisa, o programa faz em segundo plano uma <b>cópia leve</b> (540p) de cada vídeo, uma vez só ("preparando prévia leve 3/8" no alto); o vídeo final usa sempre os originais.</td></tr>
 <tr><td><b>Linha vermelha</b></td><td>Durante a reprodução, mostra nas faixas de baixo qual trecho do vídeo bruto está tocando.</td></tr>
 <tr><td><b>Faixas (uma por vídeo)</b></td><td>Cada vídeo bruto inteiro, com miniaturas, nome, duração e quadros por segundo. A régua no alto mostra os segundos.</td></tr>
 <tr><td><b>Blocos coloridos numerados</b></td><td>As tomadas que estão no vídeo final. O número é a posição na sequência; a cor indica o tipo de paisagem, sempre a mesma (cachoeira azul, rio ciano, mata verde, serra verde-oliva, pôr do sol laranja, cidade histórica terracota, cidade lilás, estrada cinza…). A legenda <b>Paisagens</b>, à direita, mostra as que aparecem no vídeo.</td></tr>
@@ -433,6 +433,9 @@ Tudo roda no seu computador: nenhum vídeo é enviado para a internet e não há
 <tr><td><b>Sequência (no meio)</b></td><td>A ordem do vídeo final, com miniatura, a cor da paisagem, duração, "⇢" quando há fusão para a próxima e "♪✗" quando a tomada está fora da batida.</td></tr>
 <tr><td><b>Barra de cima</b></td><td>Grupo (quando você separa por voo/dia/local), <b>Estilo</b>, <b>Formato</b> (16:9 ou 9:16), <b>🧲 Ímã na batida</b>, zoom, botão <b>Ajustar</b> e a <b>duração total</b>, que se atualiza a cada mudança.</td></tr>
 </table>
+
+<h3>Enviar para o CapCut</h3>
+<p>O botão <b>Enviar para o CapCut</b>, ao lado de Renderizar, prepara o acabamento no CapCut. O CapCut não abre projetos de outros editores, então o programa entrega o corte pronto em peças: uma pasta em <code>_dh_editados\capcut\</code> com cada tomada já cortada no quadro exato e numerada na ordem do vídeo (<code>01_…mp4</code>, <code>02_…mp4</code>…), a música já no tamanho e com fade (<code>00_musica.m4a</code>) e um <code>ORDEM.txt</code> com os tempos e as transições. A pasta abre sozinha e, se o CapCut estiver instalado, ele também. No CapCut: <b>Importar</b> → selecione todos os arquivos → arraste para a linha do tempo (entram na ordem) → arraste a música para a faixa de áudio.</p>
 
 <h3>Trocar de estilo sem renderizar</h3>
 <p>Escolha outro estilo na lista <b>Estilo</b> e a timeline mostra na hora os cortes daquele estilo. Assim dá para comparar, por exemplo, Cinematográfico, Trailer épico e Contemplativo antes de gastar tempo com o render.</p>
@@ -528,7 +531,7 @@ Tudo roda no seu computador: nenhum vídeo é enviado para a internet e não há
 
 <!-- ============================================================ -->
 <h2 id="saida">15. Arquivos gerados</h2>
-<p>Os vídeos prontos vão para <code>&lt;pasta dos vídeos&gt;\_dh_editados\</code>, e os arquivos de trabalho ficam numa subpasta dela, <code>projeto\</code>, para a pasta principal mostrar só os vídeos. Os originais não são tocados.</p>
+<p>Vídeos feitos por outros editores a partir dos originais (por exemplo <code>DJI_0421_highlight.mp4</code>, criado pelo VideoHighlighter) são ignorados na análise: só os originais entram. Os vídeos prontos vão para <code>&lt;pasta dos vídeos&gt;\_dh_editados\</code>, e os arquivos de trabalho ficam numa subpasta dela, <code>projeto\</code>, para a pasta principal mostrar só os vídeos. Os originais não são tocados.</p>
 <table>
 <tr><th>Arquivo</th><th>Para que serve</th></tr>
 <tr><td><code>Título[_grupo]_16x9_DATA.mp4</code> / <code>_9x16_</code></td><td>Os vídeos prontos.</td></tr>
