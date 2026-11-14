@@ -118,6 +118,7 @@ class PreviewPlayer(QObject):
         self.music_offset = 0.0
         self.t = 0.0
         self.playing = False
+        self.loop = False                    # start over at the end (one shot, being edited)
         self.cur = -1
         self._decks: list[_Deck] = []
         self._active = 0
@@ -287,6 +288,13 @@ class PreviewPlayer(QObject):
     def _on_tick(self) -> None:
         self.t = self._t0 + self._clock.elapsed() / 1000.0
         if self.t >= self.duration:
+            if self.loop and self.duration > 0.05:
+                self.t, self._t0 = 0.0, 0.0
+                self._clock.restart()
+                self.cur = -1
+                self._enter(0, play=True)
+                self.position_changed.emit(self.t)
+                return
             self.t = self.duration
             self.pause()
             self.position_changed.emit(self.t)

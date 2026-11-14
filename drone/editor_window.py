@@ -384,6 +384,7 @@ class ShotItem(QGraphicsRectItem):
             return super().mousePressEvent(e)
         self._mode = self._zone(e.pos().x())
         self._press_x = e.scenePos().x()
+        self._moved = False
         self.editor.select(self.index, edge=self._mode if self._mode != "body" else None)
         e.accept()
 
@@ -391,6 +392,7 @@ class ShotItem(QGraphicsRectItem):
         if self._mode is None:
             return
         x = e.scenePos().x()
+        self._moved = True
         if self._mode == "body":
             dt = (x - self._press_x) / self.editor.pps
             if abs(dt) > 0:
@@ -403,8 +405,16 @@ class ShotItem(QGraphicsRectItem):
     def mouseReleaseEvent(self, e):
         if self._mode is not None:
             self._mode = None
-            # later, not now: the rebuild deletes this very item while Qt is still inside its handler
-            QTimer.singleShot(0, self.editor.commit_drag)
+            if getattr(self, "_moved", False):
+                # later, not now: the rebuild deletes this very item while Qt is still inside its handler
+                QTimer.singleShot(0, self.editor.commit_drag)
+        e.accept()
+
+    def mouseDoubleClickEvent(self, e):
+        """Double-click: play just this shot, in a loop, to fine-tune it."""
+        if e.button() == Qt.LeftButton:
+            i = self.index
+            QTimer.singleShot(0, lambda: self.editor.play_loop(i))
         e.accept()
 
     def contextMenuEvent(self, e):
@@ -862,8 +872,23 @@ class EditorWindow(QMainWindow):
             self._thumbs[clip.path] = [(t, _pixmap_from_jpeg(j)) for t, j in self.session.thumbs(clip.content_hash)]
         return self._thumbs[clip.path]
 
+    def _fresh_scene(self) -> None:
+        """A new scene for every redraw; the old one is deleted later, by Qt's
+        event loop. ``scene.clear()`` deleted the blocks while Qt could still
+        hold one of them (the block just dragged, the one under the mouse) —
+        a hard crash that closed the program."""
+        old = self.scene
+        self.scene = QGraphicsScene(self)
+        self.scene.setBackgroundBrush(QBrush(QColor(10, 10, 10)))
+        self.view.setScene(self.scene)
+        if old is not None:
+            old.deleteLater()
+
     def rebuild(self) -> None:
-        self.scene.clear()
+        self._fresh_scene()
+        # everything that pointed into the old scene is gone now
+        self.sel_box = self.sel_edge = self.playhead = None
+        self.shot_items = []
         if self.plan is None:
             return
         lanes = self._lanes()
@@ -1143,6 +1168,7 @@ class EditorWindow(QMainWindow):
             return
         if self.mode != "seq":
             self.preview.pause()
+            self.preview.loop = False
             self.mode = "seq"
             self.monitor_title.setText("SEQUÊNCIA FINAL")
         path, off = self._music()
@@ -1154,6 +1180,9 @@ class EditorWindow(QMainWindow):
     def play_sequence(self) -> None:
         """Play / pause the film, from the selected shot when starting."""
         if not self._can_play or self.plan is None:
+            return
+        if self.mode == "shot" and self.preview.loop:      # Espaço in a loop: pause / go on
+            self.preview.toggle()
             return
         if self.mode != "seq":
             self._load_program()
@@ -1168,11 +1197,44 @@ class EditorWindow(QMainWindow):
             t = self.plan.cut_times()[self.sel]
         self.preview.play(t)
 
+    def play_loop(self, i: int | None = None) -> None:
+        """Play one shot over and over (double-click it): edit it while it loops —
+        trims and slides show up on the next pass."""
+        if not self._can_play or self.plan is None or not self.plan.shots:
+            return
+        if i is not None:
+            self.sel = i
+            self._refresh_selection()
+        if self.sel is None:
+            return
+        s = self.plan.shots[self.sel]
+        self.mode = "shot"
+        self.preview.loop = True
+        self._loop_uid = s.uid
+        self.monitor_title.setText(f"TOMADA #{self.sel + 1} EM LOOP  ·  Espaço pausa  ·  ■ sai do loop")
+        self.preview.set_program([Piece(s.path, s.start, s.end, 0.0)])
+        self.preview.play(0.0)
+
+    def _refresh_loop(self) -> bool:
+        """The looping shot was edited: give the player its new in/out. False if
+        there is no loop to refresh (the shot is gone)."""
+        if self.mode != "shot" or not self.preview.loop:
+            return False
+        idx = next((k for k, sh in enumerate(self.plan.shots) if sh.uid == getattr(self, "_loop_uid", None)), None)
+        if idx is None:
+            return False
+        s = self.plan.shots[idx]
+        self.sel = idx
+        self.monitor_title.setText(f"TOMADA #{idx + 1} EM LOOP  ·  Espaço pausa  ·  ■ sai do loop")
+        self.preview.set_program([Piece(s.path, s.start, s.end, 0.0)])
+        return True
+
     def play(self) -> None:
         """Play only the selected shot, in → out."""
         if not self._can_play or self.sel is None or self.plan is None:
             return
         s = self.plan.shots[self.sel]
+        self.preview.loop = False
         self.mode = "shot"
         self.monitor_title.setText(f"TOMADA #{self.sel + 1}  ·  {os.path.basename(s.path)}")
         self.preview.set_program([Piece(s.path, s.start, s.end, 0.0)])
@@ -1191,6 +1253,7 @@ class EditorWindow(QMainWindow):
         if clip is None:
             return
         self.mode = "clip"
+        self.preview.loop = False
         self._clip_path = path
         self.monitor_title.setText(f"CLIPE ORIGINAL  ·  {clip.name}")
         self.preview.set_program([Piece(path, 0.0, clip.duration, 0.0)])
@@ -1337,7 +1400,8 @@ class EditorWindow(QMainWindow):
     def _changed(self) -> None:
         self.rebuild()
         self._fill_styles()
-        self._load_program()
+        if not self._refresh_loop():
+            self._load_program()
 
     def keyPressEvent(self, e):
         if e.key() == Qt.Key_F11:

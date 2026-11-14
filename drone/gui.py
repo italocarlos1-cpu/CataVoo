@@ -605,7 +605,32 @@ class MainWindow(QMainWindow):
                 QDesktopServices.openUrl(QUrl.fromLocalFile(folder))
 
 
+def _crash_log() -> str:
+    """If the program dies, leave a trace the user can send:
+    ``%LOCALAPPDATA%\\DroneHighlighter\\erros.log`` — native crashes (faulthandler)
+    and Python errors that reach the top (logged instead of lost)."""
+    import faulthandler
+    import time
+    from drone.analysis_cache import default_cache_dir
+    path = os.path.join(default_cache_dir(), "erros.log")
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        fh = open(path, "a", encoding="utf-8", buffering=1)
+        fh.write(f"\n===== DroneHighlighter {__version__} aberto em {time.strftime('%Y-%m-%d %H:%M:%S')} =====\n")
+        faulthandler.enable(fh, all_threads=True)
+        _crash_log.fh = fh                     # keep it open for the whole run
+
+        def hook(kind, value, tb):
+            fh.write("".join(traceback.format_exception(kind, value, tb)))
+            fh.flush()
+        sys.excepthook = hook
+    except OSError:
+        pass
+    return path
+
+
 def main() -> int:
+    _crash_log()
     from drone.win_console import hide_child_consoles
     hide_child_consoles()                  # no ffmpeg console windows flashing
     app = QApplication.instance() or QApplication(sys.argv)
