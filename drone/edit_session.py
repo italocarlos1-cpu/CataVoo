@@ -51,6 +51,7 @@ class EditShot:
     movement: str = ""
     score: float = 0.0
     parts: dict = field(default_factory=dict)
+    focus: float = 0.0                 # match with the editor's Foco when it was chosen
 
     @property
     def length(self) -> float:
@@ -94,7 +95,8 @@ class EditPlan:
                                   transition=p.slot.transition,
                                   transition_duration=p.slot.transition_duration if p.slot.transition != "cut" else 0.0,
                                   crop_x=p.crop_x, category=c.category, movement=c.movement,
-                                  score=round(c.base, 4), parts={k: round(v, 3) for k, v in c.parts.items()}))
+                                  score=round(c.base, 4), parts={k: round(v, 3) for k, v in c.parts.items()},
+                                  focus=round(getattr(c, "focus", 0.0), 3)))
         if shots:
             shots[-1].transition, shots[-1].transition_duration = "cut", 0.0
         return cls(style_key=style_key, tag=tag, shots=shots, clips=clips, unit=gp.unit,
@@ -298,7 +300,9 @@ class EditPlan:
 
     @classmethod
     def from_dict(cls, d: dict, *, clips: dict, candidates: list | None = None) -> "EditPlan":
-        shots = [EditShot(**s) for s in d.get("shots", []) if s.get("path") in clips]
+        known = set(EditShot.__dataclass_fields__)
+        shots = [EditShot(**{k: v for k, v in s.items() if k in known})
+                 for s in d.get("shots", []) if s.get("path") in clips]
         return cls(style_key=d["style_key"], style_label=d.get("style_label", ""), tag=d["tag"],
                    shots=shots, clips=clips, unit=d.get("unit", 0.5), magnet=d.get("magnet", True),
                    target=d.get("target", 0.0), edited=d.get("edited", False), candidates=candidates)

@@ -314,6 +314,32 @@ class _RenderWorker(QObject):
             self.session.set_log(old)
 
 
+class _RedoWorker(QObject):
+    """New wishes (and a new Foco, which may run CLIP) off the UI thread."""
+    log = Signal(str)
+    progress = Signal(float, str)
+    finished = Signal(object, str)
+    failed = Signal(str)
+
+    def __init__(self, session, feedback: str, variation: int, previous: list, focus):
+        super().__init__()
+        self.session, self.feedback, self.variation = session, feedback, variation
+        self.previous, self.focus = previous, focus
+
+    def run(self):
+        try:
+            adj = self.session.readjust(self.feedback, self.variation, self.previous)
+            msg = ""
+            if self.focus is not None:
+                msg = self.session.set_focus(
+                    self.focus, progress_fn=lambda i, n, name: self.progress.emit(
+                        100.0 * i / max(1, n), f"Procurando “{self.focus}” em {name}"))
+            self.finished.emit(adj, msg)
+        except Exception as exc:  # noqa: BLE001 — shown to the user
+            self.log.emit(traceback.format_exc())
+            self.failed.emit(str(exc))
+
+
 class _CapCutWorker(QObject):
     log = Signal(str)
     progress = Signal(float, str)
@@ -526,6 +552,10 @@ class EditorWindow(QMainWindow):
         session.set_log(self.log)
 
         self.targets: dict = {}              # (group, format) → film length chosen here, seconds
+        self._focus_text = ""                # the Foco in force (set after a Refazer)
+        self._redo_thread = None
+        self._redo_worker = None
+        self._redo_busy = False
         self.mode = "seq"                    # what the monitor plays: seq | shot | clip
         self._proxies: dict = {}             # raw clip → light copy for the preview
         self._proxy_queued: set = set()
@@ -771,13 +801,25 @@ class EditorWindow(QMainWindow):
         self.feedback.setPlaceholderText("Ajustes: mais cachoeira, menos cidade, cortes mais rápidos…")
         self.feedback.setMinimumWidth(380)
         self.feedback.returnPressed.connect(lambda: self.redo(False))
+        self.focus_box = QComboBox()
+        self.focus_box.setEditable(True)
+        self.focus_box.setInsertPolicy(QComboBox.NoInsert)
+        self.focus_box.setMinimumWidth(200)
+        self.focus_box.lineEdit().setPlaceholderText("Foco: lago, ponte, igreja…")
+        self.focus_box.setToolTip(
+            "Foco: o assunto que deve aparecer mais ao clicar em Refazer.\n"
+            "A lista mostra as paisagens encontradas neste material (em segundos de filmagem).\n"
+            "Também dá para digitar qualquer coisa — ponte, igreja, obra, barco, piscina… —:\n"
+            "a IA de paisagens procura nas miniaturas já guardadas, sem processar os vídeos de novo\n"
+            "(precisa do Instalar_IA_Paisagens.bat; em inglês funciona melhor para palavras raras).")
+        self.focus_box.lineEdit().returnPressed.connect(lambda: self.redo(False))
         self.redo_btn = QPushButton("Refazer")
-        self.redo_btn.setToolTip("Remonta o vídeo com os ajustes escritos ao lado (usa a análise já feita)")
+        self.redo_btn.setToolTip("Remonta o vídeo com os ajustes escritos e o Foco ao lado (usa a análise já feita)")
         self.redo_btn.clicked.connect(lambda: self.redo(False))
         self.variant_btn = QPushButton("Outra versão")
         self.variant_btn.setToolTip("Mesma configuração, outras tomadas e outra ordem")
         self.variant_btn.clicked.connect(lambda: self.redo(True))
-        for w in (self.feedback, self.redo_btn, self.variant_btn):
+        for w in (self.feedback, self.focus_box, self.redo_btn, self.variant_btn):
             bot.addWidget(w)
         bot.addStretch()
         for w in (self.restore_btn, self.snap_btn, self.save_btn):
@@ -905,6 +947,7 @@ class EditorWindow(QMainWindow):
         self.log(f"Estilo {STYLES[st].label}{auto}: {len(plan.shots)} tomadas, {plan.total:.1f} s")
         self.sel = 0 if plan.shots else None
         self._fill_durations()
+        self._fill_focus()
         self.rebuild()
         self._queue_proxies()
         self.preview.t = 0.0
@@ -963,11 +1006,14 @@ class EditorWindow(QMainWindow):
             return
         self.set_duration(sec)
 
-    def redo(self, another: bool = False) -> None:
-        """Refazer (with the wishes written in the box) / Outra versão (other shots,
-        other order), from the analysis already done."""
-        if self.plan is None:
+    def redo(self, another: bool = False, wait: bool = False) -> None:
+        """Refazer (with the wishes written in the box and the Foco) / Outra versão
+        (other shots, other order), from the analysis already done. A new free-text
+        Foco runs CLIP on the cached thumbnails, in the background."""
+        if self.plan is None or self._redo_busy:
             return
+        if self._redo_thread is not None:            # the last one is over: let its thread end first
+            self._redo_thread.wait(2000)
         g, st, tag = self.key
         if self.plan.edited and QMessageBox.question(
                 self, "Refazer", "Remontar substitui os ajustes manuais feitos em "
@@ -977,14 +1023,53 @@ class EditorWindow(QMainWindow):
         previous = [(s.path, s.start, s.end) for s in self.plan.shots] if another else []
         if another:
             self.variation += 1
-        QApplication.setOverrideCursor(Qt.WaitCursor)
-        try:
-            adj = self.session.readjust(self.feedback.text().strip(), self.variation, previous)
-        except Exception as exc:  # noqa: BLE001
-            QApplication.restoreOverrideCursor()
-            QMessageBox.warning(self, "Refazer", str(exc))
-            return
-        QApplication.restoreOverrideCursor()
+        focus = self.focus_box.currentText().strip()
+        if focus.lower() == "sem foco":
+            focus = ""
+        new_focus = focus != self._focus_text
+        for b in (self.redo_btn, self.variant_btn):
+            b.setEnabled(False)
+        self.beat.start("Remontando…" + (f" (procurando “{focus}”)" if new_focus and focus else ""))
+        worker = _RedoWorker(self.session, self.feedback.text().strip(), self.variation, previous,
+                             focus if new_focus else None)
+        thread = QThread()
+        worker.moveToThread(thread)
+        thread.started.connect(worker.run)
+        worker.progress.connect(self.beat.update)
+        worker.log.connect(self.log)
+        # bound methods (not lambdas): Qt then runs them on the window's thread
+        self._redo_args = (another, focus if new_focus else None)
+        worker.finished.connect(self._redo_done)
+        worker.failed.connect(self._redo_failed)
+        worker.finished.connect(thread.quit)
+        worker.failed.connect(thread.quit)
+        # Both stay referenced until the next Refazer: dropping the worker while
+        # its thread is still winding down deletes it from the wrong thread.
+        self._redo_thread, self._redo_worker = thread, worker
+        self._redo_busy = True
+        thread.start()
+        if wait:                                     # tests
+            while thread.isRunning() or self._redo_busy:
+                QApplication.processEvents()
+                thread.wait(20)
+
+    def _redo_failed(self, msg: str) -> None:
+        self._redo_busy = False
+        for b in (self.redo_btn, self.variant_btn):
+            b.setEnabled(True)
+        self.beat.finish("Não deu para remontar.", ok=False)
+        QMessageBox.warning(self, "Refazer", msg)
+
+    def _redo_done(self, adj, msg: str) -> None:
+        another, focus = self._redo_args
+        self._redo_busy = False
+        for b in (self.redo_btn, self.variant_btn):
+            b.setEnabled(True)
+        if focus is not None:
+            self._focus_text = focus
+        if msg:
+            self.log(msg)
+        g, st, tag = self.key
         if adj.duration:
             self.targets[(g, tag)] = float(adj.duration)
         elif adj.duration_scale != 1.0:
@@ -998,7 +1083,23 @@ class EditorWindow(QMainWindow):
         else:
             self.switch()
         self._fill_styles()
+        self.beat.finish("Remontado.")
+        if self._focus_text and self.plan is not None:
+            on = sum(1 for sh in self.plan.shots if getattr(sh, "focus", 0) >= 0.6)
+            self.log(f"🎯 {on} de {len(self.plan.shots)} tomadas combinam com “{self._focus_text}”")
         self.log("🔁 Outra versão: outras tomadas e outra ordem." if another else "🔁 Refeito com os ajustes.")
+
+    def _fill_focus(self) -> None:
+        """Landscapes found in this material, most frequent first; free text allowed."""
+        g = self.key[0] if self.key else ""
+        keep = self.focus_box.currentText()
+        self.focus_box.blockSignals(True)
+        self.focus_box.clear()
+        self.focus_box.addItem("Sem foco")
+        for label, n in self.session.focus_options(g):
+            self.focus_box.addItem(f"{label} ({n} s)")
+        self.focus_box.setEditText(keep or "Sem foco")
+        self.focus_box.blockSignals(False)
 
     def set_duration(self, seconds: float, ask: bool = True) -> bool:
         """Re-fit the film of this group/format to ``seconds`` (all styles), from
@@ -1884,6 +1985,9 @@ class EditorWindow(QMainWindow):
 
     def closeEvent(self, e):
         self._closing = True
+        if self._redo_thread is not None and self._redo_thread.isRunning():
+            self._redo_thread.quit()
+            self._redo_thread.wait(10000)
         self._proxy_pool.clear()
         self._pool.clear()
         self._pool.waitForDone(5000)

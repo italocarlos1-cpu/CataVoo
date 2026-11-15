@@ -21,7 +21,7 @@ from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QFileDialog, 
 
 from drone import __version__
 from drone.ai_assist import PROVIDERS, AIClient, AIError
-from drone.config import STYLES, DroneConfig
+from drone.config import DroneConfig
 from drone.grouping import MODES
 from drone.theme import role
 from drone.progress_ui import Heartbeat
@@ -128,20 +128,6 @@ class MainWindow(QMainWindow):
         self.title = QLineEdit(self.settings.value("title", ""))
         self.title.setPlaceholderText("Ex.: Pirenópolis — Goiás")
         form.addRow("Título", self.title)
-
-        form = card("Edição")
-        self.style = QComboBox()
-        for key, st in STYLES.items():
-            self.style.addItem(st.label, key)
-            self.style.setItemData(self.style.count() - 1, st.description, Qt.ToolTipRole)
-        self.style_hint = role(QLabel(), "muted")
-        self.style_hint.setWordWrap(True)
-        self.style.currentIndexChanged.connect(
-            lambda _i: self.style_hint.setText(STYLES[self.style.currentData()].description))
-        self.style.setCurrentIndex(max(0, self.style.findData(self.settings.value("style", "cinematografico"))))
-        form.addRow("Estilo", self.style)
-        form.addRow("", self.style_hint)
-        self.style_hint.setText(STYLES[self.style.currentData()].description)
 
         form = card("Música")
         self.music_dir = QLineEdit(self.settings.value("music_dir", ""))
@@ -371,7 +357,7 @@ class MainWindow(QMainWindow):
         if not os.path.isdir(job.folder):
             QMessageBox.warning(self, "DroneHighlighter", "Selecione uma pasta com vídeos.")
             return
-        for k, v in (("folder", job.folder), ("style", job.style), ("music_dir", job.music_dir),
+        for k, v in (("folder", job.folder), ("music_dir", job.music_dir),
                      ("group_by", job.group_by),
                      ("summary", "true" if self.summary.isChecked() else "false"),
                      ("title", job.title), ("use_clip", "true" if self.use_clip.isChecked() else "false")):
@@ -481,7 +467,8 @@ class MainWindow(QMainWindow):
         h, v = self.formats.currentData()
         tag = self.music_kind.currentData()
         # No length here: it is chosen after the analysis (0 = the material decides).
-        return Job(folder=self.folder.text().strip(), style=self.style.currentData(),
+        # The style starts on Automático; it is chosen in the preview.
+        return Job(folder=self.folder.text().strip(), style="automatico",
                    duration=0.0, vertical_duration=0.0,
                    shortfall="esticar", group_by=self.group_by.currentData(),
                    summary=self.summary.isChecked() and self.group_by.currentData() != "nada",

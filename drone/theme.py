@@ -127,6 +127,9 @@ QStatusBar {{ color: {MUTED}; }}
 
 def apply(app) -> None:
     """Fusion + a dark palette (for anything the sheet misses) + the sheet."""
+    if app.property("dh_theme"):            # once per application: restyling live windows can crash Qt
+        return
+    app.setProperty("dh_theme", True)
     app.setStyle("Fusion")
     pal = QPalette()
     for role, colour in ((QPalette.Window, BG), (QPalette.WindowText, TEXT), (QPalette.Base, FIELD),

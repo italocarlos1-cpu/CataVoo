@@ -7,6 +7,7 @@ import json
 import os
 import subprocess
 
+import numpy as np
 import pytest
 
 from tests import test_drone_pipeline as base  # noqa: E402  (real cv2 swap + trip fixture)
@@ -235,7 +236,6 @@ def test_mini_editor_reorder_preview_and_colours(session, tmp_path):
     app = qtw.QApplication.instance() or qtw.QApplication([])
     from drone import theme
     from drone.editor_window import EditorWindow, _colour
-    theme.apply(app)
     w = EditorWindow(session, style_key="cinematografico", tag="16x9",
                      store=EditStore(str(tmp_path / "e.json")), title="T", main_style="cinematografico")
     w.resize(1400, 900)
@@ -475,14 +475,80 @@ def test_redo_and_another_version_inside_the_editor(session, tmp_path):
     app.processEvents()
     assert abs(w.plan.total - 15.0) <= 2 * w.plan.unit          # opened at the length chosen after the analysis
     before = [(s.path, round(s.start, 2)) for s in w.plan.shots]
-    w.redo(True)
+    w.redo(True, wait=True)
     after = [(s.path, round(s.start, 2)) for s in w.plan.shots]
     assert after != before and w.variation == 1
     w.feedback.setText("vídeo mais longo")
-    w.redo(False)
+    w.redo(False, wait=True)
     assert w.targets[("tudo", "16x9")] == pytest.approx(15.0 * 1.25, abs=1.5) and w.plan.total > 15.0
     w.dur_box.setEditText("0:12")
     w._duration_typed()
     assert abs(w.plan.total - 12.0) <= 2 * w.plan.unit
     w.close()
     session.readjust("", 0, [])                                   # leave the shared session as it was
+
+
+def test_focus_on_a_landscape_and_on_free_text(session, tmp_path, monkeypatch):
+    """Foco: a built-in landscape boosts the shots of that kind; free text goes
+    through CLIP on the cached thumbnails (a fake model here) and boosts the
+    matching seconds; without CLIP a keyword falls back to its category."""
+    from drone import landscape
+    from drone.landscape import CAT_KEYS
+    gp0 = session.prepare("tudo", "cinematografico")
+    cats = {c.category for c in gp0.cands}
+    key = sorted(cats)[0]
+    assert "🎯" in session.set_focus(landscape.LABEL_PT[key])
+    gp = session.prepare("tudo", "cinematografico")
+    assert gp is not gp0 and max(c.focus for c in gp.cands) == 1.0
+    best = max(gp.cands, key=lambda c: c.focus)
+    assert best.cat_vec[CAT_KEYS.index(key)] == max(c.cat_vec[CAT_KEYS.index(key)] for c in gp.cands)
+    _, plan = session.plan("tudo", "cinematografico", "16x9")
+    assert any(p.candidate.focus >= 0.6 for p in plan.shots)
+
+    # free text with a fake CLIP: "the second clip" is the subject
+    target_hash = session.analyses[1]["content_hash"]
+
+    class FakePF:
+        def infer(self, labels, images):
+            import types
+            n = len(images)
+            hit = FakePF.current == target_hash
+            logits = np.zeros((n, len(labels)))
+            logits[:, 0] = 5.0 if hit else -5.0
+            return types.SimpleNamespace(logits_per_image=logits)
+
+    class FakeScorer:
+        def __init__(self, *a, **k):
+            self._pf = FakePF()
+
+        def load(self):
+            pass
+
+        def unload(self):
+            pass
+
+        @staticmethod
+        def available():
+            return True
+
+    real_get = session.cache.get_thumbs
+
+    def thumbs(key):
+        FakePF.current = key
+        return real_get(key)
+
+    monkeypatch.setattr(landscape, "ClipScorer", FakeScorer)
+    monkeypatch.setattr(session.cache, "get_thumbs", thumbs)
+    msg = session.set_focus("ponte")
+    assert "ponte" in msg
+    gp = session.prepare("tudo", "cinematografico")
+    on = [c for c in gp.cands if c.focus > 0.5]
+    assert on and all(session.analyses[c.clip]["content_hash"] == target_hash for c in on)
+
+    # without CLIP: "igreja" falls back to the historic-town category, a word with none fails clearly
+    monkeypatch.setattr(FakeScorer, "available", staticmethod(lambda: False))
+    assert "cidade histórica" in session.set_focus("igreja")
+    with pytest.raises(RuntimeError, match="IA de paisagens"):
+        session.set_focus("piscina")
+    session.set_focus("")
+    assert session.focus is None

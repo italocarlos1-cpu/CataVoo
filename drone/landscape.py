@@ -194,6 +194,118 @@ class ClipScorer:
             pass
 
 
+# ---------------------------------------------------------------- focus ("Foco")
+# Anything the user wants more of, beyond the fixed categories: "ponte",
+# "igreja", "obra"… CLIP compares it with the thumbnails already in the cache
+# (no video is decoded again). CLIP understands English best, so common words
+# are translated; English typed directly is used as is.
+PT_EN = {
+    "ponte": "a bridge", "igreja": "a church", "capela": "a chapel", "casa": "a house",
+    "casas": "houses", "prédio": "a building", "predio": "a building", "prédios": "tall buildings",
+    "obra": "a construction site", "construção": "a construction site", "construcao": "a construction site",
+    "telhado": "rooftops", "estádio": "a stadium", "estadio": "a stadium", "campo de futebol": "a soccer field",
+    "piscina": "a swimming pool", "barco": "a boat", "barcos": "boats", "navio": "a ship",
+    "porto": "a harbor", "ilha": "an island", "carro": "a car", "carros": "cars", "pessoas": "people",
+    "pessoa": "a person", "torre": "a tower", "farol": "a lighthouse", "neblina": "fog",
+    "nuvens": "clouds", "nuvem": "clouds", "neve": "snow", "deserto": "a desert", "dunas": "sand dunes",
+    "vinhedo": "a vineyard", "estrada de terra": "a dirt road", "trilha": "a hiking trail",
+    "pedra": "large rocks", "praça": "a town square", "praca": "a town square", "parque": "a park",
+    "jardim": "a garden", "fazenda": "a farm", "gado": "cattle", "cavalo": "horses",
+    "ponte de ferro": "an iron bridge", "lagoa": "a pond", "represa": "a dam", "usina": "a power plant",
+    "trem": "a train", "ferrovia": "a railway", "aeroporto": "an airport", "rodovia": "a highway",
+    "viaduto": "a viaduct", "cachoeira": "a waterfall", "castelo": "a castle", "mercado": "a market",
+    "festa": "a crowd at a festival", "show": "a concert crowd", "pôr do sol": "a sunset",
+}
+FOCUS_TAG = "focus-v1"
+
+
+def focus_target(text: str):
+    """What a "Foco" text means: ("cat", key, key) for a built-in category,
+    ("clip", english prompt, fallback category or "") for anything else, or None
+    when empty. The fallback is used when CLIP is not installed ("igreja" →
+    cidade histórica)."""
+    t = (text or "").strip().lower()
+    if not t or t in ("sem foco", "nenhum"):
+        return None
+    t = t.split("(")[0].strip()                 # "lago (12)" from the list
+    for key, label in ((c[0], c[2]) for c in CATEGORIES):
+        if t == label.lower() or t == key:
+            return ("cat", key, key)
+    kw = next((key for key, words in KEYWORDS.items()
+               if any(t == w.strip() or t.startswith(w.strip()) for w in words)), "")
+    if kw and t not in PT_EN:
+        return ("cat", kw, kw)
+    en = PT_EN.get(t, t)
+    return ("clip", f"an aerial drone photo of {en}", kw)
+
+
+def focus_scores(analyses: list[dict], cache, prompt: str, *, scorer=None, log_fn=print,
+                 progress_fn=None, cancel_check=None) -> dict:
+    """{content_hash: (t array, score array)} for one CLIP prompt, from the cached
+    thumbnails. Each score is the prompt's share against the built-in landscape
+    prompts, rescaled so the best frame of the whole trip is 1.0. Cached per
+    prompt."""
+    import cv2
+    labels = [prompt, "an aerial drone photo of a landscape"] + [c[1] for c in CATEGORIES]
+    tag = f"{FOCUS_TAG}|{MODEL_TAG}|{prompt}"
+    raw, own = {}, False
+    try:
+        for n, a in enumerate(analyses):
+            if cancel_check is not None and cancel_check():
+                raise RuntimeError("cancelado")
+            key = a["content_hash"]
+            data = cache.get_embeddings(key, tag)
+            if data is None:
+                if scorer is None:
+                    if not ClipScorer.available():
+                        raise RuntimeError("a busca por um assunto livre precisa da IA de paisagens "
+                                           "(Instalar_IA_Paisagens.bat)")
+                    scorer, own = ClipScorer(log_fn), True
+                    scorer.load()
+                thumbs = cache.get_thumbs(key)
+                keep = []
+                for tt, j in thumbs:
+                    im = cv2.imdecode(np.frombuffer(j, np.uint8), cv2.IMREAD_COLOR)
+                    if im is not None:
+                        keep.append((tt, im))
+                ps = []
+                from PIL import Image
+                for i in range(0, len(keep), 32):
+                    batch = [Image.fromarray(cv2.cvtColor(im, cv2.COLOR_BGR2RGB)) for _, im in keep[i:i + 32]]
+                    out = scorer._pf.infer(labels, batch).logits_per_image
+                    try:
+                        out = out.float().cpu().numpy()
+                    except AttributeError:
+                        out = np.asarray(out)
+                    ps.append(_softmax(out)[:, 0])
+                data = {"t": [k[0] for k in keep],
+                        "p": np.round(np.concatenate(ps), 4).tolist() if ps else []}
+                cache.put_embeddings(key, tag, data)
+            raw[key] = (np.asarray(data["t"], float), np.asarray(data["p"], float))
+            if progress_fn:
+                progress_fn(n + 1, len(analyses), a.get("name", ""))
+    finally:
+        if own and scorer is not None:
+            scorer.unload()
+    top = max((float(p.max()) for _, p in raw.values() if len(p)), default=0.0)
+    if top <= 0:
+        return {}
+    return {k: (t, np.clip(p / top, 0.0, 1.0)) for k, (t, p) in raw.items()}
+
+
+def window_focus(series, start: float, end: float) -> float:
+    """Mean focus score of a time window (nearest thumbnails when it falls between)."""
+    if series is None:
+        return 0.0
+    t, p = series
+    if not len(t):
+        return 0.0
+    m = (t >= start) & (t <= end)
+    if m.any():
+        return float(p[m].mean())
+    return float(p[int(np.argmin(np.abs(t - (start + end) / 2)))])
+
+
 def annotate(analyses: list[dict], cache, *, use_clip: bool = True, log_fn=print,
              progress_fn=None) -> str:
     """Add per-sample ``cat_probs`` and ``interest`` to every timeline in place.

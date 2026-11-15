@@ -13,11 +13,13 @@ from __future__ import annotations
 import dataclasses
 import json
 import os
-import threading
-from concurrent.futures import ThreadPoolExecutor
 import re
+import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict, dataclass, field
+
+import numpy as np
 
 from drone import (ai_assist, analyzer, cinematic_director, edl_adapter, grouping, landscape,
                    material, music_selector, shot_selection, style_advisor)
@@ -576,8 +578,69 @@ class Session:
         k = (group_key, style_key)
         if k not in self._preps:
             g = self.group(group_key)
-            self._preps[k] = prepare_group(self.ctx, g, [self.analyses[i] for i in g.indices], style_key)
+            gp = prepare_group(self.ctx, g, [self.analyses[i] for i in g.indices], style_key)
+            self._apply_focus(gp.cands)
+            self._preps[k] = gp
         return self._preps[k]
+
+    # ---------------------------------------------------------------- "Foco"
+    focus = None             # (label shown, kind, data) once set by set_focus
+
+    def set_focus(self, text: str, progress_fn=None, cancel_check=None) -> str:
+        """Prefer shots of one subject from now on: a built-in landscape ("lago")
+        or anything else ("ponte", "igreja") through CLIP on the cached thumbnails.
+        Returns what was understood (for the log). Empty text clears it."""
+        target = landscape.focus_target(text)
+        if target is None:
+            self.focus = None
+            self._preps.clear()
+            return ""
+        kind, what, fallback = target
+        label = text.strip().split("(")[0].strip()
+        if kind == "clip":
+            try:
+                data = landscape.focus_scores(self.analyses, self.cache, what, log_fn=self.log_fn,
+                                              progress_fn=progress_fn, cancel_check=cancel_check)
+            except RuntimeError as exc:
+                if "cancel" in str(exc) or not fallback:
+                    raise
+                self.log_fn(f"ℹ️ {exc}; usando a categoria {landscape.LABEL_PT[fallback]}")
+                kind, what, data = "cat", fallback, None
+            if kind == "clip":
+                strong = sum(int((p >= 0.6).sum()) for _, p in data.values())
+                self.focus = (label, "clip", data)
+                self._preps.clear()
+                return f"🎯 Foco em “{label}”: {strong} s de filmagem parecidos (busca pela IA de paisagens)"
+        self.focus = (landscape.LABEL_PT.get(what, label), "cat", what)
+        self._preps.clear()
+        return f"🎯 Foco em {landscape.LABEL_PT.get(what, what)}"
+
+    def _apply_focus(self, cands: list) -> None:
+        if not self.focus or not cands:
+            return
+        _label, kind, data = self.focus
+        if kind == "cat":
+            idx = landscape.CAT_KEYS.index(data)
+            vals = [float(np.asarray(c.cat_vec)[idx]) if c.cat_vec is not None else 0.0 for c in cands]
+        else:
+            vals = [landscape.window_focus(data.get(self.analyses[c.clip]["content_hash"]), c.start, c.end)
+                    for c in cands]
+        top = max(vals) or 1.0
+        for c, v in zip(cands, vals):
+            c.focus = round(v / top, 3)
+
+    def focus_options(self, group_key: str = "") -> list:
+        """Built-in landscapes found in the material, most frequent first: [(label, n)]."""
+        counts: dict = {}
+        idx = self.group(group_key).indices if group_key else range(len(self.analyses))
+        for i in idx:
+            probs = self.analyses[i]["timeline"].get("cat_probs")
+            probs = np.asarray(probs if probs is not None else [])
+            if probs.ndim == 2 and len(probs):
+                for k in probs.argmax(axis=1):
+                    key = landscape.CAT_KEYS[int(k)]
+                    counts[key] = counts.get(key, 0) + 1
+        return [(landscape.LABEL_PT[k], n) for k, n in sorted(counts.items(), key=lambda kv: -kv[1])]
 
     def plan(self, group_key: str, style_key: str, tag: str, target: float | None = None):
         """Plan one format. ``target`` (seconds) re-fits the cut to another length

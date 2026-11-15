@@ -50,6 +50,7 @@ class Candidate:
     scene_lo: float = 0.0        # bounds this window may grow within
     scene_hi: float = 0.0
     uid: str = ""                # stable id within one run ("S12"), used by the AI director
+    focus: float = 0.0           # 0..1: how well it matches the editor's "Foco" (0 = no focus)
 
     @property
     def duration(self) -> float:

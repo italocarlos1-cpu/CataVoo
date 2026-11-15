@@ -58,6 +58,24 @@ ficam menos. A duração total e o encaixe na música não mudam.
   a sua seleção e, no modo Automático, o seu estilo.
 - **Música**: volume abaixando nos últimos ~4 s; uma faixa mais curta que o vídeo é repetida.
 
+## v0.6.2 — estilo só na prévia, Foco por assunto
+
+- Tela principal sem seleção de estilo: o `Job` sai sempre com `style="automatico"`; o estilo é
+  escolhido na prévia.
+- **Foco** (caixa ao lado de Refazer): `Session.set_focus(texto)` → `landscape.focus_target`
+  decide entre uma paisagem conhecida ("lago", "serra") e um assunto livre ("ponte", "igreja",
+  "obra"). O assunto livre roda o CLIP nas **miniaturas já guardadas** (`cache.get_thumbs`), sem
+  decodificar vídeo, e guarda o resultado por palavra (`embeddings`, tag `focus-v1|…`). Sem CLIP,
+  uma palavra ligada a uma paisagem cai nela ("igreja" → cidade histórica). O valor vai para
+  `Candidate.focus` (0..1, normalizado pelo melhor trecho) e `make_bonus` soma `0.45 × focus`.
+  `Session.focus_options` lista as paisagens do material (segundos). PT→EN em `landscape.PT_EN`.
+- Refazer/Outra versão rodam numa thread (`_RedoWorker`); o resultado volta por método ligado
+  (não lambda) para executar na thread da janela, e o worker só é solto depois que a thread
+  terminou.
+- `theme.apply` só uma vez por aplicação. Teste do mini editor sem trocar o tema no meio
+  (no Linux offscreen, repintar emoji com a fonte trocada derrubava o Qt).
+- Manual reescrito para o fluxo novo (capítulos renumerados; "Quando falta material" saiu).
+
 ## v0.6.1 — novo fluxo: analisar → escolher a duração → prévia → renderizar
 
 - **Tela principal** (`gui.py`): o botão principal é ANALISAR MATERIAL (SessionWorker: análise em

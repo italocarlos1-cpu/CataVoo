@@ -296,6 +296,8 @@ def make_bonus(*, vertical: bool = False, adj=None, previous=(), style=None):
                 v += 0.25 * float(vec[prefer].sum())
             if avoid:
                 v -= 0.35 * float(vec[avoid].sum())
+        if c.focus:                                   # "Foco": strong enough to lead the cut
+            v += 0.45 * c.focus
         if new_shots and previous and _overlaps(c, previous):
             v -= 0.35
         if bias:
