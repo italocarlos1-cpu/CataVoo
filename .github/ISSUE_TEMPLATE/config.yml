@@ -1,8 +1,8 @@
-blank_issues_enabled: false
+blank_issues_enabled: true
 contact_links:
-  - name: Team backlog (private Pro repo)
-    url: https://github.com/Aseiel/VideoHighlighter-pro/issues
-    about: Internal ideas and pro/commercial work — use [free] / [pro] in titles
-  - name: Public discussions
-    url: https://github.com/Aseiel/VideoHighlighter/discussions
-    about: Community Q&A when enabled; otherwise open an issue here
+  - name: Manual completo (PDF)
+    url: https://github.com/italocarlos1-cpu/VideoHighlighter/blob/drone/docs/DroneHighlighter_Manual.pdf
+    about: Antes de abrir um pedido, vale ver se o manual já explica
+  - name: VideoHighlighter (projeto original)
+    url: https://github.com/Aseiel/VideoHighlighter
+    about: Problemas do editor original, de Aseiel, ficam no repositório dele

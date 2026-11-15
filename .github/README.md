@@ -15,6 +15,12 @@
   <img alt="100% local" src="https://img.shields.io/badge/100%25-local-444444?style=for-the-badge">
 </p>
 
+<p align="center">
+  <a href="https://github.com/italocarlos1-cpu/VideoHighlighter/releases/latest"><b>⬇ Baixar a versão mais recente</b></a> ·
+  <a href="../docs/DroneHighlighter_Manual.pdf">📖 Manual (PDF)</a> ·
+  <a href="https://github.com/italocarlos1-cpu/VideoHighlighter/issues/new/choose">💬 Relatar um problema ou dar uma ideia</a>
+</p>
+
 ---
 
 Você volta de uma viagem com 40 minutos de filmagem aérea em 4K e quer um vídeo de 1 a 2 minutos
@@ -40,7 +46,7 @@ escuro ou repetiu, escolhe as melhores tomadas, monta no ritmo da música e entr
 **Monta como um editor**
 - **11 estilos**: cinematográfico, contemplativo, trailer épico, aventura FPV, diário de viagem,
   pôr do sol, redes sociais e outros. O **Automático** analisa a viagem e escolhe o estilo.
-- **Cortes na batida da música**, com fade-out no final.
+- **Cortes no ritmo da música**, com fade-out no final.
 - **Duração automática** ou escolhida por você, com aviso quando falta material bom.
 - **Um vídeo por voo, dia, local ou pasta**, e um resumo da viagem inteira.
 - **Não gostou?** Escreva o ajuste ("mais cachoeira, cortes mais rápidos") e clique em *Refazer*,
@@ -85,6 +91,17 @@ Na primeira vez, o Windows pode mostrar *"O Windows protegeu o computador"*. Cli
 informações* → *Executar assim mesmo*. O aviso aparece porque o programa não tem assinatura
 digital paga.
 
+## Testou? Conte como foi
+
+O projeto está em fase de testes e cada retorno ajuda. Abra um
+[pedido aqui](https://github.com/italocarlos1-cpu/VideoHighlighter/issues/new/choose) para contar
+um problema ou sugerir uma ideia: diga a versão (aparece no alto da janela), o seu PC e o drone, e
+o que aconteceu. Se o programa fechar sozinho, o arquivo
+`%LOCALAPPDATA%\DroneHighlighter\erros.log` mostra o motivo.
+
+**Requisitos:** Windows 10 ou 11, 64 bits, 8 GB de RAM (16 GB para 4K). Placa NVIDIA é opcional:
+acelera a exportação e a IA de paisagens. Vídeos MP4 e MOV, incluindo DJI em 4K e 10 bits.
+
 ## Para quem programa
 
 - O código do DroneHighlighter está em [`drone/`](../drone). As notas técnicas ficam em
@@ -92,6 +109,7 @@ digital paga.
 - Rodar pelo Python: `pip install numpy opencv-python PySide6 pyyaml pillow imageio-ffmpeg av` e depois `python -m drone` (janela) ou
   `python -m drone.cli --help` (linha de comando).
 - Os testes rodam no Windows a cada alteração, e o GitHub Actions gera o `.exe` sozinho.
+- O histórico de versões fica em [`docs/DRONE.md`](../docs/DRONE.md).
 
 ## Créditos e licença
 

@@ -117,5 +117,24 @@ jobs:
           $v = "${{ steps.ver.outputs.version }}"
           $zip = "dist\DroneHighlighter-$v-win64.zip"
           Compress-Archive -Path dist\DroneHighlighter\* -DestinationPath $zip -Force
-          $notes = "DroneHighlighter $v para Windows 64 bits.`n`nBaixe o .zip, extraia e abra o DroneHighlighter.exe. Para a IA de paisagens, rode uma vez o Instalar_IA_Paisagens.bat. O LEIA-ME.txt explica passo a passo."
-          gh release create "drone-v$v" $zip --repo "${{ github.repository }}" --target "${{ github.sha }}" --title "DroneHighlighter $v" --notes $notes --latest
+          $manual = "dist\DroneHighlighter-$v-Manual.pdf"
+          Copy-Item docs\DroneHighlighter_Manual.pdf $manual
+          # notes: how to install, then this version's changes from docs/DRONE.md
+          $md = Get-Content docs\DRONE.md -Raw -Encoding utf8
+          $m = [regex]::Match($md, "(?ms)^## v$([regex]::Escape($v))\b.*?(?=^## v|\z)")
+          $news = if ($m.Success) { ($m.Value -replace "^## [^\n]*\n", "").Trim() } else { "" }
+          $body = @"
+          ## Como instalar (Windows 10/11, 64 bits)
+          1. Baixe **DroneHighlighter-$v-win64.zip** abaixo e extraia numa pasta.
+          2. *(Recomendado, uma vez só)* rode ``Instalar_IA_Paisagens.bat`` para a IA de paisagens.
+          3. Abra ``DroneHighlighter.exe``. Se o Windows avisar *"O Windows protegeu o computador"*, clique em *Mais informações* → *Executar assim mesmo* (o programa não tem assinatura digital paga).
+
+          O **manual completo** está no PDF abaixo, e o ``LEIA-ME.txt`` vem dentro do .zip.
+          Encontrou um problema? [Conte aqui](https://github.com/${{ github.repository }}/issues/new/choose).
+
+          ## Novidades da $v
+          $news
+          "@
+          $body = ($body -split "`n" | ForEach-Object { $_ -replace "^          ", "" }) -join "`n"
+          Set-Content -Path notes.md -Value $body -Encoding utf8
+          gh release create "drone-v$v" $zip $manual --repo "${{ github.repository }}" --target "${{ github.sha }}" --title "DroneHighlighter $v" --notes-file notes.md --latest

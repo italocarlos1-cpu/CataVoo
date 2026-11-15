@@ -1,29 +1,41 @@
-name: Bug report
-description: Something broken in the free/public app
-title: "[free] "
+name: Problema / erro
+description: Algo não funcionou no DroneHighlighter
+title: "[erro] "
 labels:
   - bug
 body:
   - type: markdown
     attributes:
       value: |
-        For **VideoHighlighter Pro**, contact support or use the private team backlog.
+        Obrigado por testar! Quanto mais detalhes, mais rápido dá para corrigir.
+        O registro de erros fica em `%LOCALAPPDATA%\DroneHighlighter\erros.log` (cole o final dele abaixo, se existir).
   - type: input
     id: version
     attributes:
-      label: App version
-      placeholder: "0.9.0"
+      label: Versão
+      description: Aparece no alto da janela principal (ex.: v0.6.6)
+      placeholder: "0.6.6"
     validations:
       required: true
   - type: textarea
-    id: steps
+    id: what
     attributes:
-      label: Steps to reproduce
+      label: O que aconteceu
+      description: O que você fez, o que esperava e o que aconteceu de fato
+      placeholder: |
+        1. Abri a prévia no formato 9:16
+        2. Cliquei em RENDERIZAR
+        3. O programa fechou
     validations:
       required: true
   - type: textarea
-    id: expected
+    id: pc
     attributes:
-      label: Expected vs actual
-    validations:
-      required: true
+      label: Computador e vídeos
+      description: Processador, placa de vídeo, Windows; modelo do drone e formato dos vídeos (4K, 10 bits, D-Log…)
+      placeholder: "i5-10600K, RTX 4060, Windows 11 · DJI Mini 4 Pro, 4K 30 fps"
+  - type: textarea
+    id: log
+    attributes:
+      label: Registro (erros.log ou a caixa REGISTRO)
+      render: text

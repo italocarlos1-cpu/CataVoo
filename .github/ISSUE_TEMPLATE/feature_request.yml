@@ -1,18 +1,18 @@
-name: Feature request
-description: Suggest a feature for the free/public app
-title: "[free] "
+name: Ideia / sugestão
+description: Algo que deixaria o DroneHighlighter melhor
+title: "[ideia] "
 labels:
-  - idea
+  - enhancement
 body:
   - type: textarea
-    id: problem
+    id: idea
     attributes:
-      label: Problem or use case
+      label: Sua ideia
+      description: O que você gostaria de fazer e por quê (um vídeo ou imagem de exemplo ajuda muito)
     validations:
       required: true
   - type: textarea
-    id: proposal
+    id: today
     attributes:
-      label: Proposed solution (optional)
-    validations:
-      required: false
+      label: Como você faz isso hoje
+      description: Opcional — em outro programa, à mão, ou ainda não dá
