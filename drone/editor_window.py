@@ -33,6 +33,7 @@ The window only edits; analysis and rendering go through drone.pipeline.Session.
 """
 from __future__ import annotations
 
+import html
 import os
 import traceback
 
@@ -625,6 +626,11 @@ class EditorWindow(QMainWindow):
         self._fill_music()
         self.music_box.activated.connect(self._music_picked)
         top.addWidget(self.music_box)
+        self.text_btn = QPushButton("T  Texto")
+        self.text_btn.setToolTip("Escreve um texto sobre a tomada selecionada, durante toda a tomada.\n"
+                                 "Caixa à esquerda ou centralizada, fonte, cores e fundo preenchido ou transparente.")
+        self.text_btn.clicked.connect(self.edit_text)
+        top.addWidget(self.text_btn)
         self.material_lbl = role(QLabel(""), "muted")
         self.material_lbl.setToolTip("Bruto: tudo o que foi filmado. Bom: tomadas distintas no ritmo normal do estilo.\n"
                                      "Esticando: o máximo sem repetir cenas.")
@@ -1455,7 +1461,7 @@ class EditorWindow(QMainWindow):
                     _t, pm = min(thumbs, key=lambda tp: abs(tp[0] - s.start - 0.3))
             icon = _card_icon(pm, _colour(s.category))
             tr = " ⇢" if self.plan.trans_out(i) else ""
-            it = QListWidgetItem(icon, f"#{i + 1}  {s.length:.1f} s{tr}")
+            it = QListWidgetItem(icon, f"#{i + 1}  {s.length:.1f} s{tr}{'  T' if s.caption else ''}")
             it.setToolTip(f"#{i + 1} · {LABEL_PT.get(s.category, s.category)} · {s.length:.1f} s\n"
                           "Clique: vai até a tomada · Duplo clique: toca")
             it.setData(Qt.UserRole, i)
@@ -1484,6 +1490,7 @@ class EditorWindow(QMainWindow):
             f"No vídeo: {p.cut_times()[self.sel]:.2f} s · na tela {p.advance(self.sel):.2f} s · "
             f"transição: {'corte seco' if not p.trans_out(self.sel) else f'fusão {p.trans_out(self.sel):.1f} s'}<br>"
             f"Borda ativa: <b>{'entrada' if self.edge == 'start' else 'saída'}</b> ([ / ] ou Tab)"
+            + (f"<br>Texto: <b>{html.escape(s.caption['text'][:40])}</b>" if s.caption else "")
             + (f"<br>Enquadramento 9:16: <b>{s.crop_x * 100:.0f}%</b> da largura "
                "(arraste o quadro branco no monitor)" if self.key[2] == "9x16" else ""))
         self.crop_reset_btn.setVisible(self.key[2] == "9x16")
@@ -1814,6 +1821,65 @@ class EditorWindow(QMainWindow):
         i = self._crop_index()
         self._crop_i = i
         self.preview.stack.set_crop(None if i is None else self.plan.shots[i].crop_x)
+        self._update_caption()
+
+    def edit_text(self) -> None:
+        """Text over the selected shot (or the one on the monitor)."""
+        if self.plan is None or not self.plan.shots:
+            return
+        i = self.sel if self.sel is not None else self._shown_index()
+        if i is None:
+            i = 0
+        self.sel = i
+        self.preview.pause()
+        from drone.text_dialog import TextDialog
+        shot = self.plan.shots[i]
+        spec = shot.caption or {**getattr(self, "_last_caption", {}), "text": ""}
+        frame = self.in_img.pixmap()
+        frame = self._frame_for(i) or (frame if frame is not None and not frame.isNull() else None)
+        d = TextDialog(self, spec, frame, i + 1, self.key[2] == "9x16")
+        if not d.exec():
+            return
+        self.plan.set_caption(i, d.result_spec)
+        if d.result_spec:
+            self._last_caption = {k: v for k, v in d.result_spec.items() if k != "text"}
+            self.log(f"🔤 Texto na tomada #{i + 1}: {d.result_spec['text'][:40]}")
+        else:
+            self.log(f"🔤 Texto removido da tomada #{i + 1}")
+        self._remember()
+        self._changed()
+        self._update_caption()
+
+    def _frame_for(self, i: int):
+        """A frame of shot ``i`` for the text preview (9:16: cropped like the film)."""
+        s = self.plan.shots[i]
+        clip = self.plan.clips.get(s.path)
+        thumbs = self._thumb_list(clip) if clip is not None else None
+        if not thumbs:
+            return None
+        _t, pm = min(thumbs, key=lambda tp: abs(tp[0] - s.start - 0.3))
+        if self.key[2] != "9x16" or pm.width() <= pm.height():
+            return pm
+        cw = int(pm.height() * 9 / 16)
+        x = int(min(max(s.crop_x * pm.width() - cw / 2, 0), pm.width() - cw))
+        return pm.copy(x, 0, cw, pm.height())
+
+    def _shown_index(self):
+        """The shot the monitor is showing (None while a raw clip plays)."""
+        if self.plan is None or not self.plan.shots:
+            return None
+        if self.mode == "shot":
+            return self.sel
+        if self.mode == "seq" and self.preview.pieces:
+            i = self.preview.cur if self.preview.playing and self.preview.cur >= 0 \
+                else self.preview.piece_at(self.preview.t)
+            return i if 0 <= i < len(self.plan.shots) else None
+        return None
+
+    def _update_caption(self) -> None:
+        i = self._shown_index()
+        self.preview.stack.set_caption(None if i is None else self.plan.shots[i].caption,
+                                       vertical=self.key[2] == "9x16")
 
     def _crop_moved(self, centre: float) -> None:
         if self._crop_i is not None and self.plan is not None:
@@ -2087,6 +2153,7 @@ class EditorWindow(QMainWindow):
         cut = m.addAction("Corte seco para a próxima")
         fade = m.addAction("Fusão para a próxima")
         m.addSeparator()
+        txt = m.addAction("Texto…" if not self.plan.shots[i].caption else "Editar texto…")
         rem = m.addAction("Remover do vídeo")
         last = i == len(self.plan.shots) - 1
         cut.setEnabled(not last)
@@ -2096,6 +2163,9 @@ class EditorWindow(QMainWindow):
             self.plan.set_transition(i, "cut")
         elif chosen is fade:
             self.plan.set_transition(i, "crossfade", 0.6)
+        elif chosen is txt:
+            self.edit_text()
+            return
         elif chosen is rem:
             self.remove(i)
             return
@@ -2166,6 +2236,12 @@ class EditorWindow(QMainWindow):
         self.preview.pause()
         self.save()
         plan = self.plan.to_plan(self.gp.music, self.title_text)
+        if any(sh.caption for sh in self.plan.shots):
+            from drone import text_overlay
+            job = self.session.job
+            size = job.vertical_size if tag == "9x16" else job.horizontal_size
+            plan.overlays = text_overlay.write_pngs(
+                self.plan, size, os.path.join(self.session.ctx.out_dir, "projeto", "textos"))
         self.log(f"🎬 Renderizando {what}. Ordem: "
                  + ", ".join(f"#{i + 1} {os.path.splitext(os.path.basename(s.path))[0]}"
                              for i, s in enumerate(self.plan.shots)))

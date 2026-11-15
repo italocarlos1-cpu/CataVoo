@@ -63,6 +63,12 @@ class _Monitor(QGraphicsView):
         self.frame.setBrush(Qt.NoBrush)
         self.frame.setZValue(11)
         self.scene().addItem(self.frame)
+        self.caption = QGraphicsPixmapItem()      # the shot's text, same drawing as the render
+        self.caption.setZValue(12)
+        self.caption.setAcceptedMouseButtons(Qt.NoButton)
+        self.scene().addItem(self.caption)
+        self._caption = None
+        self._caption_vertical = False
         self._still = None
         self._drag = None
 
@@ -121,6 +127,31 @@ class _Monitor(QGraphicsView):
             self.masks[1].setRect(QRectF(c.right(), r.top(), r.right() - c.right(), r.height()))
             self.frame.setRect(c.adjusted(1, 1, -1, -1))
         self.setCursor(Qt.SizeHorCursor if on else Qt.ArrowCursor)
+        self._place_caption()
+
+    def set_caption(self, spec, vertical: bool = False) -> None:
+        spec = spec or None
+        if spec == self._caption and vertical == self._caption_vertical:
+            return
+        self._caption, self._caption_vertical = (dict(spec) if spec else None), vertical
+        self._place_caption()
+
+    def _place_caption(self) -> None:
+        if not self._caption:
+            self.caption.setVisible(False)
+            return
+        r = self.area()
+        if self._caption_vertical:
+            c = self.crop_rect()
+            if c is None:                   # 9:16 without the frame: the centred 9:16 part
+                cw = min(r.width(), r.height() * VERTICAL)
+                c = QRectF(r.center().x() - cw / 2, r.top(), cw, r.height())
+            r = c
+        from drone import text_overlay
+        img = text_overlay.draw(self._caption, int(r.width()), int(r.height()))
+        self.caption.setPixmap(QPixmap.fromImage(img))
+        self.caption.setPos(r.topLeft())
+        self.caption.setVisible(True)
 
     def set_crop(self, centre) -> None:
         self.crop = None if centre is None else float(centre)

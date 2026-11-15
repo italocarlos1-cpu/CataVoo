@@ -58,6 +58,18 @@ ficam menos. A duração total e o encaixe na música não mudam.
   a sua seleção e, no modo Automático, o seu estilo.
 - **Música**: volume abaixando nos últimos ~4 s; uma faixa mais curta que o vídeo é repetida.
 
+## v0.6.6 — texto sobre a tomada
+
+- Botão **T Texto** (linha 1, depois de Música) e "Texto…" no menu da tomada abrem `TextDialog`:
+  texto com várias linhas (uma caixa por linha), esquerda/centro, embaixo/meio/alto, 6 fontes
+  básicas, 3 tamanhos, negrito, maiúsculas, cor do texto, fundo preenchido (cor) ou transparente
+  (contorno escuro). Prévia ao vivo no quadro da tomada; o próximo texto herda o último estilo.
+- `EditShot.caption` guarda o texto (salvo, com desfazer/refazer). `drone/text_overlay.draw` é o
+  único desenho: o monitor usa na área visível (no 9:16, dentro do quadro de recorte) e o render
+  grava um PNG por tomada no tamanho de saída e aplica com `overlay=enable='between(t,a,b)'`
+  durante o tempo da tomada na tela (`text_overlay.burn`, depois do render normal).
+- O envio para o CapCut sai sem os textos.
+
 ## v0.6.5 — barra da prévia em duas linhas (layout A)
 
 - Linha 1: Estilo, Formato, Duração, Música, duração total ("2:10 · 24 tomadas"), Exportar ▾

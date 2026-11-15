@@ -52,6 +52,7 @@ escuro ou repetiu, escolhe as melhores tomadas, monta no ritmo da música e entr
 - Dê dois cliques numa tomada para tocá-la em loop enquanto você a ajusta.
 - **Desfazer e refazer** (Ctrl+Z / Ctrl+Y) qualquer mudança, até uma tomada apagada sem querer.
 - **Escolha a música** na lista das faixas da sua pasta: ela toca do começo ao fim, com fade no final.
+- **Texto sobre a tomada**: caixas à esquerda ou centralizadas, fontes básicas, cores e fundo preenchido ou transparente.
 - No **Vertical 9:16**, arraste o quadro de recorte para os lados em cada tomada.
 - **Enviar para o CapCut**: as tomadas saem cortadas no quadro exato e numeradas na ordem, junto
   com a música, prontas para o acabamento.

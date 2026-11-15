@@ -52,6 +52,7 @@ class EditShot:
     score: float = 0.0
     parts: dict = field(default_factory=dict)
     focus: float = 0.0                 # match with the editor's Foco when it was chosen
+    caption: dict = field(default_factory=dict)   # text over the whole shot (see text_overlay)
 
     @property
     def length(self) -> float:
@@ -293,6 +294,13 @@ class EditPlan:
         return plan
 
     # ------------------------------------------------------ persistence
+    def set_caption(self, i: int, spec) -> None:
+        """Text shown over shot ``i`` for its whole time on screen ({} = none)."""
+        if 0 <= i < len(self.shots):
+            from drone.text_overlay import normalize
+            self.shots[i].caption = normalize(spec) or {}
+            self.edited = True
+
     def set_crop(self, i: int, centre: float) -> None:
         """Where the 9:16 frame sits on shot ``i`` (0..1 of the source width)."""
         if 0 <= i < len(self.shots):

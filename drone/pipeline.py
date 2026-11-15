@@ -473,14 +473,20 @@ def render_plan(ctx: _RunContext, gp: GroupPrep, plan, tag: str, vertical: bool,
         music_path = music_selector.prepare(
             gp.music, plan.total, edl_adapter.side_path(out, "_musica.m4a"))
     if vertical:
-        return edl_adapter.render_vertical(
+        video, edl = edl_adapter.render_vertical(
             plan, out, title=job.title, size=job.vertical_size, fps=job.fps, crf=job.crf,
             music_path=music_path, src_sizes=gp.src_sizes, mode=cfg.render_mode,
             log_fn=ctx.log_fn, progress_fn=progress_fn, cancel_check=ctx.cancel_check)
-    return edl_adapter.render_horizontal(
-        plan, out, title=job.title, size=job.horizontal_size, fps=job.fps, crf=job.crf,
-        music_path=music_path, mode=cfg.render_mode, log_fn=ctx.log_fn,
-        progress_fn=progress_fn, cancel_check=ctx.cancel_check)
+    else:
+        video, edl = edl_adapter.render_horizontal(
+            plan, out, title=job.title, size=job.horizontal_size, fps=job.fps, crf=job.crf,
+            music_path=music_path, mode=cfg.render_mode, log_fn=ctx.log_fn,
+            progress_fn=progress_fn, cancel_check=ctx.cancel_check)
+    overlays = getattr(plan, "overlays", None)       # captions drawn by the editor, one PNG per shot
+    if overlays:
+        from drone import text_overlay
+        text_overlay.burn(video, overlays, mode=cfg.render_mode, log_fn=ctx.log_fn)
+    return video, edl
 
 
 def shots_report(plan) -> list:

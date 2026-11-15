@@ -700,3 +700,70 @@ def test_choose_a_specific_music_track(session, tmp_path):
     assert w.gp.music is not None and session.job.music_file == ""
     w.close()
     os.remove(other)
+
+
+def test_text_over_a_shot_in_preview_and_render(session, tmp_path):
+    """A caption stays the whole shot: drawn on the monitor, saved with the edit,
+    undoable, and burned into the rendered file only during that shot."""
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    os.environ["DRONEHIGHLIGHTER_NO_VIDEO_PREVIEW"] = "1"
+    qtw = pytest.importorskip("PySide6.QtWidgets")
+    if not hasattr(qtw, "QApplication") or "Mock" in type(qtw.QApplication).__name__:
+        pytest.skip("real PySide6 required")
+    app = qtw.QApplication.instance() or qtw.QApplication([])
+    import numpy as np
+    from drone import text_overlay
+    from drone.editor_window import EditorWindow
+    spec = {"text": "Dicas de drone\nessenciais!", "align": "left", "fill": True,
+            "bg_color": "#0000ff", "color": "#ffffff", "size": "grande", "pos": "baixo"}
+    img = text_overlay.draw(spec, 640, 360)
+    arr = np.frombuffer(img.constBits(), np.uint8).reshape(360, img.bytesPerLine() // 4, 4)[:, :640]
+    blue = (arr[..., 0] > 200) & (arr[..., 2] < 60) & (arr[..., 3] > 200)        # BGRA
+    ys, xs = np.nonzero(blue)
+    assert ys.min() > 180 and xs.min() < 60                  # bottom, left boxes
+    assert not arr[:150, :, 3].any()                         # nothing at the top
+    centred = text_overlay.draw({**spec, "align": "center", "fill": False}, 640, 360)
+    c = np.frombuffer(centred.constBits(), np.uint8).reshape(360, centred.bytesPerLine() // 4, 4)[:, :640]
+    cx = np.nonzero(c[..., 3].any(axis=0))[0]
+    assert abs((cx.min() + cx.max()) / 2 - 320) < 25
+
+    w = EditorWindow(session, style_key="cinematografico", tag="16x9",
+                     store=EditStore(str(tmp_path / "tx.json")), title="T", main_style="cinematografico")
+    w.show()
+    app.processEvents()
+    w.plan.set_caption(1, spec)
+    w._changed()
+    w.mode = "shot"
+    w.sel = 1
+    w._update_crop()
+    assert w.preview.stack.caption.isVisible()
+    assert "T" in w.strip.item(1).text()
+    d = w.plan.to_dict()
+    assert d["shots"][1]["caption"]["text"].startswith("Dicas")
+    w.undo()
+    assert not w.plan.shots[1].caption
+    w.redo_edit()
+    assert w.plan.shots[1].caption["bg_color"] == "#0000ff"
+
+    plan = w.plan.to_plan(w.gp.music, "")
+    plan.overlays = text_overlay.write_pngs(w.plan, session.job.horizontal_size, str(tmp_path / "tx"))
+    (png, t0, t1), = plan.overlays
+    t = w.plan.cut_times()
+    assert t0 == pytest.approx(t[1], abs=1e-3) and t1 == pytest.approx(t[1] + w.plan.advance(1), abs=1e-3)
+    out = session.render(w.gp, plan, "16x9")
+    video = out["video"]
+    import subprocess
+    from drone.media_io import ffmpeg_bin
+
+    def frame_at(sec):
+        W, H = session.job.horizontal_size
+        raw = subprocess.run([ffmpeg_bin(), "-v", "error", "-ss", f"{sec:.2f}", "-i", video, "-frames:v", "1",
+                              "-f", "rawvideo", "-pix_fmt", "rgb24", "-"], capture_output=True).stdout
+        return np.frombuffer(raw, np.uint8).reshape(H, W, 3)
+
+    def blue_px(f):
+        return int(((f[..., 2] > 180) & (f[..., 0] < 80) & (f[..., 1] < 80)).sum())
+
+    assert blue_px(frame_at((t0 + t1) / 2)) > 500
+    assert blue_px(frame_at(t1 + 0.6)) < 50
+    w.close()
