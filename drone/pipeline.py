@@ -411,14 +411,19 @@ def prepare_group(ctx: _RunContext, group, analyses: list, style_key: str = "") 
                      src_sizes={a["path"]: _display_size(a) for a in analyses})
 
 
-def plan_format(ctx: _RunContext, gp: GroupPrep, tag: str, vertical: bool):
+def plan_format(ctx: _RunContext, gp: GroupPrep, tag: str, vertical: bool, target: float | None = None):
     """The cut list of one format (no rendering). None when nothing usable.
 
-    Returns (plan, target, automatic_length)."""
+    ``target`` (seconds) overrides the job's duration without asking anything:
+    shorter keeps the best-ranked shots, longer adds shots and stretches them
+    (the editor's "Duração" control). Returns (plan, target, automatic_length)."""
     job, cfg, log_fn, est = ctx.job, ctx.cfg, ctx.log_fn, gp.est
-    asked = job.vertical_duration if vertical else job.duration
+    forced = target is not None and target > 0
+    asked = target if forced else (job.vertical_duration if vertical else job.duration)
     target, auto_len = (asked or (est.suggested_vertical if vertical else est.suggested)), not asked
-    if auto_len:
+    if forced:
+        log_fn(f"⏱️ Duração escolhida {tag}: {target:.0f} s")
+    elif auto_len:
         log_fn(f"⏱️ Duração automática {tag}: {target:.0f} s")
     elif material.shortfall(target, est, gp.unit):
         info = {"group": gp.group.label, "format": tag, "asked": target,
@@ -574,12 +579,36 @@ class Session:
             self._preps[k] = prepare_group(self.ctx, g, [self.analyses[i] for i in g.indices], style_key)
         return self._preps[k]
 
-    def plan(self, group_key: str, style_key: str, tag: str):
+    def plan(self, group_key: str, style_key: str, tag: str, target: float | None = None):
+        """Plan one format. ``target`` (seconds) re-fits the cut to another length
+        from the same analysis — nothing is processed again."""
         gp = self.prepare(group_key, style_key)
         if not gp.cands:
             return gp, None
-        planned = plan_format(self.ctx, gp, tag, tag == "9x16")
+        planned = plan_format(self.ctx, gp, tag, tag == "9x16", target)
         return gp, (planned[0] if planned else None)
+
+    def readjust(self, feedback: str = "", variation: int = 0, previous=()):
+        """New wishes for the cuts, from the analysis already done ("Refazer" and
+        "Outra versão" in the editor). ``previous``: (path, in, out) of shots to
+        stay away from. Returns the adjustments; style and duration in them are
+        for the caller to apply."""
+        self.job.feedback = (feedback or "") + (", trocar as tomadas" if previous else "")
+        self.job.variation = variation
+        adj = resolve_adjustments(self.job, self.cfg, self.ctx.ai_client, self.log_fn)
+        for c in adj.prefer:
+            if c not in self.job.priorities:
+                self.job.priorities.append(c)
+        self.job.priorities = [c for c in self.job.priorities if c not in adj.avoid_categories]
+        self.ctx.adj = adj
+        self.ctx.previous = list(previous)
+        self._preps.clear()                  # candidates and styles are rebuilt with the new wishes
+        return adj
+
+    def raw_seconds(self, group_key: str = "") -> float:
+        """Length of the raw footage (of one group, or of everything)."""
+        idx = self.group(group_key).indices if group_key else range(len(self.analyses))
+        return float(sum(self.analyses[i].get("duration") or 0.0 for i in idx))
 
     def render(self, gp: GroupPrep, plan, tag: str, *, progress_fn=None, cancel_check=None) -> dict:
         self.ctx.stamp = time.strftime("%Y%m%d_%H%M%S")

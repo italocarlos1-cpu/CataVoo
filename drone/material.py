@@ -4,7 +4,7 @@
 Used for two features:
 
 * **Duração automática** — the film is as long as the material deserves: a
-  short flight gives 20–40 s, a big trip 2–3 min.
+  short flight gives 20–40 s, a big trip several minutes.
 * **Aviso de falta de material** — when the requested length cannot be filled
   at the style's normal pace, the user decides: shorten the film, or stretch
   the shots (and accept more similar shots).
@@ -26,7 +26,7 @@ from dataclasses import dataclass
 from drone import shot_selection
 
 MIN_SUGGESTED = 15.0
-MAX_SUGGESTED = 180.0
+MAX_SUGGESTED = 3600.0           # only a sanity bound: the material itself limits the suggestion
 MAX_SUGGESTED_VERTICAL = 60.0
 
 
@@ -83,6 +83,35 @@ def estimate(cands: list, style, cfg, weights) -> MaterialEstimate:
     est.suggested_vertical = min(MAX_SUGGESTED_VERTICAL,
                                  max(MIN_SUGGESTED, _floor5(est.suggested * 0.5)))
     return est
+
+
+def clock(sec: float) -> str:
+    sec = int(round(max(0.0, sec)))
+    return f"{sec // 60}:{sec % 60:02d}"
+
+
+def choices(est: MaterialEstimate, vertical: bool = False) -> list:
+    """Round lengths worth offering for this material, in seconds, up to what
+    stretching can reach."""
+    top = max(est.maximum, est.comfortable, MIN_SUGGESTED)
+    steps = [15, 30, 45, 60, 90, 120, 150, 180, 240, 300, 360, 420, 480, 540, 600]
+    steps += list(range(720, 3601, 120))
+    return [float(x) for x in steps if x <= top + 1e-6] or [MIN_SUGGESTED]
+
+
+def parse_clock(text: str) -> float:
+    """'90', '90 s', '1:30', '1m30' → seconds (0 when it is not a length)."""
+    t = (text or "").strip().lower().split("·")[0].strip().replace(",", ".")
+    try:
+        if ":" in t:
+            m, sec = t.split(":", 1)
+            return max(0.0, float(m) * 60 + float(sec or 0))
+        if "m" in t:
+            m, sec = t.split("m", 1)
+            return max(0.0, float(m) * 60 + float(sec.replace("s", "").strip() or 0))
+        return max(0.0, float(t.replace("s", "").strip()))
+    except ValueError:
+        return 0.0
 
 
 def shortfall(target: float, est: MaterialEstimate, unit: float) -> bool:

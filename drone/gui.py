@@ -1,20 +1,19 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 """DroneHighlighter window: choose a folder, a style, click GERAR VÍDEO.
 
-Deliberately one screen with no tabs: settings on the left, run/log/results
-on the right. Advanced tuning lives in config.json (see drone.config); the
-"Edição manual" button opens the mini editor (drone.editor_window).
+One screen, no tabs: settings on the left; on the right, ANALISAR MATERIAL
+(the footage is analysed once and cached), then what there is, the length
+(suggested, or any other) and GERAR PRÉVIA, which opens the preview/editor
+(drone.editor_window). Nothing is rendered until the user asks for it there.
 """
 from __future__ import annotations
 
 import os
-import subprocess
 import sys
-import threading
 import traceback
 
-from PySide6.QtCore import QObject, QSettings, Qt, QThread, QUrl, Signal
-from PySide6.QtGui import QDesktopServices, QFont
+from PySide6.QtCore import QObject, QSettings, Qt, QThread, Signal
+from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QFileDialog, QFormLayout,
                                QFrame, QHBoxLayout, QLabel, QLineEdit, QMainWindow,
                                QMessageBox, QPlainTextEdit, QProgressBar, QPushButton,
@@ -25,9 +24,9 @@ from drone.ai_assist import PROVIDERS, AIClient, AIError
 from drone.config import STYLES, DroneConfig
 from drone.grouping import MODES
 from drone.theme import role
-from drone.progress_ui import Heartbeat, clock
+from drone.progress_ui import Heartbeat
 from drone import theme
-from drone.pipeline import Job, Session, edit_store_path, run
+from drone.pipeline import Job, Session, edit_store_path
 
 MUSIC_CHOICES = [("Automática (pelo estilo)", ""), ("Instrumental cinematográfica", "cinematografica"),
                  ("Instrumental", "instrumental"), ("Tranquila / natureza", "tranquila"),
@@ -38,70 +37,16 @@ FORMATS = [("Horizontal 16:9 + Vertical 9:16", (True, True)),
 RESOLUTIONS = [("4K (3840×2160)", (3840, 2160)), ("Full HD (1920×1080)", (1920, 1080))]
 
 
-AUTO = "Automática"
-SHORTFALL = [("Perguntar", "perguntar"), ("Encurtar o vídeo", "encurtar"),
-             ("Esticar as tomadas", "esticar")]
-
-
-def _seconds(text: str, default: float) -> float:
-    """'Automática' → 0 (the material decides); a number → that many seconds."""
-    t = (text or "").strip().lower()
-    if not t or t.startswith("auto"):
-        return 0.0
-    try:
-        return max(5.0, float(t.replace(",", ".").replace("s", "").strip()))
-    except ValueError:
-        return default
-
-
-class Worker(QObject):
-    log = Signal(str)
-    progress = Signal(float, str)
-    finished = Signal(object)
-    failed = Signal(str)
-    ask = Signal(object)                 # not enough material: the window asks the user
-
-    def __init__(self, job: Job, cfg: DroneConfig):
-        super().__init__()
-        self.job, self.cfg = job, cfg
-        self.cancelled = False
-        self._answer = None
-        self._answered = threading.Event()
-
-    def decide(self, info: dict):
-        """Called on the worker thread; blocks until the window answers."""
-        self._answered.clear()
-        self.ask.emit(info)
-        while not self._answered.wait(0.2):
-            if self.cancelled:
-                return "cancelar"
-        return self._answer
-
-    def answer(self, value) -> None:
-        self._answer = value
-        self._answered.set()
-
-    def run(self):
-        try:
-            res = run(self.job, self.cfg, log_fn=self.log.emit,
-                      progress_fn=lambda p, t: self.progress.emit(float(p), str(t)),
-                      cancel_check=lambda: self.cancelled, decide_fn=self.decide)
-            self.finished.emit(res)
-        except Exception as exc:  # noqa: BLE001 — shown to the user
-            self.log.emit(traceback.format_exc())
-            self.failed.emit(str(exc))
-
-
 class SessionWorker(QObject):
-    """Runs the (cached) analysis for the manual editor off the UI thread."""
+    """Analyses the footage (cached) off the UI thread and measures the material."""
     log = Signal(str)
     progress = Signal(float, str)
     finished = Signal(object)
     failed = Signal(str)
 
-    def __init__(self, job: Job, cfg: DroneConfig):
+    def __init__(self, job: Job, cfg: DroneConfig, measure: bool = True):
         super().__init__()
-        self.job, self.cfg = job, cfg
+        self.job, self.cfg, self.measure = job, cfg, measure
         self.cancelled = False
 
     def run(self):
@@ -109,6 +54,11 @@ class SessionWorker(QObject):
             sess = Session(self.job, self.cfg, log_fn=self.log.emit,
                            progress_fn=lambda p, t: self.progress.emit(float(p), str(t)),
                            cancel_check=lambda: self.cancelled)
+            sess.material = []               # (group label, raw seconds, estimate)
+            if self.measure:
+                for g in sess.groups:
+                    gp = sess.prepare(g.key, self.job.style)
+                    sess.material.append((g.label, sess.raw_seconds(g.key), gp.est))
             self.finished.emit(sess)
         except Exception as exc:  # noqa: BLE001 — shown to the user
             self.log.emit(traceback.format_exc())
@@ -123,7 +73,6 @@ class MainWindow(QMainWindow):
         self.settings = QSettings("DroneHighlighter", "DroneHighlighter")
         self.thread = None
         self.worker = None
-        self.result = None
 
         root = QWidget()
         outer = QVBoxLayout(root)
@@ -194,32 +143,6 @@ class MainWindow(QMainWindow):
         form.addRow("", self.style_hint)
         self.style_hint.setText(STYLES[self.style.currentData()].description)
 
-        self.duration = QComboBox()
-        self.duration.setEditable(True)
-        for s in (AUTO, "30", "45", "60", "90", "120", "180"):
-            self.duration.addItem(s)
-        self.duration.setCurrentText(str(self.settings.value("duration", "90")))
-        self.duration.setToolTip("Escolha ou digite os segundos. 'Automática': o programa mede "
-                                 "quanto material bom existe e decide o tamanho.")
-        self.vduration = QComboBox()
-        self.vduration.setEditable(True)
-        for s in (AUTO, "15", "30", "45", "60", "90"):
-            self.vduration.addItem(s)
-        self.vduration.setCurrentText(str(self.settings.value("vduration", "45")))
-        drow = QHBoxLayout()
-        drow.addWidget(role(QLabel("16:9"), "muted"))
-        drow.addWidget(self.duration, 1)
-        drow.addSpacing(10)
-        drow.addWidget(role(QLabel("9:16"), "muted"))
-        drow.addWidget(self.vduration, 1)
-        form.addRow("Duração (s)", drow)
-        self.shortfall = QComboBox()
-        for label, key in SHORTFALL:
-            self.shortfall.addItem(label, key)
-        self.shortfall.setCurrentIndex(max(0, self.shortfall.findData(self.settings.value("shortfall", "perguntar"))))
-        self.shortfall.setToolTip("Quando os vídeos não têm material bom suficiente para a duração pedida.")
-        form.addRow("Se faltar material", self.shortfall)
-
         form = card("Música")
         self.music_dir = QLineEdit(self.settings.value("music_dir", ""))
         self.music_dir.setPlaceholderText("Pasta com as suas músicas")
@@ -249,11 +172,13 @@ class MainWindow(QMainWindow):
         self.group_by.setCurrentIndex(max(0, self.group_by.findData(self.settings.value("group_by", "nada"))))
         self.summary = QCheckBox("Também um vídeo da viagem inteira")
         self.summary.setChecked(self.settings.value("summary", "false") == "true")
-        self.group_by.currentIndexChanged.connect(
-            lambda _i: self.summary.setEnabled(self.group_by.currentData() != "nada"))
-        self.summary.setEnabled(self.group_by.currentData() != "nada")
         form.addRow("Organizar", self.group_by)
         form.addRow("", self.summary)
+        # Only meaningful with groups: hidden for "Um vídeo com tudo".
+        def _summary_row(_i=0, _form=form):     # _form: "form" is reused by the next card
+            _form.setRowVisible(self.summary, self.group_by.currentData() != "nada")
+        self.group_by.currentIndexChanged.connect(_summary_row)
+        _summary_row()
 
         form = card("Ajuste fino")
         self.prompt = QPlainTextEdit()
@@ -271,12 +196,14 @@ class MainWindow(QMainWindow):
         right = QVBoxLayout()
         right.setSpacing(10)
         cols.addLayout(right, 4)
-        self.go = role(QPushButton("GERAR VÍDEO"), "primary")
+        self.go = role(QPushButton("ANALISAR MATERIAL"), "primary")
+        self.go.setToolTip("Analisa os vídeos da pasta (uma vez só; fica guardado) e mostra quanto material bom existe.\n"
+                           "Nenhum vídeo é gerado ainda: você escolhe a duração depois de ver o resultado.")
         self.go.setMinimumHeight(52)
         f = self.go.font()
         f.setPointSize(12)
         self.go.setFont(f)
-        self.go.clicked.connect(lambda: self._start())
+        self.go.clicked.connect(lambda: self._analyse())
         self.cancel = QPushButton("Cancelar")
         self.cancel.setEnabled(False)
         self.cancel.setMinimumHeight(52)
@@ -315,47 +242,41 @@ class MainWindow(QMainWindow):
         self.logbox.setFont(mono)
         right.addWidget(self.logbox, 1)
 
-        orow = QHBoxLayout()
-        self.open_video = QPushButton("▶  Assistir")
-        self.open_video.setEnabled(False)
-        self.open_video.clicked.connect(self._open_video)
-        self.open_folder = QPushButton("Abrir pasta")
-        self.open_folder.setEnabled(False)
-        self.open_folder.clicked.connect(self._open_folder)
-        orow.addWidget(self.open_video)
-        orow.addWidget(self.open_folder)
-        right.addLayout(orow)
+        # ---- after the analysis: what there is, how long, and the preview
+        self.result_card = role(QFrame(), "card")
+        rl = QVBoxLayout(self.result_card)
+        rl.setContentsMargins(16, 14, 16, 14)
+        rl.setSpacing(10)
+        self.material_hint = QLabel("")
+        self.material_hint.setWordWrap(True)
+        self.material_hint.setTextFormat(Qt.RichText)
+        rl.addWidget(self.material_hint)
+        drow = QHBoxLayout()
+        drow.setSpacing(10)
+        drow.addWidget(role(QLabel("Duração"), "muted"))
+        self.duration = QComboBox()
+        self.duration.setEditable(True)
+        self.duration.setInsertPolicy(QComboBox.NoInsert)
+        self.duration.setMinimumWidth(170)
+        self.duration.setToolTip("A sugestão do programa já vem escolhida. Escolha outro tamanho ou digite o que quiser\n"
+                                 "(90, 1:30, 4:00…). Dá para mudar de novo depois, dentro da prévia.")
+        drow.addWidget(self.duration)
+        self.preview_btn = role(QPushButton("GERAR PRÉVIA"), "primary")
+        self.preview_btn.setMinimumHeight(44)
+        self.preview_btn.setToolTip("Abre a prévia: o vídeo montado toca na hora, sem renderizar. Lá você muda o estilo e a\n"
+                                    "duração, refaz, pede outra versão, ajusta as tomadas e só então renderiza o vídeo final.")
+        self.preview_btn.clicked.connect(self._preview)
+        drow.addWidget(self.preview_btn, 1)
+        rl.addLayout(drow)
+        self.result_card.setVisible(False)
+        right.addWidget(self.result_card)
 
         right.addSpacing(4)
         right.addWidget(self._build_ai_box())
-        right.addSpacing(4)
-        right.addWidget(role(QLabel("NÃO GOSTOU?"), "section"))
-        redo = role(QFrame(), "card")
-        rl = QVBoxLayout(redo)
-        rl.setContentsMargins(14, 12, 14, 12)
-        self.feedback = QLineEdit()
-        self.feedback.setPlaceholderText("Ex.: mais cachoeira, menos cidade, cortes mais rápidos")
-        self.redo_btn = QPushButton("Refazer")
-        self.redo_btn.setToolTip("Gera de novo com os ajustes escritos acima (usa a análise já feita)")
-        self.redo_btn.clicked.connect(self._redo)
-        self.variant_btn = QPushButton("Outra versão")
-        self.variant_btn.setToolTip("Mesma configuração, outras tomadas e outra ordem")
-        self.variant_btn.clicked.connect(self._variant)
-        for b in (self.redo_btn, self.variant_btn):
-            b.setEnabled(False)
-        self.manual_btn = QPushButton("Edição manual")
-        self.manual_btn.setToolTip("Abre o mini editor: veja e toque os cortes de qualquer estilo sem "
-                                   "renderizar, ajuste cada tomada quadro a quadro e renderize quando quiser.")
-        self.manual_btn.clicked.connect(self._manual)
-        rl.addWidget(self.feedback)
-        rrow = QHBoxLayout()
-        rrow.addWidget(self.redo_btn)
-        rrow.addWidget(self.variant_btn)
-        rrow.addWidget(self.manual_btn)
-        rl.addLayout(rrow)
-        right.addWidget(redo)
         self.editors = []
-        self.variation = 0
+        self.session = None
+        self._session_key = None
+        self._open_after = False
         self.setCentralWidget(root)
 
     def _build_ai_box(self) -> QWidget:
@@ -438,19 +359,32 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Assistente de IA", str(exc))
             self.status.setText("IA indisponível.")
 
-    def _manual(self):
-        """Prepare a Session (analysis from the cache when possible) and open the timeline."""
+    def _job_key(self, job: Job) -> tuple:
+        """What an analysis depends on (the style and the length are chosen later)."""
+        return (job.folder, job.group_by, job.summary, job.horizontal, job.vertical,
+                tuple(job.horizontal_size or ()), job.music_dir, tuple(job.music_tags), job.title,
+                job.prompt, self.use_clip.isChecked(), self.ai_box.isChecked())
+
+    def _analyse(self, then_open: bool = False):
+        """Analyse the folder (cached) and show how much good material there is."""
         job = self.build_job()
         if not os.path.isdir(job.folder):
             QMessageBox.warning(self, "DroneHighlighter", "Selecione uma pasta com vídeos.")
             return
+        for k, v in (("folder", job.folder), ("style", job.style), ("music_dir", job.music_dir),
+                     ("group_by", job.group_by),
+                     ("summary", "true" if self.summary.isChecked() else "false"),
+                     ("title", job.title), ("use_clip", "true" if self.use_clip.isChecked() else "false")):
+            self.settings.setValue(k, v)
         cfg = self.ai_settings()
+        cfg.save()
         cfg.use_clip = self.use_clip.isChecked()
-        self._manual_job = job
+        self._job, self._open_after = job, then_open
         self.logbox.clear()
-        self.logbox.appendPlainText("✂ Preparando a edição manual (a análise usa o cache quando possível)…")
-        self.manual_btn.setEnabled(False)
+        self.logbox.appendPlainText(
+            "🔎 Analisando o material (fica guardado: os vídeos não são processados de novo depois)…")
         self.go.setEnabled(False)
+        self.preview_btn.setEnabled(False)
         self.cancel.setEnabled(True)
         self.thread = QThread()
         self.worker = SessionWorker(job, cfg)
@@ -459,36 +393,78 @@ class MainWindow(QMainWindow):
         self.worker.log.connect(self.logbox.appendPlainText)
         self.worker.log.connect(self.beat.touch)
         self.worker.progress.connect(self._progress)
-        self.beat.start("Preparando a edição manual…")
-        self.worker.finished.connect(self._open_editor)
+        self.beat.start("Analisando o material…")
+        self.worker.finished.connect(self._show_material)
         self.worker.failed.connect(self._failed)
-        self.worker.failed.connect(lambda *_: self.manual_btn.setEnabled(True))
         self.worker.finished.connect(self.thread.quit)
         self.worker.failed.connect(self.thread.quit)
         self.thread.start()
 
-    def _open_editor(self, session):
+    def _show_material(self, session):
+        """The analysis is done: what there is, the suggested length, the preview button."""
+        from drone import material
+        self.session, self._session_key = session, self._job_key(self._job)
+        self.go.setEnabled(True)
+        self.preview_btn.setEnabled(True)
+        self.cancel.setEnabled(False)
+        self.beat.finish("Material analisado. Escolha a duração e clique em GERAR PRÉVIA.")
+        ck = material.clock
+        vertical = self._job.vertical and not self._job.horizontal
+        for label, raw, est in session.material:
+            top = max(est.maximum, est.comfortable)
+            self.logbox.appendPlainText(
+                f"📊 {label}: {ck(raw)} brutos → ~{ck(est.comfortable)} de material bom sem repetir "
+                f"({est.distinct} tomadas, {est.strong} fortes); até {ck(top)} esticando. "
+                f"Sugestão: {ck(est.suggested_vertical if vertical else est.suggested)}.")
+        usable = [m for m in session.material if m[2].distinct]
+        if not usable:
+            self.material_hint.setText("Nenhum trecho aproveitável foi encontrado nesta pasta.")
+            self.duration.clear()
+            self.preview_btn.setEnabled(False)
+            self.result_card.setVisible(True)
+            return
+        label, raw, est = max(usable, key=lambda m: m[1])
+        top = max(est.maximum, est.comfortable)
+        sug = est.suggested_vertical if vertical else est.suggested
+        more = f" · {label}" if len(session.material) > 1 else ""
+        self.material_hint.setText(
+            f"<b>{ck(raw)}</b> de filmagem bruta{more}<br>"
+            f"<b>~{ck(est.comfortable)}</b> de material bom, sem repetir cenas "
+            f"({est.distinct} tomadas, {est.strong} fortes)<br>"
+            f"até <b>{ck(top)}</b> esticando as tomadas"
+            + ("<br><span style='color:#8c8c8c'>Com vários grupos, cada um usa a própria sugestão; "
+               "a duração escolhida aqui vale para o primeiro que abrir.</span>" if len(session.material) > 1 else ""))
+        self.duration.clear()
+        for sec in sorted({*material.choices(est, vertical), float(round(sug)), float(round(top))}):
+            mark = "sugerida" if round(sec) == round(sug) else "máximo" if round(sec) == round(top) else ""
+            self.duration.addItem(ck(sec) + (f"  ·  {mark}" if mark else ""), sec)
+        self.duration.setCurrentIndex(max(0, self.duration.findData(float(round(sug)))))
+        self.result_card.setVisible(True)
+        if self._open_after:
+            self._open_after = False
+            self._preview()
+
+    def _preview(self):
+        """Open the preview/editor on the analysed material, at the chosen length."""
+        from drone import material
         from drone.edit_session import EditStore
         from drone.editor_window import EditorWindow
-        self.manual_btn.setEnabled(True)
-        self.go.setEnabled(True)
-        self.cancel.setEnabled(False)
-        self.beat.finish("Edição manual aberta.")
-        job = self._manual_job
+        job = self.build_job()
+        if self.session is None or self._job_key(job) != self._session_key:
+            self._analyse(then_open=True)        # something changed: analyse (from the cache) first
+            return
+        session = self.session
+        self.session = None                      # a session belongs to one editor; the next one is re-read
+        self._session_key = None
+        target = material.parse_clock(self.duration.currentText())
         store = EditStore(edit_store_path(session.ctx.out_dir))
         tag = "16x9" if job.horizontal else "9x16"
         ed = EditorWindow(session, style_key=job.style, tag=tag, store=store, title=job.title,
-                          main_style=job.style)
-        ed.rendered.connect(lambda out: self.logbox.appendPlainText(f"✅ Edição manual: {out['video']}"))
+                          main_style=job.style, target=target)
+        ed.rendered.connect(lambda out: self.logbox.appendPlainText(f"✅ Vídeo renderizado: {out['video']}"))
         self.editors.append(ed)
+        self.beat.finish("Prévia aberta.")
         ed.showMaximized()
-
-    def _redo(self):
-        self._start(feedback=self.feedback.text().strip())
-
-    def _variant(self):
-        self.variation += 1
-        self._start(feedback=self.feedback.text().strip(), variation=self.variation, new_shots=True)
 
     # -- actions -------------------------------------------------------
     def _pick_folder(self):
@@ -502,85 +478,17 @@ class MainWindow(QMainWindow):
             self.music_dir.setText(d)
 
     def build_job(self) -> Job:
-        dur = _seconds(self.duration.currentText(), STYLES[self.style.currentData()].default_duration)
-        vdur = _seconds(self.vduration.currentText(), 45.0)
         h, v = self.formats.currentData()
         tag = self.music_kind.currentData()
+        # No length here: it is chosen after the analysis (0 = the material decides).
         return Job(folder=self.folder.text().strip(), style=self.style.currentData(),
-                   duration=dur, vertical_duration=vdur,
-                   shortfall=self.shortfall.currentData(), group_by=self.group_by.currentData(),
-                   summary=self.summary.isChecked() and self.summary.isEnabled(),
+                   duration=0.0, vertical_duration=0.0,
+                   shortfall="esticar", group_by=self.group_by.currentData(),
+                   summary=self.summary.isChecked() and self.group_by.currentData() != "nada",
                    horizontal=h, vertical=v, title=self.title.text().strip(),
                    music_dir=self.music_dir.text().strip(), music_tags=[tag] if tag else [],
                    prompt=self.prompt.toPlainText(),
                    horizontal_size=self.resolution.currentData())
-
-    def _start(self, feedback: str = "", variation: int = 0, new_shots: bool = False):
-        if feedback is False:          # clicked() passes a bool
-            feedback = ""
-        job = self.build_job()
-        if feedback or variation:
-            job.feedback = feedback + (", trocar as tomadas" if new_shots else "")
-            job.variation = variation
-            job.previous_report = self.result.report if self.result else ""
-        else:
-            self.variation = 0
-        if not os.path.isdir(job.folder):
-            QMessageBox.warning(self, "DroneHighlighter", "Selecione uma pasta com vídeos.")
-            return
-        for k, v in (("folder", job.folder), ("style", job.style), ("duration", self.duration.currentText()),
-                     ("vduration", self.vduration.currentText()), ("music_dir", job.music_dir),
-                     ("shortfall", job.shortfall), ("group_by", job.group_by),
-                     ("summary", "true" if self.summary.isChecked() else "false"),
-                     ("title", job.title), ("use_clip", "true" if self.use_clip.isChecked() else "false")):
-            self.settings.setValue(k, v)
-        cfg = self.ai_settings()
-        cfg.save()
-        cfg.use_clip = self.use_clip.isChecked()
-        self.logbox.clear()
-        self.go.setEnabled(False)
-        self.cancel.setEnabled(True)
-        self.open_video.setEnabled(False)
-        self.open_folder.setEnabled(False)
-        self.redo_btn.setEnabled(False)
-        self.variant_btn.setEnabled(False)
-        self.thread = QThread()
-        self.worker = Worker(job, cfg)
-        self.worker.moveToThread(self.thread)
-        self.thread.started.connect(self.worker.run)
-        self.worker.log.connect(self.logbox.appendPlainText)
-        self.worker.log.connect(self.beat.touch)
-        self.worker.progress.connect(self._progress)
-        self.beat.start("Começando…")
-        self.worker.ask.connect(self._ask_shortfall)
-        self.worker.finished.connect(self._done)
-        self.worker.failed.connect(self._failed)
-        self.worker.finished.connect(self.thread.quit)
-        self.worker.failed.connect(self.thread.quit)
-        self.thread.start()
-
-    def _ask_shortfall(self, info: dict):
-        """Not enough footage for the requested length: let the user choose."""
-        box = QMessageBox(self)
-        box.setIcon(QMessageBox.Question)
-        box.setWindowTitle("Pouco material")
-        where = f"{info['group']} — " if info.get("group") and info["group"] != "Viagem completa" else ""
-        box.setText(f"{where}Você pediu {info['asked']:.0f} s ({info['format']}), mas há material bom "
-                    f"para cerca de {info['comfortable']:.0f} s no ritmo normal do estilo "
-                    f"(até ~{info['maximum']:.0f} s esticando as tomadas).")
-        box.setInformativeText("Encurtar: vídeo mais curto, só com as melhores cenas.\n"
-                               "Esticar: tomadas mais longas e cenas mais parecidas para chegar "
-                               "perto do tempo pedido.")
-        shorter = box.addButton(f"Encurtar para {info['shorter']:.0f} s", QMessageBox.AcceptRole)
-        stretch = box.addButton("Esticar as tomadas", QMessageBox.ActionRole)
-        box.addButton("Cancelar", QMessageBox.RejectRole)
-        remember = QCheckBox("Usar esta resposta para os próximos vídeos desta geração")
-        box.setCheckBox(remember)
-        box.exec()
-        clicked = box.clickedButton()
-        answer = "encurtar" if clicked is shorter else "esticar" if clicked is stretch else "cancelar"
-        if self.worker is not None:
-            self.worker.answer((answer, remember.isChecked()))
 
     def _cancel(self):
         if self.worker:
@@ -590,34 +498,13 @@ class MainWindow(QMainWindow):
     def _progress(self, pct: float, text: str):
         self.beat.update(pct, text)
 
-    def _done(self, res):
-        self.result = res
-        self.go.setEnabled(True)
-        self.cancel.setEnabled(False)
-        self.beat.finish(f"Concluído em {clock(res.seconds)} — {len(res.outputs)} vídeo(s)")
-        self.open_video.setEnabled(bool(res.outputs))
-        self.open_folder.setEnabled(bool(res.outputs))
-        self.redo_btn.setEnabled(bool(res.outputs))
-        self.variant_btn.setEnabled(bool(res.outputs))
-
     def _failed(self, msg: str):
         self.go.setEnabled(True)
+        self.preview_btn.setEnabled(self.session is not None)
         self.cancel.setEnabled(False)
         self.beat.finish("Cancelado." if "cancel" in msg else "Falhou.", ok=False)
         if "cancel" not in msg:
             QMessageBox.critical(self, "DroneHighlighter", msg)
-
-    def _open_video(self):
-        if self.result and self.result.outputs:
-            QDesktopServices.openUrl(QUrl.fromLocalFile(self.result.outputs[0]))
-
-    def _open_folder(self):
-        if self.result and self.result.outputs:
-            folder = os.path.dirname(self.result.outputs[0])
-            if os.name == "nt":
-                subprocess.Popen(["explorer", folder])
-            else:
-                QDesktopServices.openUrl(QUrl.fromLocalFile(folder))
 
 
 def _crash_log() -> str:

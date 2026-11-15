@@ -7,7 +7,7 @@ Tudo roda localmente: não usa API externa, não cobra assinatura e funciona off
 depois que as dependências e o modelo CLIP estão instalados.
 
 ```text
-python -m drone                       # janela (Selecionar pasta → GERAR VÍDEO)
+python -m drone                       # janela (Selecionar pasta → ANALISAR MATERIAL → GERAR PRÉVIA → RENDERIZAR)
 python -m drone.cli --pasta "C:\VideosDrone\Pirenopolis\Brutos" --estilo cinematografico ^
     --duracao 90 --titulo "Pirenópolis — Goiás" --musicas "C:\Musicas" --formato ambos
 python -m drone.cli --pasta ... --so-analisar   # só ranqueia os trechos, não renderiza
@@ -57,6 +57,26 @@ ficam menos. A duração total e o encaixe na música não mudam.
   para gerar também o vídeo da viagem inteira. A análise é feita uma vez; cada grupo tem
   a sua seleção e, no modo Automático, o seu estilo.
 - **Música**: volume abaixando nos últimos ~4 s; uma faixa mais curta que o vídeo é repetida.
+
+## v0.6.1 — novo fluxo: analisar → escolher a duração → prévia → renderizar
+
+- **Tela principal** (`gui.py`): o botão principal é ANALISAR MATERIAL (SessionWorker: análise em
+  cache + estimativa por grupo). Depois aparece o cartão com bruto/bom/esticando, a **Duração**
+  (sugerida já escolhida; aceita qualquer valor digitado) e GERAR PRÉVIA, que abre o editor com
+  `target=`. Saíram: GERAR VÍDEO, Assistir/Abrir pasta, Refazer/Outra versão/Edição manual, a
+  duração e o "Se faltar material" da coluna esquerda, e a classe `Worker` (render às cegas).
+  `pipeline.run` continua existindo para `python -m drone.cli` e os testes.
+- **Editor**: caixa Duração editável (`set_duration`, `_duration_typed`, `material.parse_clock`),
+  resumo do material, **Refazer** (campo de ajustes) e **Outra versão** (`EditorWindow.redo` →
+  `Session.readjust`, que troca os ajustes e limpa os `_preps`). Sem limite de 10 min.
+- **Sem ímã**: as edições são livres (quadro a quadro); a música é sempre recortada no tamanho do
+  vídeo no render. "Encaixar tudo na batida" continua como botão opcional.
+- `plan_format(..., target=)` / `Session.plan(..., target=)`, `Session.raw_seconds`,
+  `material.choices`.
+- Caixa "vídeo da viagem inteira" só aparece com agrupamento; descrições dos estilos maiores;
+  "Ainda trabalhando…" numa segunda linha com o tempo da etapa.
+- **Manual**: os capítulos da tela principal ainda descrevem o fluxo antigo (a revisar quando o
+  fluxo novo for validado).
 
 ## v0.6.0 — revisão de desempenho, diário estrito, progresso vivo
 

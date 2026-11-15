@@ -204,9 +204,10 @@ def test_timeline_window_offscreen(session, tmp_path):
     assert end < w.plan.shots[0].end <= end + f + 1e-6
     QTest.keyClick(w.view, Qt.Key_BracketLeft)
     assert w.edge == "start"
-    w.drag_edge(0, "end", w.plan.shots[0].end + 0.8)
+    before = w.plan.shots[0].end
+    w.drag_edge(0, "end", before - 0.8)
     w.commit_drag()
-    assert w.plan.on_beat(0)                                    # ímã on by default
+    assert w.plan.shots[0].end == pytest.approx(before - 0.8, abs=f)   # free edit: no snapping
     edited = w.plan
     w.style_box.setCurrentIndex(w.style_box.findData("trailer_epico"))
     app.processEvents()
@@ -318,7 +319,6 @@ def test_dragging_a_block_with_the_mouse(session, tmp_path):
     app.processEvents()
     w._initial_sizes()
     app.processEvents()
-    w.magnet.setChecked(False)
     assert w.sel == 0
     it = w.shot_items[0]
     w.view.ensureVisible(it)
@@ -399,9 +399,90 @@ def test_heartbeat_shows_percent_time_and_quiet_stretches(monkeypatch):
     assert pct.text() == "42%" and bar.value() == 424 and "Renderizando 16:9" in status.text()
     now[0] += 65
     hb._tick()
-    assert "1:05" in status.text() and "ainda trabalhando" in status.text()
+    first, second = status.text().split("\n")
+    assert "1:05" in first and second.startswith("Ainda trabalhando, normal nas etapas longas") and "1:05" in second
     hb.touch()
     hb._tick()
-    assert "ainda trabalhando" not in status.text()
+    assert "Ainda trabalhando" not in status.text()
     hb.finish("Concluído")
     assert pct.text() == "100%" and status.text() == "Concluído" and not hb.timer.isActive()
+
+
+def test_duration_is_refitted_from_the_same_analysis(session, tmp_path):
+    """Editor's Duração: another length is planned from the analysis already done
+    (no new analysis), shorter and longer, for every style of that format."""
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    os.environ["DRONEHIGHLIGHTER_NO_VIDEO_PREVIEW"] = "1"
+    qtw = pytest.importorskip("PySide6.QtWidgets")
+    if not hasattr(qtw, "QApplication") or "Mock" in type(qtw.QApplication).__name__:
+        pytest.skip("real PySide6 required")
+    app = qtw.QApplication.instance() or qtw.QApplication([])
+    from drone import analyzer, material
+    from drone.editor_window import EditorWindow
+    w = EditorWindow(session, style_key="cinematografico", tag="16x9",
+                     store=EditStore(str(tmp_path / "t.json")), title="T", main_style="cinematografico")
+    w.show()
+    app.processEvents()
+    est = w.gp.est
+    secs = [w.dur_box.itemData(i) for i in range(w.dur_box.count())]
+    assert secs == sorted(secs)
+    assert any("sugerida" in w.dur_box.itemText(i) for i in range(w.dur_box.count()))
+    assert "bom ~" in w.material_lbl.text() and "bruto" in w.material_lbl.text()
+    calls = []
+    real = analyzer.analyze_clip
+    analyzer.analyze_clip = lambda *a, **k: calls.append(1) or real(*a, **k)
+    try:
+        long_total = w.plan.total
+        assert w.set_duration(15.0, ask=False)
+        short = w.plan
+        assert short.total <= 15.0 + 2 * short.unit and short.total < long_total
+        top = est.maximum
+        assert w.set_duration(top, ask=False)
+        assert w.plan.total > short.total and len(w.plan.shots) >= len(short.shots)
+        # the other styles of this format follow the chosen length
+        w.style_box.setCurrentIndex(w.style_box.findData("redes_sociais"))
+        app.processEvents()
+        assert w.targets[("tudo", "16x9")] == top and abs(w.plan.target - w.plan.total) < 0.05
+    finally:
+        analyzer.analyze_clip = real
+    assert calls == []                       # nothing was analysed again
+    w.close()
+
+
+def test_material_choices_stop_at_what_the_footage_gives():
+    from drone import material
+    est = material.MaterialEstimate(distinct=20, strong=8, comfortable=95.0, maximum=140.0, suggested=60.0)
+    assert material.choices(est) == [15.0, 30.0, 45.0, 60.0, 90.0, 120.0]
+    big = material.MaterialEstimate(distinct=300, comfortable=900.0, maximum=2000.0, suggested=600.0)
+    assert material.choices(big)[-1] == 1920.0 and material.clock(605) == "10:05"
+    assert [material.parse_clock(x) for x in ("90", "1:30", "1m30", "2:00  ·  sugerida", "x")] == [90, 90, 90, 120, 0]
+
+
+def test_redo_and_another_version_inside_the_editor(session, tmp_path):
+    """Refazer / Outra versão live in the editor: re-planned from the same
+    analysis; another version stays away from the shots on screen."""
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    os.environ["DRONEHIGHLIGHTER_NO_VIDEO_PREVIEW"] = "1"
+    qtw = pytest.importorskip("PySide6.QtWidgets")
+    if not hasattr(qtw, "QApplication") or "Mock" in type(qtw.QApplication).__name__:
+        pytest.skip("real PySide6 required")
+    app = qtw.QApplication.instance() or qtw.QApplication([])
+    from drone.editor_window import EditorWindow
+    w = EditorWindow(session, style_key="cinematografico", tag="16x9",
+                     store=EditStore(str(tmp_path / "r.json")), title="T", main_style="cinematografico",
+                     target=15.0)
+    w.show()
+    app.processEvents()
+    assert abs(w.plan.total - 15.0) <= 2 * w.plan.unit          # opened at the length chosen after the analysis
+    before = [(s.path, round(s.start, 2)) for s in w.plan.shots]
+    w.redo(True)
+    after = [(s.path, round(s.start, 2)) for s in w.plan.shots]
+    assert after != before and w.variation == 1
+    w.feedback.setText("vídeo mais longo")
+    w.redo(False)
+    assert w.targets[("tudo", "16x9")] == pytest.approx(15.0 * 1.25, abs=1.5) and w.plan.total > 15.0
+    w.dur_box.setEditText("0:12")
+    w._duration_typed()
+    assert abs(w.plan.total - 12.0) <= 2 * w.plan.unit
+    w.close()
+    session.readjust("", 0, [])                                   # leave the shared session as it was

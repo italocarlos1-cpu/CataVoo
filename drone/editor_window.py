@@ -23,8 +23,8 @@ Keyboard:
     clique / Espaço  play / pause the selected shot   duplo clique / T  it from the start
     L              loop the selected shot            C   play its raw clip
     ▶ (button)     play / pause the whole film
-    ← / →          active edge ±1 frame (fine adjustment, ignores the ímã)
-    Shift + ← / →  ±1 beat with the ímã on, ±1 s with it off
+    ← / →          active edge ±1 frame
+    Shift + ← / →  ±1 s
     [  /  ]        choose the in / out edge          Tab  toggle edge
     Alt + ← / →    slide the whole shot ±1 frame     Delete  remove the shot
     ↑ / ↓          previous / next shot              F11  full screen
@@ -41,7 +41,7 @@ from PySide6.QtCore import QEvent, QObject, QRectF, QRunnable, QSize, Qt, QThrea
 from PySide6.QtGui import QBrush, QColor, QCursor, QFont, QIcon, QImage, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox, QComboBox, QFrame,
                                QGraphicsItem, QGraphicsRectItem, QGraphicsScene,
-                               QGraphicsSimpleTextItem, QGraphicsView, QHBoxLayout, QLabel,
+                               QGraphicsSimpleTextItem, QGraphicsView, QHBoxLayout, QLabel, QLineEdit,
                                QListView, QListWidget, QListWidgetItem, QMainWindow, QMenu,
                                QMessageBox, QPlainTextEdit, QProgressBar, QPushButton, QSlider,
                                QSplitter, QVBoxLayout, QWidget)
@@ -494,11 +494,13 @@ class EditorWindow(QMainWindow):
     rendered = Signal(object)
 
     def __init__(self, session, *, style_key: str, tag: str, store: EditStore, title: str = "",
-                 main_style: str = "", parent=None):
+                 main_style: str = "", target: float = 0.0, parent=None):
         super().__init__(parent)
         self.session, self.store, self.title_text = session, store, title
         self.main_style = main_style or style_key
-        self.setWindowTitle("DroneHighlighter — Edição manual")
+        self._first = (tag, float(target or 0.0))   # the length chosen after the analysis
+        self.variation = 0
+        self.setWindowTitle("DroneHighlighter — Prévia e edição")
         self.resize(1400, 900)
         self.plans: dict = {}               # (group, style, tag) → EditPlan
         self.preps: dict = {}
@@ -523,6 +525,7 @@ class EditorWindow(QMainWindow):
         self._render_worker = None
         session.set_log(self.log)
 
+        self.targets: dict = {}              # (group, format) → film length chosen here, seconds
         self.mode = "seq"                    # what the monitor plays: seq | shot | clip
         self._proxies: dict = {}             # raw clip → light copy for the preview
         self._proxy_queued: set = set()
@@ -562,12 +565,23 @@ class EditorWindow(QMainWindow):
             self.tag_box.addItem(lbl, k)
         self.tag_box.setCurrentIndex(max(0, self.tag_box.findData(tag)))
         top.addWidget(self.tag_box)
+        top.addWidget(role(QLabel("Duração"), "muted"))
+        self.dur_box = QComboBox()
+        self.dur_box.setEditable(True)
+        self.dur_box.setInsertPolicy(QComboBox.NoInsert)
+        self.dur_box.lineEdit().editingFinished.connect(self._duration_typed)
+        self.dur_box.setMinimumWidth(150)
+        self.dur_box.setToolTip("Remonta o vídeo neste tamanho a partir da mesma análise, sem processar nada de novo.\n"
+                                "Menor: ficam as tomadas mais bem avaliadas. Maior: entram mais tomadas e elas esticam.\n"
+                                "Escolha na lista ou digite o tempo que quiser (90, 1:30, 4:00…) e tecle Enter.\n"
+                                "Vale para todos os estilos deste formato.")
+        self.dur_box.activated.connect(self._duration_picked)
+        top.addWidget(self.dur_box)
+        self.material_lbl = role(QLabel(""), "muted")
+        self.material_lbl.setToolTip("Bruto: tudo o que foi filmado. Bom: tomadas distintas no ritmo normal do estilo.\n"
+                                     "Esticando: o máximo sem repetir cenas.")
+        top.addWidget(self.material_lbl)
         top.addSpacing(10)
-        self.magnet = QCheckBox("Ímã na batida")
-        self.magnet.setChecked(True)
-        self.magnet.setToolTip("Ligado: ao arrastar, o corte pula de batida em batida da música.\n"
-                               "As setas ←/→ continuam ajustando quadro a quadro.")
-        top.addWidget(self.magnet)
         top.addStretch()
         self.total_lbl = QLabel()
         f = QFont()
@@ -753,9 +767,23 @@ class EditorWindow(QMainWindow):
         bf.setBold(True)
         self.bar_pct.setFont(bf)
         self.beat = Heartbeat(self.bar, self.bar_status, self.bar_pct, self)
+        self.feedback = QLineEdit()
+        self.feedback.setPlaceholderText("Ajustes: mais cachoeira, menos cidade, cortes mais rápidos…")
+        self.feedback.setMinimumWidth(380)
+        self.feedback.returnPressed.connect(lambda: self.redo(False))
+        self.redo_btn = QPushButton("Refazer")
+        self.redo_btn.setToolTip("Remonta o vídeo com os ajustes escritos ao lado (usa a análise já feita)")
+        self.redo_btn.clicked.connect(lambda: self.redo(False))
+        self.variant_btn = QPushButton("Outra versão")
+        self.variant_btn.setToolTip("Mesma configuração, outras tomadas e outra ordem")
+        self.variant_btn.clicked.connect(lambda: self.redo(True))
+        for w in (self.feedback, self.redo_btn, self.variant_btn):
+            bot.addWidget(w)
+        bot.addStretch()
         for w in (self.restore_btn, self.snap_btn, self.save_btn):
             bot.addWidget(w)
-        bot.addSpacing(10)
+        lay.addLayout(bot)                      # row 1: remake / tidy
+        bot = QHBoxLayout()                     # row 2: progress and output
         bbox = QVBoxLayout()
         bbox.setSpacing(2)
         brow = QHBoxLayout()
@@ -778,7 +806,6 @@ class EditorWindow(QMainWindow):
         self.capcut_btn.clicked.connect(self.send_to_capcut)
         self.cancel_btn.clicked.connect(self._cancel_render)
         self.zoom.valueChanged.connect(self._zoom)
-        self.magnet.toggled.connect(self._magnet_toggled)
 
         self._fill_styles(style_key)
         self.style_box.currentIndexChanged.connect(lambda _i: self.switch())
@@ -859,7 +886,7 @@ class EditorWindow(QMainWindow):
                         plan = loaded
                         self.log(f"✎ Edição salva carregada: {STYLES[st].label} {tag}")
                 if plan is None:
-                    _gp, auto_plan = self.session.plan(g, st, tag)
+                    _gp, auto_plan = self.session.plan(g, st, tag, self._target_for(g, tag))
                     if auto_plan is None:
                         raise RuntimeError("nenhum trecho utilizável para este grupo/estilo")
                     plan = EditPlan.from_plan(auto_plan, gp, style_key=st, tag=tag,
@@ -873,14 +900,127 @@ class EditorWindow(QMainWindow):
         QApplication.restoreOverrideCursor()
         self.gp, self.plan = gp, plan
         self._loaded_key = self.key
-        self.plan.magnet = self.magnet.isChecked()
+        self.plan.magnet = False             # edits are free; the music is re-fitted to the film
         auto = f" (Automático → {gp.style.label})" if gp.auto else ""
         self.log(f"Estilo {STYLES[st].label}{auto}: {len(plan.shots)} tomadas, {plan.total:.1f} s")
         self.sel = 0 if plan.shots else None
+        self._fill_durations()
         self.rebuild()
         self._queue_proxies()
         self.preview.t = 0.0
         self._load_program()
+
+    # ================================================================ duration
+    def _fill_durations(self) -> None:
+        """Lengths this material can give, with the suggested and the maximum marked."""
+        from drone import material
+        g, _st, tag = self.key
+        est = self.gp.est
+        vertical = tag == "9x16"
+        sug = est.suggested_vertical if vertical else est.suggested
+        top = max(est.maximum, est.comfortable)
+        current = self._target_for(g, tag) or self.plan.target or self.plan.total
+        marks = {round(x): "" for x in material.choices(est, vertical)}
+        if sug:
+            marks[round(sug)] = "sugerida"
+        if top >= 15:
+            marks[round(top)] = "máximo"
+        if round(current) not in marks:
+            marks[round(current)] = "atual"
+        self.dur_box.blockSignals(True)
+        self.dur_box.clear()
+        for sec in sorted(marks):
+            label = material.clock(sec) + (f"  ·  {marks[sec]}" if marks[sec] else "")
+            self.dur_box.addItem(label, float(sec))
+        self.dur_box.setCurrentIndex(max(0, self.dur_box.findData(float(round(current)))))
+        self.dur_box.blockSignals(False)
+        raw = self.session.raw_seconds(g) if hasattr(self.session, "raw_seconds") else 0.0
+        self.material_lbl.setText(
+            (f"bruto {material.clock(raw)}  ·  " if raw else "")
+            + f"bom ~{material.clock(est.comfortable)}  ·  até {material.clock(top)} esticando")
+
+    def _target_for(self, g: str, tag: str):
+        """Length chosen for this group/format: here, or after the analysis."""
+        if (g, tag) in self.targets:
+            return self.targets[(g, tag)]
+        return self._first[1] if tag == self._first[0] and self._first[1] > 0 else None
+
+    def _duration_picked(self, _index: int = 0) -> None:
+        sec = self.dur_box.currentData()
+        if sec:
+            self.set_duration(float(sec))
+
+    def _duration_typed(self) -> None:
+        """Any length typed by hand: '90', '1:30', '4:00'."""
+        from drone import material
+        if self.plan is None:
+            return
+        sec = material.parse_clock(self.dur_box.currentText())
+        g, _st, tag = self.key
+        now = self._target_for(g, tag) or self.plan.target or self.plan.total
+        if sec < 5 or abs(sec - now) < 0.5:
+            self._fill_durations()
+            return
+        self.set_duration(sec)
+
+    def redo(self, another: bool = False) -> None:
+        """Refazer (with the wishes written in the box) / Outra versão (other shots,
+        other order), from the analysis already done."""
+        if self.plan is None:
+            return
+        g, st, tag = self.key
+        if self.plan.edited and QMessageBox.question(
+                self, "Refazer", "Remontar substitui os ajustes manuais feitos em "
+                                 f"{STYLES[st].label} ({tag}). Continuar?") != QMessageBox.Yes:
+            return
+        self.preview.pause()
+        previous = [(s.path, s.start, s.end) for s in self.plan.shots] if another else []
+        if another:
+            self.variation += 1
+        QApplication.setOverrideCursor(Qt.WaitCursor)
+        try:
+            adj = self.session.readjust(self.feedback.text().strip(), self.variation, previous)
+        except Exception as exc:  # noqa: BLE001
+            QApplication.restoreOverrideCursor()
+            QMessageBox.warning(self, "Refazer", str(exc))
+            return
+        QApplication.restoreOverrideCursor()
+        if adj.duration:
+            self.targets[(g, tag)] = float(adj.duration)
+        elif adj.duration_scale != 1.0:
+            self.targets[(g, tag)] = max(5.0, (self._target_for(g, tag) or self.plan.total) * adj.duration_scale)
+        for key in [k for k, pl in self.plans.items() if k == self.key or not pl.edited]:
+            self.plans.pop(key)
+        self.store.drop(g, st, tag)
+        self._loaded_key = None
+        if adj.style in STYLES and adj.style != st and self.style_box.findData(adj.style) >= 0:
+            self.style_box.setCurrentIndex(self.style_box.findData(adj.style))   # triggers switch()
+        else:
+            self.switch()
+        self._fill_styles()
+        self.log("🔁 Outra versão: outras tomadas e outra ordem." if another else "🔁 Refeito com os ajustes.")
+
+    def set_duration(self, seconds: float, ask: bool = True) -> bool:
+        """Re-fit the film of this group/format to ``seconds`` (all styles), from
+        the analysis already done. Hand edits of the style on screen are replaced."""
+        if self.plan is None:
+            return False
+        g, st, tag = self.key
+        if ask and self.plan.edited and QMessageBox.question(
+                self, "Duração", "Remontar o vídeo neste tamanho substitui os ajustes manuais feitos em "
+                                 f"{STYLES[st].label} ({tag}). Continuar?") != QMessageBox.Yes:
+            self._fill_durations()
+            return False
+        self.preview.pause()
+        self.targets[(g, tag)] = float(seconds)
+        for key in [k for k, pl in self.plans.items() if k[0] == g and k[2] == tag
+                    and (k == self.key or not pl.edited)]:
+            self.plans.pop(key)                 # unedited styles re-plan at the new length when shown
+        self.store.drop(g, st, tag)
+        self._loaded_key = None
+        self.switch()
+        self._fill_styles()
+        return True
 
     # ================================================================ drawing
     def x_to_time(self, x: float) -> float:
@@ -1074,10 +1214,10 @@ class EditorWindow(QMainWindow):
 
     def _update_info(self) -> None:
         p = self.plan
-        target = f" (automático: {p.target:.1f} s)" if p.target else ""
+
         off = sum(1 for i in range(len(p.shots)) if not p.on_beat(i))
         beat = f" · {off} fora da batida" if off else " · tudo na batida"
-        self.total_lbl.setText(f"Duração: {p.total:.2f} s{target} · {len(p.shots)} tomadas{beat}")
+        self.total_lbl.setText(f"{_clock(p.total)} ({p.total:.1f} s) · {len(p.shots)} tomadas{beat}")
         if self.sel is None or self.sel >= len(p.shots):
             self.info.setText("Selecione uma tomada colorida.")
             return
@@ -1435,7 +1575,7 @@ class EditorWindow(QMainWindow):
             self._cue_selected()
 
     def drag_edge(self, i: int, edge: str, t: float) -> None:
-        self.plan.trim(i, edge, t, snap=self.magnet.isChecked())
+        self.plan.trim(i, edge, t, snap=False)
         self._move_item(i)
 
     def drag_slide(self, i: int, dt: float) -> None:
@@ -1501,10 +1641,7 @@ class EditorWindow(QMainWindow):
             if mods & Qt.AltModifier:
                 self.plan.slide(self.sel, sign * self.plan.frame(self.plan.shots[self.sel].path))
             elif mods & Qt.ShiftModifier:
-                if self.magnet.isChecked():
-                    self.plan.nudge(self.sel, self.edge, beats=sign)
-                else:
-                    self.plan.nudge(self.sel, self.edge, seconds=sign)
+                self.plan.nudge(self.sel, self.edge, seconds=sign)
             else:
                 self.plan.nudge(self.sel, self.edge, frames=sign)
             self._changed()
@@ -1618,10 +1755,6 @@ class EditorWindow(QMainWindow):
         self.rebuild()
         self._scroll_to_sel()
 
-    def _magnet_toggled(self, on: bool) -> None:
-        if self.plan is not None:
-            self.plan.magnet = on
-
     def snap_all(self) -> None:
         n = self.plan.snap_all()
         self.log(f"🧲 {n} tomada(s) encaixada(s) na batida")
@@ -1650,17 +1783,6 @@ class EditorWindow(QMainWindow):
     def render(self) -> None:
         if self.plan is None or not self.plan.shots:
             return
-        off = sum(1 for i in range(len(self.plan.shots)) if not self.plan.on_beat(i))
-        if off and self.magnet.isChecked():
-            ans = QMessageBox.question(
-                self, "Ímã", f"{off} tomada(s) estão fora da batida (ajuste fino por quadro).\n"
-                             "Encaixar tudo na batida antes de renderizar?",
-                QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel)
-            if ans == QMessageBox.Cancel:
-                return
-            if ans == QMessageBox.Yes:
-                self.plan.snap_all()
-                self._changed()
         self.save()
         plan = self.plan.to_plan(self.gp.music, self.title_text)
         self.beat.start("Renderizando…")
@@ -1743,11 +1865,14 @@ class EditorWindow(QMainWindow):
         box.setWindowTitle("Edição manual")
         box.setText(f"Vídeo pronto:\n{out['video']}")
         watch = box.addButton("Assistir", QMessageBox.AcceptRole)
+        folder = box.addButton("Abrir pasta", QMessageBox.ActionRole)
         box.addButton("Fechar", QMessageBox.RejectRole)
         box.exec()
+        from PySide6.QtGui import QDesktopServices
         if box.clickedButton() is watch:
-            from PySide6.QtGui import QDesktopServices
             QDesktopServices.openUrl(QUrl.fromLocalFile(out["video"]))
+        elif box.clickedButton() is folder:
+            QDesktopServices.openUrl(QUrl.fromLocalFile(os.path.dirname(out["video"])))
 
     def _render_failed(self, msg: str) -> None:
         self.beat.finish("Cancelado." if "cancel" in msg else "Falhou.", ok=False)

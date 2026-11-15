@@ -89,20 +89,25 @@ STYLES: dict[str, Style] = {
     "automatico": Style(
         "automatico", "Automático (analisa as cenas e escolhe)", 3.5, 6.5, "crossfade", 0.6,
         bpm_range=(60, 140), default_duration=90, transition_share=0.5, adaptive=True,
-        description="Lê as paisagens, os movimentos, a luz e a quantidade de material e "
-                    "escolhe o estilo mais adequado; o ritmo se adapta a cada tomada."),
+        description="O programa escolhe por você: lê as paisagens, os movimentos, a luz e a "
+                    "quantidade de material e usa o estilo que mais combina. Bom para começar ou "
+                    "quando não souber qual escolher."),
     "cinematografico": Style(
         "cinematografico", "Cinematográfico", 3.5, 6.5, "crossfade", 0.6,
         bpm_range=(70, 120), music_tags=("cinemat", "instrument", "epic", "orquest", "piano"),
         default_duration=90, transition_share=0.5, adaptive=True,
-        description="Equilíbrio entre impacto e respiro; fusões alternadas com cortes na batida."),
+        description="O equilíbrio clássico: tomadas de 3,5 a 6,5 s, fusões suaves alternadas com cortes "
+                    "na batida, abre e fecha com as cenas mais fortes. Serve para quase qualquer "
+                    "viagem."),
     "contemplativo": Style(
         "contemplativo", "Natureza contemplativa", 5.0, 9.0, "crossfade", 1.0,
         bpm_range=(55, 100), music_tags=_CALM,
         default_duration=120, transition_share=1.0, adaptive=True,
         weight_overrides={"smoothness": 0.32, "movement": 0.10},
         prefer=("waterfall", "mountains", "lake", "river", "forest"), closer="pull_out",
-        description="Tomadas longas e suaves, fusões lentas, paisagens naturais."),
+        description="Calmo e lento: tomadas longas (5 a 9 s) e estáveis, fusões demoradas, música "
+                    "tranquila. Para natureza, cachoeiras e serras, quando a ideia é relaxar "
+                    "olhando a paisagem."),
     "por_do_sol": Style(
         "por_do_sol", "Pôr do sol / golden hour", 5.5, 9.0, "crossfade", 1.2,
         bpm_range=(55, 95), music_tags=_CALM + ("sunset", "lofi"),
@@ -110,29 +115,34 @@ STYLES: dict[str, Style] = {
         weight_overrides={"interest": 0.26, "smoothness": 0.28},
         prefer=("sunset", "coast", "lake", "mountains"), closer="sunset",
         pace_curve=(1.0, 1.0, 1.2),
-        description="Luz dourada: dissolves longos, termina no pôr do sol, ritmo que desacelera."),
+        description="Feito para a luz dourada: fusões longas, ritmo que vai desacelerando e final "
+                    "no pôr do sol. Use quando boa parte da filmagem foi no fim da tarde ou no "
+                    "amanhecer."),
     "minimalista": Style(
         "minimalista", "Minimalista", 7.0, 12.0, "crossfade", 1.5,
         bpm_range=(50, 90), music_tags=_CALM + ("minimal",),
         default_duration=60, transition_share=1.0, adaptive=True,
         weight_overrides={"quality": 0.35, "smoothness": 0.32, "movement": 0.05},
         movement_bias={"hover": 1.5, "pan": 1.3, "fast": 0.3},
-        description="Poucas tomadas muito longas e estáveis; cada imagem respira."),
+        description="Poucas tomadas, bem longas e muito estáveis; cada imagem fica na tela tempo "
+                    "suficiente para ser apreciada. Para quem tem poucas cenas, mas muito bonitas."),
     "cidade_historica": Style(
         "cidade_historica", "Cidade histórica / arquitetura", 3.5, 6.0, "crossfade", 0.6,
         bpm_range=(70, 115), music_tags=("instrument", "acoust", "acúst", "folk", "piano", "orquest"),
         default_duration=75, transition_share=0.4, adaptive=True, chronological=0.2,
         prefer=("historic", "city"), opener="rise_reveal", closer="pull_out",
         movement_bias={"orbit": 1.3, "rise_reveal": 1.2},
-        description="Órbitas em torno de igrejas e casarios, revelações do centro histórico."),
+        description="Valoriza arquitetura: órbitas em torno de igrejas e casarios e revelações do "
+                    "centro histórico, em ritmo médio. Para cidades como Pirenópolis ou Goiás "
+                    "Velho."),
     "diario_viagem": Style(
         "diario_viagem", "Diário de viagem (ordem cronológica)", 3.5, 7.0, "crossfade", 0.5,
         bpm_range=(85, 125), music_tags=("indie", "acoust", "folk", "alternat", "travel"),
         default_duration=90, transition_share=0.35, adaptive=True, chronological=1.0,
         max_per_clip=5,
-        description="Conta a viagem exatamente na ordem em que foi filmada, como um diário: "
-                    "tomadas mais longas e mais trechos de cada vídeo, sem nunca voltar a um "
-                    "vídeo que já passou."),
+        description="Conta a viagem exatamente na ordem em que foi filmada, como um diário: tomadas "
+                    "mais longas e mais trechos de cada vídeo, sem nunca voltar a um vídeo que já "
+                    "passou. Para guardar de lembrança."),
     "trailer_epico": Style(
         "trailer_epico", "Trailer épico", 2.0, 5.0, "crossfade", 0.4,
         bpm_range=(80, 140), music_tags=("epic", "épic", "trailer", "cinemat", "orquest", "score"),
@@ -140,13 +150,15 @@ STYLES: dict[str, Style] = {
         weight_overrides={"interest": 0.26, "movement": 0.20},
         opener="rise_reveal", closer="pull_out",
         pace_curve=(1.7, 1.3, 1.0, 0.75, 0.6, 0.55),
-        description="Começa lento e grandioso e acelera até cortes rápidos; fecha com um afastamento."),
+        description="Como trailer de cinema: começa lento e grandioso, vai acelerando até cortes "
+                    "rápidos e fecha com um afastamento. Para paisagens imponentes e música forte."),
     "viagem_dinamica": Style(
         "viagem_dinamica", "Viagem dinâmica", 1.8, 3.6, "cut", 0.0,
         bpm_range=(100, 150), music_tags=("indie", "alternat", "upbeat", "pop", "rock", "eletr", "electr"),
         default_duration=60, transition_share=0.0, lively=True,
         weight_overrides={"movement": 0.22, "smoothness": 0.20},
-        description="Cortes curtos na batida, muita variedade de lugares."),
+        description="Animado: cortes curtos (2 a 3,5 s) na batida, com muita variedade de lugares e "
+                    "movimentos. Para mostrar bastante coisa em pouco tempo, com música alegre."),
     "aventura_fpv": Style(
         "aventura_fpv", "Aventura / FPV radical", 1.2, 2.6, "cut", 0.0,
         bpm_range=(120, 175), music_tags=("rock", "eletr", "electr", "drum", "energ", "dubstep", "trap"),
@@ -154,13 +166,15 @@ STYLES: dict[str, Style] = {
         weight_overrides={"movement": 0.28, "smoothness": 0.15},
         movement_bias={"flyover": 1.4, "fast": 3.0, "hover": 0.5},
         opener="flyover",
-        description="Velocidade: sobrevoos rasantes e movimentos rápidos, cortes secos curtos."),
+        description="Velocidade: prioriza sobrevoos rasantes e movimentos rápidos, com cortes secos "
+                    "e curtos. Para voos esportivos, trilhas, estradas e cenas de ação."),
     "redes_sociais": Style(
         "redes_sociais", "Vídeo curto para redes sociais", 1.5, 3.0, "cut", 0.0,
         bpm_range=(95, 150), music_tags=("upbeat", "pop", "eletr", "electr", "indie"),
         default_duration=30, transition_share=0.0, lively=True,
         weight_overrides={"interest": 0.26, "movement": 0.20},
-        description="Gancho forte no primeiro segundo e cortes rápidos para Reels/Shorts."),
+        description="Para Reels, Shorts e TikTok: a cena mais impactante logo no primeiro segundo e "
+                    "cortes rápidos para prender a atenção. Ideal para o vídeo vertical curto."),
 }
 
 # Concept from SkyGrid's per-camera "source profiles", reimplemented: what a

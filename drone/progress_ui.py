@@ -6,7 +6,7 @@ track, encoding a 4K video with the music), so the bar can sit still for a
 while and look frozen. :class:`Heartbeat` drives a bar, a status line and a
 percentage label: a spinner and the elapsed time tick every half second
 whatever the work is doing, and after a long quiet stretch the line says so
-in plain words ("ainda trabalhando…") instead of leaving the user guessing.
+in plain words on a second line ("Ainda trabalhando, normal nas etapas longas") instead of leaving the user guessing.
 """
 from __future__ import annotations
 
@@ -80,7 +80,7 @@ class Heartbeat(QObject):
         self.k = (self.k + 1) % len(SPIN)
         line = f"{SPIN[self.k]}  {self.text}   ·   {clock(now - self.t0)}"
         quiet = now - self.last
-        if quiet >= QUIET:
-            line += f"   ·   ainda trabalhando (sem novidade há {clock(quiet)}; normal nas etapas longas)"
+        if quiet >= QUIET:                    # second line: this step's own time
+            line += f"\nAinda trabalhando, normal nas etapas longas  ·  nesta etapa há {clock(quiet)}"
         self.status.setText(line)
         self.pct.setText(f"{self.value:.0f}%")

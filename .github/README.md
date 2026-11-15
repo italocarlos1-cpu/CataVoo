@@ -69,7 +69,9 @@ escuro ou repetiu, escolhe as melhores tomadas, monta no ritmo da música e entr
    e extraia numa pasta.
 2. *(Recomendado, uma vez só)* Dê dois cliques em `Instalar_IA_Paisagens.bat` para instalar a IA
    de paisagens. Com placa NVIDIA, são uns 3 GB.
-3. Abra o `DroneHighlighter.exe`, escolha a pasta dos vídeos e clique em **GERAR VÍDEO**.
+3. Abra o `DroneHighlighter.exe`, escolha a pasta dos vídeos e clique em **ANALISAR MATERIAL**. O programa mostra
+   quanto material bom existe e sugere a duração; **GERAR PRÉVIA** toca o vídeo montado sem renderizar, e
+   **RENDERIZAR** grava o vídeo final quando você gostar.
 
 Não precisa instalar Python nem ffmpeg: vem tudo junto. O `LEIA-ME.txt` na pasta explica passo a
 passo, e o [manual completo](../docs/DroneHighlighter_Manual.pdf) descreve cada recurso com as
