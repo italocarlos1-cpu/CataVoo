@@ -8,6 +8,12 @@ short ``ORDEM.txt``. In CapCut: Importar → select all files → drag them to t
 timeline (they land in the right order because of the numbers) → drop the
 music underneath. Transitions, colour and text are then done in CapCut.
 
+Each file is exactly the shot's *time on screen* in the film (from its cut to
+the next cut). Laid end to end they add up to the film's length, so every cut
+falls on the same beat of the music as in the program; the dissolves become
+straight cuts (``ORDEM.txt`` says where to put them back). The program's
+dissolve overlaps two shots, which a back-to-back import can't reproduce.
+
 The cuts are re-encoded from the originals at their full resolution (GPU
 encoder when there is one), never from the preview proxies.
 """
@@ -50,7 +56,10 @@ def export(plan, *, out_dir: str, music=None, src_sizes: dict | None = None, tit
              f"  ·  {'vertical 9:16' if vertical else 'horizontal 16:9'}",
              f"Duração total: {plan.total:.2f} s  ·  {n} tomadas", "",
              "No CapCut: Importar → selecione todos os arquivos → arraste para a linha do tempo",
-             "(entram na ordem pelo número) → arraste 00_musica.m4a para baixo, na faixa de áudio.", ""]
+             "(entram na ordem pelo número) → arraste 00_musica.m4a para baixo, na faixa de áudio,",
+             "começando no zero. Cada arquivo tem exatamente o tempo que a tomada fica na tela, então",
+             "os cortes caem nas mesmas batidas da música. Onde houver \"fusão\", coloque uma transição",
+             "no CapCut (ela já vem como corte seco).", ""]
     cuts = plan.cut_times()
     for i, s in enumerate(plan.shots):
         if cancel_check is not None and cancel_check():
@@ -58,20 +67,22 @@ def export(plan, *, out_dir: str, music=None, src_sizes: dict | None = None, tit
         if progress_fn:
             progress_fn(i, n + 1)
         base = os.path.splitext(os.path.basename(s.path))[0]
+        on_screen = plan.advance(i) if i < n - 1 else s.length
+        end = s.start + on_screen
         dst = os.path.join(folder, f"{i + 1:02d}_{base}_{s.start:.1f}s.mp4")
-        log_fn(f"✂ CapCut {i + 1}/{n}: {base} {s.start:.2f}–{s.end:.2f} s")
+        log_fn(f"✂ CapCut {i + 1}/{n}: {base} {s.start:.2f}–{end:.2f} s")
         if vertical and src_sizes and s.path in src_sizes:
             w, h = src_sizes[s.path]
             out_h = min(1920, h)
             out_w = int(out_h * 9 / 16) // 2 * 2
-            cut_cropped(s.path, s.start, s.end, dst, src_size=(w, h), sal_x=s.crop_x,
+            cut_cropped(s.path, s.start, end, dst, src_size=(w, h), sal_x=s.crop_x,
                         out_size=(out_w, out_h), mode=mode)
         else:
-            cut_full(s.path, s.start, s.end, dst, mode=mode)
-        trans = (f"fusão {plan.trans_out(i):.1f} s para a próxima" if plan.trans_out(i)
+            cut_full(s.path, s.start, end, dst, mode=mode)
+        trans = (f"fusão de {plan.trans_out(i):.1f} s para a próxima" if plan.trans_out(i)
                  else "corte seco")
-        lines.append(f"{i + 1:02d}  no vídeo em {cuts[i]:7.2f} s  ·  {s.length:5.2f} s  ·  "
-                     f"{os.path.basename(s.path)} {s.start:.2f}–{s.end:.2f} s  ·  {trans}")
+        lines.append(f"{i + 1:02d}  entra em {cuts[i]:7.2f} s  ·  {on_screen:5.2f} s na tela  ·  "
+                     f"{os.path.basename(s.path)} {s.start:.2f}–{end:.2f} s  ·  {trans}")
     if music is not None:
         try:
             music_selector.prepare(music, plan.total, os.path.join(folder, "00_musica.m4a"))

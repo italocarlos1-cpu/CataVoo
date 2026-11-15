@@ -357,8 +357,11 @@ def test_capcut_folder_has_every_shot_cut_in_order(session, tmp_path):
                                   title="T", mode="cpu", log_fn=lambda *_: None)
     clips = sorted(f for f in os.listdir(folder) if f.endswith(".mp4"))
     assert len(clips) == len(ep.shots) and clips[0].startswith("01_")
-    for f, s in zip(clips, ep.shots):
-        assert abs(_duration(os.path.join(folder, f)) - s.length) < 0.12
+    lengths = [_duration(os.path.join(folder, f)) for f in clips]
+    for i, d in enumerate(lengths):             # time on screen: back to back = the film
+        want = ep.advance(i) if i < len(ep.shots) - 1 else ep.shots[i].length
+        assert abs(d - want) < 0.12
+    assert abs(sum(lengths) - ep.total) < 0.05 * len(lengths) + 0.1
     assert os.path.exists(os.path.join(folder, "ORDEM.txt"))
     if gp.music is not None:
         assert abs(_duration(os.path.join(folder, "00_musica.m4a")) - ep.total) < 0.3
