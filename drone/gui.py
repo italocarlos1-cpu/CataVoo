@@ -32,8 +32,7 @@ MUSIC_CHOICES = [("Automática (pelo estilo)", ""), ("Instrumental cinematográf
                  ("Instrumental", "instrumental"), ("Tranquila / natureza", "tranquila"),
                  ("Eletrônica ambiente", "eletronica"), ("Alternativa / indie", "indie"),
                  ("Animada", "animada")]
-FORMATS = [("Horizontal 16:9 + Vertical 9:16", (True, True)),
-           ("Somente horizontal 16:9", (True, False)), ("Somente vertical 9:16", (False, True))]
+FORMATS = [("Horizontal 16:9", (True, False)), ("Vertical 9:16", (False, True))]
 RESOLUTIONS = [("4K (3840×2160)", (3840, 2160)), ("Full HD (1920×1080)", (1920, 1080))]
 
 
@@ -152,6 +151,12 @@ class MainWindow(QMainWindow):
             self.resolution.addItem(label, v)
         form.addRow("Formato", self.formats)
         form.addRow("Resolução", self.resolution)
+        self.formats.setToolTip("O formato com que a prévia abre. Dentro da prévia dá para trocar a qualquer momento.")
+
+        def _resolution_row(_i=0, _form=form):   # 4K/Full HD is for the horizontal video
+            _form.setRowVisible(self.resolution, self.formats.currentData()[0])
+        self.formats.currentIndexChanged.connect(_resolution_row)
+        _resolution_row()
         self.group_by = QComboBox()
         for key, label in MODES.items():
             self.group_by.addItem(label, key)
@@ -176,6 +181,8 @@ class MainWindow(QMainWindow):
         self.use_clip = QCheckBox("Reconhecer paisagens com IA local (CLIP)")
         self.use_clip.setChecked(self.settings.value("use_clip", "true") == "true")
         form.addRow("", self.use_clip)
+        lay.addSpacing(6)
+        lay.addWidget(self._build_ai_box())      # with the other settings, on the left
         lay.addStretch()
 
         # ---- right: run, progress, log, results
@@ -257,8 +264,6 @@ class MainWindow(QMainWindow):
         self.result_card.setVisible(False)
         right.addWidget(self.result_card)
 
-        right.addSpacing(4)
-        right.addWidget(self._build_ai_box())
         self.editors = []
         self.session = None
         self._session_key = None

@@ -50,6 +50,9 @@ escuro ou repetiu, escolhe as melhores tomadas, monta no ritmo da música e entr
 - O monitor toca o vídeo final com a música **sem renderizar nada**.
 - Ajuste cada tomada **quadro a quadro**, arraste para reordenar e troque de estilo na hora.
 - Dê dois cliques numa tomada para tocá-la em loop enquanto você a ajusta.
+- **Desfazer e refazer** (Ctrl+Z / Ctrl+Y) qualquer mudança, até uma tomada apagada sem querer.
+- **Escolha a música** na lista das faixas da sua pasta: ela toca do começo ao fim, com fade no final.
+- No **Vertical 9:16**, arraste o quadro de recorte para os lados em cada tomada.
 - **Enviar para o CapCut**: as tomadas saem cortadas no quadro exato e numeradas na ordem, junto
   com a música, prontas para o acabamento.
 

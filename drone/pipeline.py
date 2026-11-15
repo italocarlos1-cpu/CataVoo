@@ -668,6 +668,16 @@ class Session:
         self._preps.clear()                  # candidates and styles are rebuilt with the new wishes
         return adj
 
+    def set_music(self, path: str = "") -> None:
+        """One specific track for the films ('' = chosen automatically per style).
+        The cuts are planned again on that track's beats."""
+        self.job.music_file = path or ""
+        self._preps.clear()
+
+    def music_tracks(self) -> list:
+        """The tracks of the music library, for the editor's list."""
+        return music_selector.scan_library(self.job.music_dir)
+
     def raw_seconds(self, group_key: str = "") -> float:
         """Length of the raw footage (of one group, or of everything)."""
         idx = self.group(group_key).indices if group_key else range(len(self.analyses))

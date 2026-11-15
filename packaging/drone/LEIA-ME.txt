@@ -67,14 +67,16 @@ nem ffmpeg no computador.
  PASSO 5 - Usar
 --------------------------------------------------------------
  1. "Selecionar pasta": escolha a pasta com os vídeos do drone.
- 2. Escolha o estilo (ou deixe no "Automático").
+ 2. Escolha o formato: Horizontal 16:9 ou Vertical 9:16.
  3. Clique em ANALISAR MATERIAL e espere. Os vídeos são analisados
     uma vez só; depois disso tudo é rápido.
  4. O programa mostra quanto material bom existe e sugere uma
     duração. Aceite a sugestão ou escolha outra.
  5. Clique em GERAR PRÉVIA: o vídeo montado toca na hora, sem
-    renderizar. Ali você muda o estilo e a duração, usa "Refazer"
-    e "Outra versão" e ajusta as tomadas.
+    renderizar. Ali você muda o estilo, a duração e a música, usa
+    "Refazer" e "Outra versão" e ajusta as tomadas. Errou? Use
+    "Desfazer" (Ctrl+Z) e "Refazer edição" (Ctrl+Y). No 9:16,
+    arraste o quadro branco para escolher o recorte de cada tomada.
  6. Quando gostar, clique em RENDERIZAR para gravar o vídeo final.
 
  Os vídeos originais nunca são alterados nem apagados.

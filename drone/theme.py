@@ -15,7 +15,7 @@ from __future__ import annotations
 import os
 import tempfile
 
-from PySide6.QtCore import QPointF, Qt
+from PySide6.QtCore import QObject, QPointF, Qt
 from PySide6.QtGui import QColor, QFont, QPainter, QPalette, QPixmap, QPolygonF
 
 BG = "#0a0a0a"          # window
@@ -148,6 +148,8 @@ def apply(app) -> None:
     f.setPointSizeF(10)
     app.setFont(f)
     app.setStyleSheet(QSS.replace("@ARROW@", _arrow_png()).replace("@DOT@", _dot_png()))
+    app._dh_no_wheel = _NoWheelOnChoices(app)
+    app.installEventFilter(app._dh_no_wheel)
 
 
 def _dot_png() -> str:
@@ -184,6 +186,19 @@ def _arrow_png() -> str:
     except Exception:  # noqa: BLE001 — cosmetic only
         pass
     return path.replace("\\", "/")
+
+
+class _NoWheelOnChoices(QObject):
+    """The mouse wheel over a closed list (or a number box) changed its value
+    without a click — easy to do by accident while scrolling the window.
+    Those values now change only by clicking; the wheel is ignored there."""
+
+    def eventFilter(self, obj, e):
+        from PySide6.QtCore import QEvent
+        from PySide6.QtWidgets import QAbstractSpinBox, QComboBox
+        if e.type() == QEvent.Wheel and isinstance(obj, (QComboBox, QAbstractSpinBox)):
+            return True
+        return False
 
 
 def role(widget, name: str):

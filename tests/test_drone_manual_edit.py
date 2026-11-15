@@ -552,3 +552,151 @@ def test_focus_on_a_landscape_and_on_free_text(session, tmp_path, monkeypatch):
         session.set_focus("piscina")
     session.set_focus("")
     assert session.focus is None
+
+
+def test_edits_keep_the_scroll_and_render_matches_the_preview(session, tmp_path):
+    """After trimming, the views stay where they were; the rendered cut list is
+    exactly the edited sequence (order, in and out)."""
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    os.environ["DRONEHIGHLIGHTER_NO_VIDEO_PREVIEW"] = "1"
+    qtw = pytest.importorskip("PySide6.QtWidgets")
+    if not hasattr(qtw, "QApplication") or "Mock" in type(qtw.QApplication).__name__:
+        pytest.skip("real PySide6 required")
+    app = qtw.QApplication.instance() or qtw.QApplication([])
+    from drone.editor_window import EditorWindow
+    from modules.media.edl import load_edl
+    w = EditorWindow(session, style_key="cinematografico", tag="16x9",
+                     store=EditStore(str(tmp_path / "s.json")), title="T", main_style="cinematografico")
+    w.resize(1300, 700)
+    w.show()
+    app.processEvents()
+    w.zoom.setValue(80)
+    app.processEvents()
+    vb = w.view.verticalScrollBar()
+    vb.setValue(vb.maximum())
+    app.processEvents()
+    before = vb.value()
+    w.drag_edge(0, "end", w.plan.shots[0].end - 0.3)
+    w.commit_drag()
+    app.processEvents()
+    assert vb.value() == before
+    w.strip.moved.emit(0, len(w.plan.shots) - 1)
+    app.processEvents()
+    app.processEvents()
+    want = [(s.path, round(s.start, 2), round(s.end, 2)) for s in w.plan.shots]
+    out = session.render(w.gp, w.plan.to_plan(w.gp.music, "T"), "16x9")
+    got = [(c.source, round(c.start, 2), round(c.end, 2)) for c in load_edl(out["edl"]).cuts]
+    assert got == want
+    w.close()
+
+
+def test_vertical_frame_is_moved_per_shot(session, tmp_path):
+    """9:16: the monitor shows the crop frame of the shot on screen; dragging it
+    sideways changes only that shot, is saved, and reaches the render."""
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    os.environ["DRONEHIGHLIGHTER_NO_VIDEO_PREVIEW"] = "1"
+    qtw = pytest.importorskip("PySide6.QtWidgets")
+    if not hasattr(qtw, "QApplication") or "Mock" in type(qtw.QApplication).__name__:
+        pytest.skip("real PySide6 required")
+    from PySide6.QtCore import QPoint, Qt
+    from PySide6.QtTest import QTest
+    app = qtw.QApplication.instance() or qtw.QApplication([])
+    from drone.editor_window import EditorWindow
+    store = EditStore(str(tmp_path / "v.json"))
+    w = EditorWindow(session, style_key="cinematografico", tag="9x16", store=store, title="T",
+                     main_style="cinematografico")
+    w.resize(1400, 900)
+    w.show()
+    app.processEvents()
+    mon = w.preview.stack
+    assert mon.frame.isVisible() and mon.crop == pytest.approx(w.plan.shots[0].crop_x)
+    others = [s.crop_x for s in w.plan.shots[1:]]
+    c = mon.crop_rect()
+    start = c.center().toPoint()
+    QTest.mousePress(mon.viewport(), Qt.LeftButton, Qt.NoModifier, start)
+    for dx in range(-10, -90, -10):
+        QTest.mouseMove(mon.viewport(), start + QPoint(dx, 0))
+    QTest.mouseRelease(mon.viewport(), Qt.LeftButton, Qt.NoModifier, start + QPoint(-80, 0))
+    app.processEvents()
+    moved = w.plan.shots[0].crop_x
+    assert moved < w.plan.candidates[0].get("crop_x", 1.0) + 1      # moved to the left
+    assert w.plan.edited and [s.crop_x for s in w.plan.shots[1:]] == others
+    assert store.get("tudo", "cinematografico", "9x16")["shots"][0]["crop_x"] == pytest.approx(moved)
+    assert w.plan.to_plan(w.gp.music, "T").shots[0].crop_x == pytest.approx(moved)
+    # another shot on screen → its own frame
+    w.select(1)
+    w._update_crop()
+    w.preview.seek(w.plan.cut_times()[1] + 0.05)
+    app.processEvents()
+    assert mon.crop == pytest.approx(others[0])
+    # in 16:9 there is no frame
+    w.tag_box.setCurrentIndex(w.tag_box.findData("16x9"))
+    app.processEvents()
+    assert not mon.frame.isVisible()
+    w.close()
+
+
+def test_undo_and_redo_in_the_preview(session, tmp_path):
+    """Delete the wrong shot → Desfazer brings it back → Refazer edição deletes
+    it again; remakes (Outra versão) can be undone too."""
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    os.environ["DRONEHIGHLIGHTER_NO_VIDEO_PREVIEW"] = "1"
+    qtw = pytest.importorskip("PySide6.QtWidgets")
+    if not hasattr(qtw, "QApplication") or "Mock" in type(qtw.QApplication).__name__:
+        pytest.skip("real PySide6 required")
+    from PySide6.QtCore import Qt
+    from PySide6.QtTest import QTest
+    app = qtw.QApplication.instance() or qtw.QApplication([])
+    from drone.editor_window import EditorWindow
+    w = EditorWindow(session, style_key="cinematografico", tag="16x9",
+                     store=EditStore(str(tmp_path / "u.json")), title="T", main_style="cinematografico")
+    w.show()
+    app.processEvents()
+    assert not w.undo_btn.isEnabled() and not w.redo_edit_btn.isEnabled()
+    first = [s.uid for s in w.plan.shots]
+    w.remove(1)
+    app.processEvents()
+    after_delete = [s.uid for s in w.plan.shots]
+    assert len(after_delete) == len(first) - 1 and w.undo_btn.isEnabled()
+    QTest.keyClick(w.view, Qt.Key_Z, Qt.ControlModifier)            # Ctrl+Z
+    assert [s.uid for s in w.plan.shots] == first and w.redo_edit_btn.isEnabled()
+    w.redo_edit()
+    assert [s.uid for s in w.plan.shots] == after_delete
+    w.undo()
+    w.redo(True, wait=True)                                          # Outra versão
+    other = [s.uid for s in w.plan.shots]
+    assert other != first
+    w.undo()
+    assert [s.uid for s in w.plan.shots] == first
+    assert not any("♪" in w.strip.item(i).text() for i in range(w.strip.count()))
+    assert not hasattr(w, "snap_btn")
+    w.close()
+    session.readjust("", 0, [])
+
+
+def test_choose_a_specific_music_track(session, tmp_path):
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    os.environ["DRONEHIGHLIGHTER_NO_VIDEO_PREVIEW"] = "1"
+    qtw = pytest.importorskip("PySide6.QtWidgets")
+    if not hasattr(qtw, "QApplication") or "Mock" in type(qtw.QApplication).__name__:
+        pytest.skip("real PySide6 required")
+    app = qtw.QApplication.instance() or qtw.QApplication([])
+    from drone.editor_window import EditorWindow
+    from tests.drone_fixtures import make_music
+    lib = session.job.music_dir
+    other = os.path.join(lib, "outra_faixa_lenta.wav")
+    make_music(other, 40, 70)
+    w = EditorWindow(session, style_key="cinematografico", tag="16x9",
+                     store=EditStore(str(tmp_path / "mu.json")), title="T", main_style="cinematografico")
+    w.show()
+    app.processEvents()
+    tracks = [w.music_box.itemData(i) for i in range(1, w.music_box.count())]
+    assert other in tracks
+    w.music_box.setCurrentIndex(w.music_box.findData(other))
+    w.set_music(other)
+    assert w.gp.music.path == other and abs(w.gp.music.bpm - 70) < 3
+    assert w._music()[0] == other                                    # the preview plays it
+    w.set_music("")
+    assert w.gp.music is not None and session.job.music_file == ""
+    w.close()
+    os.remove(other)

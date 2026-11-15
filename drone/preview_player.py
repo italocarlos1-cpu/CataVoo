@@ -17,9 +17,169 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 
-from PySide6.QtCore import QElapsedTimer, QObject, Qt, QTimer, QUrl, Signal
-from PySide6.QtGui import QPixmap
-from PySide6.QtWidgets import QLabel, QSizePolicy, QStackedWidget
+from PySide6.QtCore import QElapsedTimer, QObject, QRectF, QSizeF, Qt, QTimer, QUrl, Signal
+from PySide6.QtGui import QBrush, QColor, QPen, QPixmap
+from PySide6.QtWidgets import (QFrame, QGraphicsPixmapItem, QGraphicsRectItem, QGraphicsScene,
+                               QGraphicsSimpleTextItem, QGraphicsView, QSizePolicy)
+
+VERTICAL = 9 / 16
+
+
+class _Monitor(QGraphicsView):
+    """One scene for everything the monitor shows: the paused still, the two
+    video decks and, in 9:16, the crop frame — so the frame can sit on top of
+    the playing video and be dragged sideways."""
+    crop_moved = Signal(float)          # dragging: new centre (0..1 of the frame width)
+    crop_done = Signal(float)           # released
+
+    def __init__(self):
+        super().__init__()
+        self.setScene(QGraphicsScene(self))
+        self.setBackgroundBrush(QBrush(QColor(0, 0, 0)))
+        self.setFrameShape(QFrame.NoFrame)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        self.setMinimumSize(320, 180)
+        self.setStyleSheet("background:#000; border:0; border-radius:8px")
+        self.aspect = 16 / 9            # of the source frame
+        self.crop = None                # centre 0..1, or None = no 9:16 frame
+        self.pix = QGraphicsPixmapItem()
+        self.pix.setTransformationMode(Qt.SmoothTransformation)
+        self.scene().addItem(self.pix)
+        self.text = QGraphicsSimpleTextItem()
+        self.text.setBrush(QBrush(QColor(90, 90, 90)))
+        self.scene().addItem(self.text)
+        self.videos: list = []
+        shade = QColor(0, 0, 0, 165)
+        self.masks = [QGraphicsRectItem(), QGraphicsRectItem()]
+        for m in self.masks:
+            m.setBrush(QBrush(shade))
+            m.setPen(QPen(Qt.NoPen))
+            m.setZValue(10)
+            self.scene().addItem(m)
+        self.frame = QGraphicsRectItem()
+        self.frame.setPen(QPen(QColor(255, 255, 255), 2))
+        self.frame.setBrush(Qt.NoBrush)
+        self.frame.setZValue(11)
+        self.scene().addItem(self.frame)
+        self._still = None
+        self._drag = None
+
+    def add_video(self, item) -> None:
+        item.setZValue(1)
+        item.setVisible(False)
+        self.scene().addItem(item)
+        self.videos.append(item)
+        item.nativeSizeChanged.connect(self._native)
+
+    def _native(self, size) -> None:
+        if size.width() > 0 and size.height() > 0:
+            self.aspect = size.width() / size.height()
+            self.relayout()
+
+    def area(self) -> QRectF:
+        """Where the frame is drawn: the source aspect, fitted and centred."""
+        w, h = max(1, self.viewport().width()), max(1, self.viewport().height())
+        if w / h > self.aspect:
+            fw, fh = h * self.aspect, h
+        else:
+            fw, fh = w, w / self.aspect
+        return QRectF((w - fw) / 2, (h - fh) / 2, fw, fh)
+
+    def crop_rect(self) -> QRectF | None:
+        if self.crop is None:
+            return None
+        r = self.area()
+        if self.aspect <= VERTICAL:
+            return QRectF(r)
+        cw = r.height() * VERTICAL
+        x = min(max(self.crop * r.width() - cw / 2, 0.0), r.width() - cw)
+        return QRectF(r.left() + x, r.top(), cw, r.height())
+
+    def relayout(self) -> None:
+        w, h = max(1, self.viewport().width()), max(1, self.viewport().height())
+        self.scene().setSceneRect(0, 0, w, h)
+        r = self.area()
+        for v in self.videos:
+            v.setPos(r.topLeft())
+            v.setSize(QSizeF(r.width(), r.height()))
+        if self._still is not None:
+            pm = self._still.scaled(int(r.width()), int(r.height()), Qt.KeepAspectRatio,
+                                    Qt.SmoothTransformation)
+            self.pix.setPixmap(pm)
+            self.pix.setPos(r.left() + (r.width() - pm.width()) / 2, r.top() + (r.height() - pm.height()) / 2)
+        tb = self.text.boundingRect()
+        self.text.setPos((w - tb.width()) / 2, (h - tb.height()) / 2)
+        c = self.crop_rect()
+        on = c is not None
+        for m in self.masks:
+            m.setVisible(on)
+        self.frame.setVisible(on)
+        if on:
+            self.masks[0].setRect(QRectF(r.left(), r.top(), c.left() - r.left(), r.height()))
+            self.masks[1].setRect(QRectF(c.right(), r.top(), r.right() - c.right(), r.height()))
+            self.frame.setRect(c.adjusted(1, 1, -1, -1))
+        self.setCursor(Qt.SizeHorCursor if on else Qt.ArrowCursor)
+
+    def set_crop(self, centre) -> None:
+        self.crop = None if centre is None else float(centre)
+        self.relayout()
+
+    def show_still(self, pm: QPixmap | None, text: str = "") -> None:
+        if pm is not None and not pm.isNull():
+            self._still = pm
+            self.aspect = pm.width() / max(1, pm.height())
+            self.text.setText("")
+        else:
+            self._still = None
+            self.pix.setPixmap(QPixmap())
+            self.text.setText(text)
+        self.pix.setVisible(True)
+        for v in self.videos:
+            v.setVisible(False)
+        self.relayout()
+
+    def show_video(self, item) -> None:
+        for v in self.videos:
+            v.setVisible(v is item)
+        self.pix.setVisible(False)
+        self.text.setText("")
+
+    def resizeEvent(self, e):
+        super().resizeEvent(e)
+        self.relayout()
+
+    # ---- dragging the 9:16 frame sideways
+    def _centre_at(self, x: float) -> float:
+        r = self.area()
+        return min(1.0, max(0.0, (x - r.left()) / max(1.0, r.width())))
+
+    def mousePressEvent(self, e):
+        c = self.crop_rect()
+        if c is not None and e.button() == Qt.LeftButton:
+            x = e.position().x()
+            # grab the frame where it was clicked (no jump), or move it to the click
+            self._drag = (x - c.center().x()) if c.left() <= x <= c.right() else 0.0
+            self.mouseMoveEvent(e)
+            return
+        super().mousePressEvent(e)
+
+    def mouseMoveEvent(self, e):
+        if self._drag is not None and self.crop is not None:
+            self.crop = self._centre_at(e.position().x() - self._drag)
+            self.relayout()
+            self.crop_moved.emit(self.crop)
+            return
+        super().mouseMoveEvent(e)
+
+    def mouseReleaseEvent(self, e):
+        if self._drag is not None:
+            self._drag = None
+            if self.crop is not None:
+                self.crop_done.emit(self.crop)
+            return
+        super().mouseReleaseEvent(e)
 
 
 @dataclass
@@ -43,7 +203,7 @@ class _Deck:
 
     def __init__(self, owner, widget):
         from PySide6.QtMultimedia import QMediaPlayer
-        self.widget = widget
+        self.widget = widget                 # a QGraphicsVideoItem in the monitor
         self.player = QMediaPlayer(owner)
         self.player.setVideoOutput(widget)
         self.path = ""
@@ -102,17 +262,7 @@ class PreviewPlayer(QObject):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.stack = QStackedWidget()
-        self.stack.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.stack.setStyleSheet("background:#000; border-radius:8px")
-        self.still = QLabel()
-        self.still.setAlignment(Qt.AlignCenter)
-        self.still.setStyleSheet("background:#000; color:#5a5a5a")
-        self.still.setMinimumSize(320, 180)
-        self.still.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Ignored)
-        self._still_pm = None
-        self.stack.addWidget(self.still)
-        self.stack.installEventFilter(self)
+        self.stack = _Monitor()              # the monitor (name kept from the widget-stack days)
         self.pieces: list[Piece] = []
         self.music_path = ""
         self.music_offset = 0.0
@@ -134,25 +284,17 @@ class PreviewPlayer(QObject):
         # raw clip → the file actually played (a light proxy once it exists)
         self.resolve = lambda path: path
         if os.environ.get("DRONEHIGHLIGHTER_NO_VIDEO_PREVIEW"):
-            self.still.setText("Prévia em vídeo desligada")
+            self.stack.show_still(None, "Prévia em vídeo desligada")
             return
         try:
-            from PySide6.QtMultimediaWidgets import QVideoWidget
+            from PySide6.QtMultimediaWidgets import QGraphicsVideoItem
             for _ in range(2):
-                w = QVideoWidget()
-                w.setStyleSheet("background:#000")
-                self.stack.addWidget(w)
-                self._decks.append(_Deck(self, w))
+                item = QGraphicsVideoItem()
+                self.stack.add_video(item)
+                self._decks.append(_Deck(self, item))
             self.available = True
         except Exception as exc:  # noqa: BLE001 — no multimedia: still frames only
-            self.still.setText(f"Prévia em vídeo indisponível ({exc})")
-
-    def eventFilter(self, obj, e):
-        from PySide6.QtCore import QEvent
-        if obj is self.stack and e.type() == QEvent.Resize and self._still_pm is not None:
-            self.still.setPixmap(self._still_pm.scaled(self.stack.size(), Qt.KeepAspectRatio,
-                                                       Qt.SmoothTransformation))
-        return False
+            self.stack.show_still(None, f"Prévia em vídeo indisponível ({exc})")
 
     # ------------------------------------------------------------ setup
     @property
@@ -177,13 +319,7 @@ class PreviewPlayer(QObject):
     def show_still(self, pm: QPixmap | None, text: str = "") -> None:
         if self.playing:
             return
-        if pm is not None and not pm.isNull():
-            self._still_pm = pm
-            self.still.setPixmap(pm.scaled(self.stack.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation))
-        else:
-            self.still.setPixmap(QPixmap())
-            self.still.setText(text)
-        self.stack.setCurrentWidget(self.still)
+        self.stack.show_still(pm, text)
 
     # ------------------------------------------------------------ transport
     def piece_at(self, t: float) -> int:
@@ -277,7 +413,7 @@ class PreviewPlayer(QObject):
                 deck.play()
         else:
             deck.load(src, self._src_time(i, self.t), i, play)
-        self.stack.setCurrentWidget(deck.widget)
+        self.stack.show_video(deck.widget)
         other.pause()
         self.cur = i
         self.piece_changed.emit(i)

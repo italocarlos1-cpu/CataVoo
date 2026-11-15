@@ -43,7 +43,7 @@ from PySide6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox, QComb
                                QGraphicsItem, QGraphicsRectItem, QGraphicsScene,
                                QGraphicsSimpleTextItem, QGraphicsView, QHBoxLayout, QLabel, QLineEdit,
                                QListView, QListWidget, QListWidgetItem, QMainWindow, QMenu,
-                               QMessageBox, QPlainTextEdit, QProgressBar, QPushButton, QSlider,
+                               QMessageBox, QPlainTextEdit, QProgressBar, QPushButton, QSizePolicy, QSlider,
                                QSplitter, QVBoxLayout, QWidget)
 
 from drone.config import STYLES
@@ -302,10 +302,16 @@ class _RenderWorker(QObject):
         old = self.session.log_fn
         self.session.set_log(self.log.emit)
         try:
-            out = self.session.render(
-                self.gp, self.plan, self.tag,
-                progress_fn=lambda i, n, *a: self.progress.emit(100.0 * i / max(1, n), "Renderizando"),
-                cancel_check=lambda: self.cancelled)
+            def prog(i, n, stage="", *a):
+                # two passes inside: cut every shot, then join them with the music.
+                # One bar: cutting is the first half, joining the second.
+                frac = i / max(1, n)
+                if str(stage).lower().startswith(("cut", "vertical")):
+                    self.progress.emit(50.0 * frac, f"Cortando as tomadas ({i + 1}/{max(1, n - 1)})")
+                else:
+                    self.progress.emit(50.0 + 50.0 * frac, "Juntando as tomadas com a música e as transições")
+            out = self.session.render(self.gp, self.plan, self.tag, progress_fn=prog,
+                                      cancel_check=lambda: self.cancelled)
             self.finished.emit(out)
         except Exception as exc:  # noqa: BLE001 — shown to the user
             self.log.emit(traceback.format_exc())
@@ -552,6 +558,7 @@ class EditorWindow(QMainWindow):
         session.set_log(self.log)
 
         self.targets: dict = {}              # (group, format) → film length chosen here, seconds
+        self._hist: dict = {}                # (group, style, format) → undo/redo snapshots
         self._focus_text = ""                # the Foco in force (set after a Refazer)
         self._redo_thread = None
         self._redo_worker = None
@@ -607,6 +614,24 @@ class EditorWindow(QMainWindow):
                                 "Vale para todos os estilos deste formato.")
         self.dur_box.activated.connect(self._duration_picked)
         top.addWidget(self.dur_box)
+        top.addWidget(role(QLabel("Música"), "muted"))
+        self.music_box = QComboBox()
+        self.music_box.setMinimumWidth(190)
+        self.music_box.setMaximumWidth(320)
+        self.music_box.setToolTip("Escolha a música do vídeo entre as faixas da sua biblioteca.\n"
+                                  "Ela toca do começo ao fim do vídeo e é cortada no final com o volume abaixando.\n"
+                                  "Automática: o programa escolhe pelo estilo.")
+        self.music_box.addItem("Automática (pelo estilo)", "")
+        for path in session.music_tracks():
+            self.music_box.addItem(os.path.splitext(os.path.basename(path))[0], path)
+            self.music_box.setItemData(self.music_box.count() - 1, path, Qt.ToolTipRole)
+        if self.music_box.count() == 1:
+            self.music_box.setItemText(0, "sem biblioteca de música")
+            self.music_box.setEnabled(False)
+        current = getattr(session.job, "music_file", "") or ""
+        self.music_box.setCurrentIndex(max(0, self.music_box.findData(current)))
+        self.music_box.activated.connect(lambda _i: self.set_music(self.music_box.currentData() or ""))
+        top.addWidget(self.music_box)
         self.material_lbl = role(QLabel(""), "muted")
         self.material_lbl.setToolTip("Bruto: tudo o que foi filmado. Bom: tomadas distintas no ritmo normal do estilo.\n"
                                      "Esticando: o máximo sem repetir cenas.")
@@ -687,6 +712,9 @@ class EditorWindow(QMainWindow):
         self.preview.piece_changed.connect(self._play_piece)
         self.preview.state_changed.connect(self._play_state)
         self.preview.still_needed.connect(self._want_still)
+        self.preview.stack.crop_moved.connect(self._crop_moved)
+        self.preview.stack.crop_done.connect(self._crop_done)
+        self._crop_i = None
         upper.addWidget(mon)
 
         side = role(QFrame(), "card")
@@ -697,13 +725,14 @@ class EditorWindow(QMainWindow):
         self.info = QLabel("Selecione uma tomada colorida.")
         self.info.setWordWrap(True)
         self.info.setTextFormat(Qt.RichText)
+        self.info.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Minimum)   # never cut the text
         sl.addWidget(self.info)
         frames = QHBoxLayout()
         self.in_img, self.out_img = QLabel(), QLabel()
         for lbl, cap in ((self.in_img, "Entrada"), (self.out_img, "Saída")):
             box = QVBoxLayout()
             t = role(QLabel(cap), "muted")
-            lbl.setFixedSize(200, 113)
+            lbl.setFixedSize(148, 83)
             lbl.setAlignment(Qt.AlignCenter)
             lbl.setStyleSheet("background:#000; border-radius:6px")
             box.addWidget(t)
@@ -711,6 +740,11 @@ class EditorWindow(QMainWindow):
             frames.addLayout(box)
         frames.addStretch()
         sl.addLayout(frames)
+        self.crop_reset_btn = role(QPushButton("Enquadramento automático"), "ghost")
+        self.crop_reset_btn.setToolTip("Volta o recorte 9:16 desta tomada para onde o programa tinha posto")
+        self.crop_reset_btn.clicked.connect(self.reset_crop)
+        self.crop_reset_btn.setVisible(False)
+        sl.addWidget(self.crop_reset_btn, 0, Qt.AlignLeft)
         sl.addWidget(role(QLabel("PAISAGENS"), "section"))
         self.legend = QLabel()
         self.legend.setWordWrap(True)
@@ -721,8 +755,10 @@ class EditorWindow(QMainWindow):
         self.logbox.setReadOnly(True)
         sl.addWidget(self.logbox, 1)
         upper.addWidget(side)
-        upper.setStretchFactor(0, 3)
-        upper.setStretchFactor(1, 2)
+        side.setMinimumWidth(300)
+        side.setMaximumWidth(380)               # the monitor gets the rest
+        upper.setStretchFactor(0, 5)
+        upper.setStretchFactor(1, 1)
         split.addWidget(upper)
 
         # ---- sequence strip
@@ -734,6 +770,7 @@ class EditorWindow(QMainWindow):
         self.strip = SequenceStrip()
         self.strip.moved.connect(self._strip_moved)
         self.strip.currentRowChanged.connect(self._strip_selected)
+        self.strip.itemDoubleClicked.connect(lambda it: self.play_shot(self.strip.row(it)))
         self.strip.installEventFilter(self)
         ql.addWidget(self.strip)
         split.addWidget(seq)
@@ -774,15 +811,21 @@ class EditorWindow(QMainWindow):
 
         # ---- bottom buttons
         bot = QHBoxLayout()
+        self.undo_btn = QPushButton("↶ Desfazer")
+        self.undo_btn.setToolTip("Desfaz a última mudança: apagar, mover, aparar, trocar transição, enquadrar,\n"
+                                 "Refazer, Outra versão, Duração… (Ctrl+Z)")
+        self.undo_btn.clicked.connect(self.undo)
+        self.redo_edit_btn = QPushButton("↷ Refazer edição")
+        self.redo_edit_btn.setToolTip("Volta o que foi desfeito (Ctrl+Y ou Ctrl+Shift+Z)")
+        self.redo_edit_btn.clicked.connect(self.redo_edit)
         self.restore_btn = QPushButton("Restaurar automático")
         self.restore_btn.setToolTip("Descarta as edições deste estilo/formato e volta ao corte automático")
-        self.snap_btn = QPushButton("Encaixar tudo na batida")
         self.save_btn = QPushButton("Salvar edição")
         self.capcut_btn = QPushButton("Enviar para o CapCut")
         self.capcut_btn.setToolTip("Corta cada tomada no quadro exato, numera na ordem do vídeo, junta a música\n"
                                    "e abre a pasta (e o CapCut, se estiver instalado) para o acabamento.")
         self.render_btn = role(QPushButton("RENDERIZAR"), "primary")
-        self.render_btn.setMinimumHeight(38)
+        self.render_btn.setMinimumHeight(34)
         self.render_btn.setMinimumWidth(180)
         self.cancel_btn = QPushButton("Cancelar")
         self.cancel_btn.setEnabled(False)
@@ -822,10 +865,10 @@ class EditorWindow(QMainWindow):
         for w in (self.feedback, self.focus_box, self.redo_btn, self.variant_btn):
             bot.addWidget(w)
         bot.addStretch()
-        for w in (self.restore_btn, self.snap_btn, self.save_btn):
+        for w in (self.undo_btn, self.redo_edit_btn, self.restore_btn, self.save_btn):
             bot.addWidget(w)
-        lay.addLayout(bot)                      # row 1: remake / tidy
-        bot = QHBoxLayout()                     # row 2: progress and output
+        lay.insertLayout(1, bot)                # under the top bar: remake / tidy
+        bot = QHBoxLayout()                     # then the progress
         bbox = QVBoxLayout()
         bbox.setSpacing(2)
         brow = QHBoxLayout()
@@ -834,15 +877,15 @@ class EditorWindow(QMainWindow):
         bbox.addLayout(brow)
         bbox.addWidget(self.bar_status)
         bot.addLayout(bbox, 1)
-        bot.addSpacing(10)
-        bot.addWidget(self.cancel_btn)
-        bot.addWidget(self.capcut_btn)
-        bot.addWidget(self.render_btn)
-        lay.addLayout(bot)
+        lay.insertLayout(2, bot)
+        # the outputs sit at the right end of the top bar
+        top.addSpacing(14)
+        top.addWidget(self.cancel_btn)
+        top.addWidget(self.capcut_btn)
+        top.addWidget(self.render_btn)
         self.setCentralWidget(root)
 
         self.restore_btn.clicked.connect(self.restore)
-        self.snap_btn.clicked.connect(self.snap_all)
         self.save_btn.clicked.connect(self.save)
         self.render_btn.clicked.connect(self.render)
         self.capcut_btn.clicked.connect(self.send_to_capcut)
@@ -946,12 +989,14 @@ class EditorWindow(QMainWindow):
         auto = f" (Automático → {gp.style.label})" if gp.auto else ""
         self.log(f"Estilo {STYLES[st].label}{auto}: {len(plan.shots)} tomadas, {plan.total:.1f} s")
         self.sel = 0 if plan.shots else None
+        self._crop_i = None
         self._fill_durations()
         self._fill_focus()
         self.rebuild()
         self._queue_proxies()
         self.preview.t = 0.0
         self._load_program()
+        self._record()
 
     # ================================================================ duration
     def _fill_durations(self) -> None:
@@ -1101,6 +1146,21 @@ class EditorWindow(QMainWindow):
         self.focus_box.setEditText(keep or "Sem foco")
         self.focus_box.blockSignals(False)
 
+    def set_music(self, path: str) -> None:
+        """Use this track for the films of this group. Automatic cuts are planned
+        again on its beats; edited ones keep their shots and get the new track."""
+        if self.plan is None:
+            return
+        self.preview.pause()
+        self.session.set_music(path)
+        g = self.key[0]
+        for key in [k for k, pl in self.plans.items() if k[0] == g and not pl.edited]:
+            self.plans.pop(key)
+        self._loaded_key = None
+        self.switch()
+        m = self.gp.music
+        self.log(f"🎶 Música: {os.path.basename(m.path)} ({m.bpm:.0f} BPM)" if m else "🎶 Sem música")
+
     def set_duration(self, seconds: float, ask: bool = True) -> bool:
         """Re-fit the film of this group/format to ``seconds`` (all styles), from
         the analysis already done. Hand edits of the style on screen are replaced."""
@@ -1152,6 +1212,18 @@ class EditorWindow(QMainWindow):
             old.deleteLater()
 
     def rebuild(self) -> None:
+        """Redraw everything — where the user was looking stays where it was."""
+        keep = (self.view.horizontalScrollBar().value(), self.view.verticalScrollBar().value(),
+                self.strip.horizontalScrollBar().value())
+        self._rebuild()
+        self.view.horizontalScrollBar().setValue(keep[0])
+        self.view.verticalScrollBar().setValue(keep[1])
+        self.strip.horizontalScrollBar().setValue(keep[2])
+        QTimer.singleShot(0, lambda: (self.view.horizontalScrollBar().setValue(keep[0]),
+                                      self.view.verticalScrollBar().setValue(keep[1]),
+                                      self.strip.horizontalScrollBar().setValue(keep[2])))
+
+    def _rebuild(self) -> None:
         self._fresh_scene()
         # everything that pointed into the old scene is gone now
         self.sel_box = self.sel_edge = self.playhead = None
@@ -1275,6 +1347,7 @@ class EditorWindow(QMainWindow):
     def _refresh_selection(self) -> None:
         """Selection changed without the cut changing: no scene rebuild."""
         self._place_selection()
+        self._update_crop()
         self._program_blocks()
         self.strip.blockSignals(True)
         if self.sel is not None and self.sel < self.strip.count():
@@ -1304,8 +1377,7 @@ class EditorWindow(QMainWindow):
                     _t, pm = min(thumbs, key=lambda tp: abs(tp[0] - s.start - 0.3))
             icon = _card_icon(pm, _colour(s.category))
             tr = " ⇢" if self.plan.trans_out(i) else ""
-            beat = "" if self.plan.on_beat(i) else " ♪✗"
-            it = QListWidgetItem(icon, f"#{i + 1}  {s.length:.1f}s{tr}{beat}\n{LABEL_PT.get(s.category, s.category)}")
+            it = QListWidgetItem(icon, f"#{i + 1}  {s.length:.1f}s{tr}\n{LABEL_PT.get(s.category, s.category)}")
             it.setData(Qt.UserRole, i)
             it.setToolTip(f"{os.path.basename(s.path)} {fmt_time(s.start)}–{fmt_time(s.end)}")
             self.strip.addItem(it)
@@ -1316,9 +1388,7 @@ class EditorWindow(QMainWindow):
     def _update_info(self) -> None:
         p = self.plan
 
-        off = sum(1 for i in range(len(p.shots)) if not p.on_beat(i))
-        beat = f" · {off} fora da batida" if off else " · tudo na batida"
-        self.total_lbl.setText(f"{_clock(p.total)} ({p.total:.1f} s) · {len(p.shots)} tomadas{beat}")
+        self.total_lbl.setText(f"{_clock(p.total)} ({p.total:.1f} s) · {len(p.shots)} tomadas")
         if self.sel is None or self.sel >= len(p.shots):
             self.info.setText("Selecione uma tomada colorida.")
             return
@@ -1330,10 +1400,12 @@ class EditorWindow(QMainWindow):
             f"{LABEL_PT.get(s.category, s.category)} · {s.movement} · nota {s.score:.2f}<br>"
             f"Entrada <b>{fmt_time(s.start, fps)}</b> · Saída <b>{fmt_time(s.end, fps)}</b> · "
             f"{s.length:.2f} s ({int(round(s.length * fps))} quadros)<br>"
-            f"No vídeo: {p.cut_times()[self.sel]:.2f} s · avança {p.advance(self.sel):.2f} s "
-            f"{'🎵 na batida' if p.on_beat(self.sel) else '⚠ fora da batida'} · "
+            f"No vídeo: {p.cut_times()[self.sel]:.2f} s · na tela {p.advance(self.sel):.2f} s · "
             f"transição: {'corte seco' if not p.trans_out(self.sel) else f'fusão {p.trans_out(self.sel):.1f} s'}<br>"
-            f"Borda ativa: <b>{'entrada' if self.edge == 'start' else 'saída'}</b> ([ / ] ou Tab)")
+            f"Borda ativa: <b>{'entrada' if self.edge == 'start' else 'saída'}</b> ([ / ] ou Tab)"
+            + (f"<br>Enquadramento 9:16: <b>{s.crop_x * 100:.0f}%</b> da largura "
+               "(arraste o quadro branco no monitor)" if self.key[2] == "9x16" else ""))
+        self.crop_reset_btn.setVisible(self.key[2] == "9x16")
         self._preview_timer.start()
 
     # ================================================================ preview
@@ -1458,6 +1530,7 @@ class EditorWindow(QMainWindow):
         if not self.preview.playing:
             self.preview.seek(self.preview.t)
         self._play_pos(self.preview.t)
+        self._update_crop()
 
     def play_sequence(self) -> None:
         """Play / pause the film, from the selected shot when starting."""
@@ -1492,6 +1565,7 @@ class EditorWindow(QMainWindow):
         self.monitor_title.setText(f"TOMADA #{self.sel + 1}  ·  clique ou Espaço: tocar / pausar  ·  "
                                    "duplo clique: do início")
         self.preview.set_program([Piece(s.path, s.start, s.end, 0.0)])
+        self._update_crop()
         self.preview.play(0.0)
 
     def click_shot(self, i: int | None = None) -> None:
@@ -1561,6 +1635,7 @@ class EditorWindow(QMainWindow):
         self.preview.loop = False
         self.monitor_title.setText(f"CLIPE ORIGINAL  ·  {clip.name}")
         self.preview.set_program([Piece(path, 0.0, clip.duration, 0.0)])
+        self._update_crop()
         self.preview.play(t or 0.0)
 
     def lane_click(self, pos, play: bool) -> None:
@@ -1617,6 +1692,8 @@ class EditorWindow(QMainWindow):
         self.scrub.set_blocks(blocks, p.total, self.sel)
 
     def _play_pos(self, t: float) -> None:
+        if self.key[2] == "9x16" and not self.preview.playing and self._crop_index() != self._crop_i:
+            self._update_crop()
         d = self.preview.duration
         if self.mode == "seq":
             self.scrub.set_time(t)
@@ -1624,6 +1701,8 @@ class EditorWindow(QMainWindow):
         self._move_playhead(t)
 
     def _play_piece(self, i: int) -> None:
+        if self.key[2] == "9x16":
+            self._update_crop()
         if self.mode == "seq":
             self.scrub.sel = i
         if self.mode == "seq" and 0 <= i < self.strip.count():
@@ -1636,6 +1715,55 @@ class EditorWindow(QMainWindow):
         self.play_seq_btn.setText("⏸" if playing and self.mode == "seq" else "▶")
         if self.playhead is not None:
             self.playhead.setVisible(playing or self.mode != "seq")
+
+    # ---------------------------------------------------------------- 9:16 framing
+    def _crop_index(self):
+        """The shot whose 9:16 frame the monitor shows (None: no frame)."""
+        if self.plan is None or not self.plan.shots or self.key[2] != "9x16":
+            return None
+        if self.mode == "shot":
+            return self.sel
+        if self.mode == "seq" and self.preview.pieces:
+            i = self.preview.cur if self.preview.playing and self.preview.cur >= 0 \
+                else self.preview.piece_at(self.preview.t)
+            return i if 0 <= i < len(self.plan.shots) else None
+        return None
+
+    def _update_crop(self) -> None:
+        i = self._crop_index()
+        self._crop_i = i
+        self.preview.stack.set_crop(None if i is None else self.plan.shots[i].crop_x)
+
+    def _crop_moved(self, centre: float) -> None:
+        if self._crop_i is not None and self.plan is not None:
+            self.plan.shots[self._crop_i].crop_x = round(centre, 4)   # live; committed on release
+
+    def _crop_done(self, centre: float) -> None:
+        i = self._crop_i
+        if i is None or self.plan is None:
+            return
+        self.plan.set_crop(i, centre)
+        self._remember()
+        self._record()
+        self._fill_styles()
+        if i == self.sel:
+            self._update_info()
+        self.log(f"↔ Enquadramento 9:16 da tomada #{i + 1}: {centre * 100:.0f}% da largura")
+
+    def reset_crop(self) -> None:
+        """Back to the automatic framing of the selected shot."""
+        if self.plan is None or self.sel is None:
+            return
+        s = self.plan.shots[self.sel]
+        auto = next((c.get("crop_x", 0.5) for c in self.plan.candidates
+                     if c["path"] == s.path and abs(c["start"] - s.start) < 0.05), None)
+        if auto is None:
+            auto = 0.5
+        self.plan.set_crop(self.sel, auto)
+        self._remember()
+        self._record()
+        self._update_crop()
+        self._update_info()
 
     def _move_playhead(self, t: float) -> None:
         if self.playhead is None or not self.preview.pieces:
@@ -1705,8 +1833,63 @@ class EditorWindow(QMainWindow):
         self._fill_styles()
         if not self._refresh_loop():
             self._load_program()
+        self._record()
+
+    # ---------------------------------------------------------------- undo / redo
+    def _history(self) -> dict:
+        return self._hist.setdefault(self.key, {"undo": [], "redo": [], "last": None})
+
+    def _record(self) -> None:
+        """After any change: the state before it goes on the undo list."""
+        if self.plan is None or not self.key:
+            return
+        h = self._history()
+        now = self.plan.to_dict()
+        if h["last"] is not None and now != h["last"]:
+            h["undo"].append(h["last"])
+            del h["undo"][:-100]
+            h["redo"].clear()
+        h["last"] = now
+        self._undo_buttons()
+
+    def _undo_buttons(self) -> None:
+        h = self._hist.get(self.key) or {"undo": [], "redo": []}
+        self.undo_btn.setEnabled(bool(h["undo"]))
+        self.redo_edit_btn.setEnabled(bool(h["redo"]))
+
+    def undo(self) -> None:
+        self._step_history("undo", "redo", "↶ Desfeito")
+
+    def redo_edit(self) -> None:
+        self._step_history("redo", "undo", "↷ Refeito")
+
+    def _step_history(self, take: str, give: str, word: str) -> None:
+        h = self._hist.get(self.key)
+        if self.plan is None or not h or not h[take]:
+            return
+        self.preview.pause()
+        h[give].append(self.plan.to_dict())
+        state = h[take].pop()
+        plan = EditPlan.from_dict(state, clips=self.plan.clips, candidates=self.plan.candidates)
+        g, st, tag = self.key
+        if plan.target:
+            self.targets[(g, tag)] = plan.target
+        self.plan = plan
+        self.plans[self.key] = plan
+        h["last"] = state
+        if self.sel is not None and self.sel >= len(plan.shots):
+            self.sel = len(plan.shots) - 1 if plan.shots else None
+        self.rebuild()
+        self._fill_styles()
+        self._fill_durations()
+        self._load_program()
+        self._remember()
+        self._undo_buttons()
+        self.log(f"{word}: {len(plan.shots)} tomadas, {_clock(plan.total)}")
 
     def keyPressEvent(self, e):
+        if self._undo_key(e):
+            return
         if e.key() == Qt.Key_F11:
             self.showNormal() if self.isFullScreen() else self.showFullScreen()
             return
@@ -1718,7 +1901,20 @@ class EditorWindow(QMainWindow):
             return
         super().keyPressEvent(e)
 
+    def _undo_key(self, e) -> bool:
+        if not e.modifiers() & Qt.ControlModifier:
+            return False
+        if e.key() == Qt.Key_Z and e.modifiers() & Qt.ShiftModifier or e.key() == Qt.Key_Y:
+            self.redo_edit()
+            return True
+        if e.key() == Qt.Key_Z:
+            self.undo()
+            return True
+        return False
+
     def on_key(self, e) -> bool:
+        if self._undo_key(e):
+            return True
         k, mods = e.key(), e.modifiers()
         if k == Qt.Key_Space:
             self.click_shot()
@@ -1809,7 +2005,6 @@ class EditorWindow(QMainWindow):
         m = QMenu(self)
         cut = m.addAction("Corte seco para a próxima")
         fade = m.addAction("Fusão para a próxima")
-        snap = m.addAction("Encaixar esta tomada na batida")
         m.addSeparator()
         rem = m.addAction("Remover do vídeo")
         last = i == len(self.plan.shots) - 1
@@ -1820,8 +2015,6 @@ class EditorWindow(QMainWindow):
             self.plan.set_transition(i, "cut")
         elif chosen is fade:
             self.plan.set_transition(i, "crossfade", 0.6)
-        elif chosen is snap:
-            self.plan.trim(i, "end", self.plan.shots[i].end, snap=True)
         elif chosen is rem:
             self.remove(i)
             return
@@ -1842,8 +2035,11 @@ class EditorWindow(QMainWindow):
             self.preview.seek(self.plan.cut_times()[self.sel])
 
     def _scroll_to_sel(self) -> None:
+        """Bring the selected shot into view — only if it is not already."""
         if self.sel is not None and self.sel < len(getattr(self, "shot_items", [])):
             self.view.ensureVisible(self.shot_items[self.sel], 80, 20)
+            if self.sel < self.strip.count():
+                self.strip.scrollToItem(self.strip.item(self.sel))
 
     def _strip_moved(self, src: int, dst: int) -> None:
         self.plan.move(src, dst)
@@ -1855,11 +2051,6 @@ class EditorWindow(QMainWindow):
         self.pps = float(v)
         self.rebuild()
         self._scroll_to_sel()
-
-    def snap_all(self) -> None:
-        n = self.plan.snap_all()
-        self.log(f"🧲 {n} tomada(s) encaixada(s) na batida")
-        self._changed()
 
     def restore(self) -> None:
         g, st, tag = self.key
@@ -1881,11 +2072,22 @@ class EditorWindow(QMainWindow):
         return path
 
     # ================================================================ render
-    def render(self) -> None:
+    def render(self, ask: bool = True) -> None:
         if self.plan is None or not self.plan.shots:
             return
+        g, st, tag = self.key
+        what = (f"{STYLES[st].label} · {'Vertical 9:16' if tag == '9x16' else 'Horizontal 16:9'} · "
+                f"{_clock(self.plan.total)} · {len(self.plan.shots)} tomadas"
+                + (" · com os seus ajustes" if self.plan.edited else ""))
+        if ask and QMessageBox.question(self, "Renderizar", f"Renderizar exatamente o que está na prévia?\n\n{what}") \
+                != QMessageBox.Yes:
+            return
+        self.preview.pause()
         self.save()
         plan = self.plan.to_plan(self.gp.music, self.title_text)
+        self.log(f"🎬 Renderizando {what}. Ordem: "
+                 + ", ".join(f"#{i + 1} {os.path.splitext(os.path.basename(s.path))[0]}"
+                             for i, s in enumerate(self.plan.shots)))
         self.beat.start("Renderizando…")
         self.render_btn.setEnabled(False)
         self.capcut_btn.setEnabled(False)

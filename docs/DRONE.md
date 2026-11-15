@@ -58,6 +58,33 @@ ficam menos. A duração total e o encaixe na música não mudam.
   a sua seleção e, no modo Automático, o seu estilo.
 - **Música**: volume abaixando nos últimos ~4 s; uma faixa mais curta que o vídeo é repetida.
 
+## v0.6.4 — desfazer/refazer, escolha da música, enquadramento 9:16
+
+- **↶ Desfazer / ↷ Refazer edição** (Ctrl+Z, Ctrl+Y ou Ctrl+Shift+Z) na prévia: histórico de até
+  100 passos por estilo e formato, com fotos de `EditPlan.to_dict()` gravadas em `_record()` depois
+  de cada mudança (editar, enquadrar, Refazer, Outra versão, Duração, Restaurar automático).
+- Saíram o botão "Encaixar tudo na batida", a ação do menu e os avisos ♪✗ / "fora da batida".
+- Lista **Música** na barra de cima: as faixas da biblioteca (`Session.music_tracks`) ou Automática.
+  `Session.set_music` força a faixa (`job.music_file`) e limpa as preparações; os cortes
+  automáticos são refeitos nessa batida e os editados mantêm as tomadas. Uma faixa só, do começo
+  ao fim, cortada no final com fade.
+- Formatos: só Horizontal 16:9 ou Vertical 9:16 (a resolução some no vertical). No 9:16, quadro
+  branco arrastável no monitor, por tomada (`EditPlan.set_crop`), e "Enquadramento automático".
+- A roda do mouse não troca mais o valor das listas e campos numéricos; caixa da IA na coluna
+  da esquerda.
+
+## v0.6.3 — prévia: rolagem estável, saídas no alto, render com confirmação
+
+- `rebuild()` guarda e devolve a rolagem da timeline e da sequência (antes, cada edição voltava
+  ao início das listas); `_scroll_to_sel` só aproxima a tomada se ela não estiver à vista.
+- Duplo clique numa miniatura da sequência toca a tomada (`play_shot`).
+- Layout: Enviar para o CapCut/RENDERIZAR no fim da barra de cima; ajustes, Foco, Refazer,
+  Outra versão e os botões de arrumação na segunda linha; inspetor estreito (300–380 px).
+- Render: confirmação com estilo/formato/duração/tomadas, ordem das tomadas no registro, e uma
+  barra só (cortar = 0–50 %, juntar = 50–100 %). O render tem duas passagens internas e a barra
+  voltava a 0 na segunda, parecendo um segundo render. Teste confirma que a lista de cortes
+  renderizada é exatamente a sequência editada.
+
 ## v0.6.2 — estilo só na prévia, Foco por assunto
 
 - Tela principal sem seleção de estilo: o `Job` sai sempre com `style="automatico"`; o estilo é

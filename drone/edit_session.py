@@ -293,6 +293,12 @@ class EditPlan:
         return plan
 
     # ------------------------------------------------------ persistence
+    def set_crop(self, i: int, centre: float) -> None:
+        """Where the 9:16 frame sits on shot ``i`` (0..1 of the source width)."""
+        if 0 <= i < len(self.shots):
+            self.shots[i].crop_x = round(min(1.0, max(0.0, float(centre))), 4)
+            self.edited = True
+
     def to_dict(self) -> dict:
         return {"style_key": self.style_key, "style_label": self.style_label, "tag": self.tag,
                 "unit": self.unit, "magnet": self.magnet, "target": self.target,
