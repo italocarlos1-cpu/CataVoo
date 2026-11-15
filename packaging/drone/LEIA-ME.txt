@@ -77,13 +77,6 @@ nem ffmpeg no computador.
 
 
 --------------------------------------------------------------
- E O "DroneHighlighter-cli.exe"?
---------------------------------------------------------------
- Fica guardado dentro de _internal. Não precisa abrir: é a
- mesma coisa sem janela, para quem gosta de digitar comandos.
-
-
---------------------------------------------------------------
  ATUALIZAR PARA UMA VERSÃO NOVA
 --------------------------------------------------------------
  1. Baixe e extraia o .zip novo (passos 1 e 2).

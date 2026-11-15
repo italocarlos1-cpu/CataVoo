@@ -125,3 +125,28 @@ def test_automatic_end_to_end(trip, tmp_path):
     assert rep["style"] != "automatico"
     assert any("Estilo automático" in m for m in logs)
     assert os.path.exists(res.outputs[0])
+
+
+def test_diario_follows_recording_order_strictly(trip):
+    """Diário de viagem: every shot in shooting order — opener, closer and the
+    extras that fill the duration included — and never back to a clip already left."""
+    cfg = trip["cfg"]
+    st = STYLES["diario_viagem"]
+    w = cfg.weights_for(st)
+    cands = []
+    for i, a in enumerate(trip["a"].values()):
+        cands += candidates_for_clip(i, a, 3.0, cfg, w, per_clip=4)
+    for target in (24, 60):                      # 60 s forces extras and stretching
+        plan = cd.direct(cands, target=target, style=st, weights=w, cfg=cfg, title="T",
+                         log_fn=lambda *_: None)
+        keys = [(p.candidate.order, p.start) for p in plan.shots]
+        assert keys == sorted(keys)
+        seen, last = set(), None
+        for p in plan.shots:
+            o = p.candidate.order
+            if o != last:
+                assert o not in seen, "voltou a um vídeo que já tinha passado"
+                seen.add(o)
+                last = o
+        assert plan.shots[0].text == "T"
+        assert all(p.end - p.start >= p.slot.advance - 1e-3 for p in plan.shots)

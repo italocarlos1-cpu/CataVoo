@@ -8,6 +8,7 @@ import shutil
 import subprocess
 from datetime import datetime, timedelta
 
+import numpy as np
 import pytest
 
 from tests import test_drone_pipeline as base  # noqa: E402  (real cv2 swap + trip fixture)
@@ -151,3 +152,34 @@ def test_short_music_is_looped_and_faded(tmp_path):
     choice = music_selector.MusicChoice(path=track, duration=5.0, bpm=120, beat_interval=0.5, start=0.0)
     out = music_selector.prepare(choice, 12.0, str(tmp_path / "m.m4a"))
     assert abs(_duration(out) - 12.0) < 0.3
+
+
+def test_parallel_analysis_matches_one_at_a_time(trip, tmp_path, monkeypatch):
+    """Analysing several clips at once must give exactly the same analyses, in
+    shooting order, as one at a time."""
+    from drone import pipeline
+    from drone.analysis_cache import AnalysisCache
+    from drone.config import DroneConfig
+
+    def analyse(workers, name):
+        monkeypatch.setenv("DRONEHIGHLIGHTER_WORKERS", str(workers))
+        cfg = DroneConfig()
+        cfg.use_clip = False
+        job = pipeline.Job(folder=str(trip["root"] / "Brutos"), output_dir=str(tmp_path / name))
+        res = pipeline.Result()
+        seen = []
+        out, _ = pipeline._analyse(job, cfg, AnalysisCache(str(tmp_path / f"{name}.sqlite")),
+                                   pipeline.Progress(lambda p, t: seen.append(p)), res,
+                                   lambda *_: None, None)
+        assert seen == sorted(seen) or max(seen) <= 66.0001     # never past the stage's share
+        return out, res
+
+    one, r1 = analyse(1, "um")
+    par, r2 = analyse(3, "tres")
+    assert r1.analysed == r2.analysed == len(one) and r2.cached == 0
+    assert [a["name"] for a in one] == [a["name"] for a in par]
+    assert [a["order"] for a in par] == sorted(a["order"] for a in par)
+    for a, b in zip(one, par):
+        assert a["timeline"].keys() == b["timeline"].keys()
+        for k in a["timeline"]:
+            assert np.array_equal(np.asarray(a["timeline"][k]), np.asarray(b["timeline"][k])), k

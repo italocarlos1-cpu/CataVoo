@@ -17,7 +17,7 @@ Python temporário e apaga depois. Ao abrir, o programa acha o pacote sozinho (o
 "packs" do VideoHighlighter, `packaging/packs/rthook_packs.py`). Para desinstalar, apague `packs\clip`.
 
 O workflow do GitHub testa isso de verdade: numa cópia da pasta, roda o `.bat /silencioso /cpu` e confere
-que o `_internal\DroneHighlighter-cli.exe` classifica as paisagens com o CLIP.
+que o `DroneHighlighter.exe` carrega e usa o CLIP (autoteste com `DRONEHIGHLIGHTER_SELFTEST_CLIP`).
 
 `build_exe.bat clip` ainda existe para quem quer o CLIP *dentro* do `.exe` (vários GB, sem internet depois).
 
@@ -28,7 +28,7 @@ que o `_internal\DroneHighlighter-cli.exe` classifica as paisagens com o CLIP.
    também roda os testes do DroneHighlighter no Windows.
 
 ## O que vai dentro
-- `DroneHighlighter.exe` é a janela; `_internal\DroneHighlighter-cli.exe` é a linha de comando, guardada dentro de `_internal` para não confundir (mesmas opções de `python -m drone.cli`).
+- Só existe o `DroneHighlighter.exe` (a janela); a linha de comando ficou só para quem roda pelo Python (`python -m drone.cli`) (mesmas opções de `python -m drone.cli`).
 - O ffmpeg vem embutido (imageio-ffmpeg), então não é preciso instalar ffmpeg nem Python no PC que vai usar.
 - A pasta precisa ficar inteira, porque o `.exe` usa os arquivos de `_internal`. Para levar a outro PC, copie a pasta ou o `.zip`.
 - O `.exe` não traz o PyTorch: até rodar o `Instalar_IA_Paisagens.bat`, as paisagens são reconhecidas pela cor e o restante funciona igual.

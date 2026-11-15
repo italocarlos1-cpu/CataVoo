@@ -257,6 +257,16 @@ def _order(shots: list, adj=None, chronological: float = 0.0) -> list:
     return seq
 
 
+def strict_order(style) -> bool:
+    """Diário de viagem: recording order, no exceptions (no hook-first opener,
+    no closing shot pulled from earlier, no going back to a clip already left)."""
+    return style.chronological >= 1.0
+
+
+def _rec_key(c):
+    return (c.order, c.start)
+
+
 def _fit_window(c, length: float) -> tuple[float, float]:
     lo, hi = c.scene_lo, c.scene_hi
     length = min(length, hi - lo)
@@ -323,6 +333,8 @@ def direct(candidates: list, *, target: float, style: Style, weights, cfg, music
     ``previous``: (path, start, end) of the last version's shots."""
     style = adjusted_style(style, adj)
     adj = with_style_defaults(style, adj)
+    strict = strict_order(style)
+    per_clip = style.max_per_clip or cfg.max_shots_per_clip
     unit = music.unit() if music is not None else 0.0
     slots = plan_slots(target, style, unit)
     vertical_bonus = make_bonus(vertical=vertical, adj=adj, previous=previous, style=style)
@@ -336,7 +348,7 @@ def direct(candidates: list, *, target: float, style: Style, weights, cfg, music
     else:
         chosen = shot_selection.select(candidates, len(slots), w_variety=weights.variety,
                                        duplicate_threshold=cfg.duplicate_threshold,
-                                       max_per_clip=cfg.max_shots_per_clip,
+                                       max_per_clip=per_clip,
                                        extra_bonus=vertical_bonus, log_fn=log_fn)
     if not chosen:
         raise RuntimeError("nenhum trecho utilizável encontrado (tudo tremido, escuro ou desfocado?)")
@@ -347,7 +359,12 @@ def direct(candidates: list, *, target: float, style: Style, weights, cfg, music
         scale = len(slots) / len(chosen)
         slots = plan_slots(target / scale, style, unit) if len(chosen) > 1 else slots[:1]
         slots = slots[:len(chosen)]
-    ordered = chosen[:len(slots)] if forced else _order(chosen, adj, style.chronological)[:len(slots)]
+    if forced:
+        ordered = chosen[:len(slots)]
+    elif strict:
+        ordered = sorted(chosen, key=_rec_key)[:len(slots)]
+    else:
+        ordered = _order(chosen, adj, style.chronological)[:len(slots)]
     if style.adaptive and unit:
         adapt_slots(slots[:len(ordered)], ordered, unit, style)
 
@@ -369,14 +386,31 @@ def direct(candidates: list, *, target: float, style: Style, weights, cfg, music
         plan.shots.append(PlannedShot(candidate=c, start=s, end=round(e, 3), slot=slot,
                                       text=title if i == 0 and title else "",
                                       crop_x=c.sal_x))
-    _add_shots(plan, candidates, target, unit or 0.5, style, weights, cfg, vertical_bonus, log_fn)
+    _add_shots(plan, candidates, target, unit or 0.5, style, weights, cfg, vertical_bonus, log_fn,
+               per_clip=per_clip)
     _fill_deficit(plan, target, unit or 0.5, style)
+    if strict and not forced:
+        _recording_order(plan, title)
     plan.total = sum(p.slot.advance for p in plan.shots)
     return plan
 
 
+def _recording_order(plan: Plan, title: str) -> None:
+    """Put every shot (extras included) back in recording order. Each shot keeps
+    its own length; the roles and the title follow the positions."""
+    if len(plan.shots) < 2:
+        return
+    roles = [p.slot.role for p in plan.shots]
+    plan.shots.sort(key=lambda p: (p.candidate.order, p.start))
+    for p, role in zip(plan.shots, roles):
+        p.slot.role = role
+        p.text = ""
+    if title:
+        plan.shots[0].text = title
+
+
 def _add_shots(plan: Plan, candidates: list, target: float, unit: float, style: Style,
-               weights, cfg, bonus, log_fn) -> None:
+               weights, cfg, bonus, log_fn, per_clip: int = 0) -> None:
     """When the chosen clips were too short for their slots, cast extra shots
     (inserted before the closing shot) rather than deliver a short film."""
     body_k = _beats_for(unit, style.shot_min, style.shot_max)
@@ -388,7 +422,7 @@ def _add_shots(plan: Plan, candidates: list, target: float, unit: float, style: 
         used = [p.candidate for p in plan.shots]
         pick = shot_selection.select(candidates, 1, w_variety=weights.variety,
                                      duplicate_threshold=cfg.duplicate_threshold,
-                                     max_per_clip=cfg.max_shots_per_clip,
+                                     max_per_clip=per_clip or cfg.max_shots_per_clip,
                                      extra_bonus=bonus, already=used, log_fn=lambda *_: None)
         if not pick:
             return

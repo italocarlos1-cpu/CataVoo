@@ -55,7 +55,8 @@ def estimate(cands: list, style, cfg, weights) -> MaterialEstimate:
         return est
     pool = shot_selection.select(cands, len(cands), w_variety=weights.variety,
                                  duplicate_threshold=cfg.duplicate_threshold,
-                                 max_per_clip=cfg.max_shots_per_clip, relax=False,
+                                 max_per_clip=getattr(style, "max_per_clip", 0) or cfg.max_shots_per_clip,
+                                 relax=False,
                                  log_fn=lambda *_: None)
     if not pool:
         return est

@@ -25,6 +25,7 @@ from drone.ai_assist import PROVIDERS, AIClient, AIError
 from drone.config import STYLES, DroneConfig
 from drone.grouping import MODES
 from drone.theme import role
+from drone.progress_ui import Heartbeat, clock
 from drone import theme
 from drone.pipeline import Job, Session, edit_store_path, run
 
@@ -288,9 +289,22 @@ class MainWindow(QMainWindow):
         self.bar = QProgressBar()
         self.bar.setRange(0, 1000)
         self.bar.setTextVisible(False)
+        self.bar.setProperty("role", "thick")
         self.status = role(QLabel("Pronto."), "muted")
-        right.addWidget(self.bar)
+        self.status.setWordWrap(True)          # a long line must not widen the window
+        self.pct = QLabel("")
+        f = self.pct.font()
+        f.setBold(True)
+        f.setPointSize(13)
+        self.pct.setFont(f)
+        self.pct.setMinimumWidth(56)
+        self.pct.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        prow = QHBoxLayout()
+        prow.addWidget(self.bar, 1)
+        prow.addWidget(self.pct)
+        right.addLayout(prow)
         right.addWidget(self.status)
+        self.beat = Heartbeat(self.bar, self.status, self.pct, self)
 
         right.addWidget(role(QLabel("REGISTRO"), "section"))
         self.logbox = QPlainTextEdit()
@@ -443,7 +457,9 @@ class MainWindow(QMainWindow):
         self.worker.moveToThread(self.thread)
         self.thread.started.connect(self.worker.run)
         self.worker.log.connect(self.logbox.appendPlainText)
+        self.worker.log.connect(self.beat.touch)
         self.worker.progress.connect(self._progress)
+        self.beat.start("Preparando a edição manual…")
         self.worker.finished.connect(self._open_editor)
         self.worker.failed.connect(self._failed)
         self.worker.failed.connect(lambda *_: self.manual_btn.setEnabled(True))
@@ -457,8 +473,7 @@ class MainWindow(QMainWindow):
         self.manual_btn.setEnabled(True)
         self.go.setEnabled(True)
         self.cancel.setEnabled(False)
-        self.bar.setValue(1000)
-        self.status.setText("Edição manual aberta.")
+        self.beat.finish("Edição manual aberta.")
         job = self._manual_job
         store = EditStore(edit_store_path(session.ctx.out_dir))
         tag = "16x9" if job.horizontal else "9x16"
@@ -534,7 +549,9 @@ class MainWindow(QMainWindow):
         self.worker.moveToThread(self.thread)
         self.thread.started.connect(self.worker.run)
         self.worker.log.connect(self.logbox.appendPlainText)
+        self.worker.log.connect(self.beat.touch)
         self.worker.progress.connect(self._progress)
+        self.beat.start("Começando…")
         self.worker.ask.connect(self._ask_shortfall)
         self.worker.finished.connect(self._done)
         self.worker.failed.connect(self._failed)
@@ -568,18 +585,16 @@ class MainWindow(QMainWindow):
     def _cancel(self):
         if self.worker:
             self.worker.cancelled = True
-            self.status.setText("Cancelando…")
+            self.beat.update(self.beat.value, "Cancelando… (termina o passo atual)")
 
     def _progress(self, pct: float, text: str):
-        self.bar.setValue(int(pct * 10))
-        self.status.setText(text)
+        self.beat.update(pct, text)
 
     def _done(self, res):
         self.result = res
         self.go.setEnabled(True)
         self.cancel.setEnabled(False)
-        self.bar.setValue(1000)
-        self.status.setText(f"Concluído em {res.seconds:.0f}s — {len(res.outputs)} vídeo(s)")
+        self.beat.finish(f"Concluído em {clock(res.seconds)} — {len(res.outputs)} vídeo(s)")
         self.open_video.setEnabled(bool(res.outputs))
         self.open_folder.setEnabled(bool(res.outputs))
         self.redo_btn.setEnabled(bool(res.outputs))
@@ -588,7 +603,7 @@ class MainWindow(QMainWindow):
     def _failed(self, msg: str):
         self.go.setEnabled(True)
         self.cancel.setEnabled(False)
-        self.status.setText("Falhou.")
+        self.beat.finish("Cancelado." if "cancel" in msg else "Falhou.", ok=False)
         if "cancel" not in msg:
             QMessageBox.critical(self, "DroneHighlighter", msg)
 
@@ -629,6 +644,23 @@ def _crash_log() -> str:
     return path
 
 
+def _clip_selftest() -> str:
+    """For the build check: is the CLIP pack found and does it classify?"""
+    try:
+        import numpy as np
+        from drone.landscape import ClipScorer
+        if not ClipScorer.available():
+            return "clip ausente"
+        sc = ClipScorer(log_fn=lambda *_: None)
+        sc.load()
+        img = np.zeros((224, 224, 3), dtype=np.uint8)
+        img[:112] = (230, 160, 60)
+        probs = sc.probs([img])[0]
+        return f"clip ok {getattr(sc._pf, 'device', '?')} {np.asarray(probs).shape}"
+    except Exception as exc:  # noqa: BLE001 — reported, not raised
+        return f"clip erro {type(exc).__name__}: {exc}"
+
+
 def main() -> int:
     _crash_log()
     from drone.win_console import hide_child_consoles
@@ -652,8 +684,11 @@ def main() -> int:
         from PySide6.QtCore import QTimer
 
         def _done():
+            lines = [f"ok {__version__} {w.windowTitle()}"]
+            if os.environ.get("DRONEHIGHLIGHTER_SELFTEST_CLIP"):
+                lines.append(_clip_selftest())
             with open(selftest, "w", encoding="utf-8") as fh:
-                fh.write(f"ok {__version__} {w.windowTitle()}")
+                fh.write("\n".join(lines))
             app.quit()
         QTimer.singleShot(1500, _done)
     return app.exec()

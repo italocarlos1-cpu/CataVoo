@@ -58,6 +58,25 @@ ficam menos. A duração total e o encaixe na música não mudam.
   a sua seleção e, no modo Automático, o seu estilo.
 - **Música**: volume abaixando nos últimos ~4 s; uma faixa mais curta que o vídeo é repetida.
 
+## v0.6.0 — revisão de desempenho, diário estrito, progresso vivo
+
+- **Análise em paralelo** (`pipeline.analysis_workers`): 2 vídeos ao mesmo tempo com 4–7 threads
+  de CPU, 3 com 8 ou mais; `DRONEHIGHLIGHTER_WORKERS=1` volta a um por vez. O gargalo é decodificar
+  o 4K (medido: a decodificação é ~todo o tempo; opções do decodificador não ajudam), então com a
+  placa decodificando sobra processador para medir vídeos lado a lado. O resultado é idêntico ao
+  sequencial (teste compara as timelines).
+- `iter_frame_pairs`: stderr do ffmpeg descartado (um pipe que ninguém lê podia travar o ffmpeg).
+- Editor: quadros de entrada/saída e do monitor vêm da cópia leve; pedidos de quadro ao arrastar
+  na linha do vídeo são agrupados (só o último é buscado); no máximo 3 ffmpeg de quadro por vez;
+  cache de quadros limitado a 150; `grab_frame` em BMP (sem comprimir PNG).
+- **Diário de viagem** em ordem estrita de gravação (`strict_order`, `_recording_order`),
+  tomadas de 3,5–7 s, até 5 trechos por vídeo (`Style.max_per_clip`).
+- Clique/Espaço = tocar/pausar a tomada; duplo clique/T = do início, uma vez; L = loop.
+- `progress_ui.Heartbeat`: porcentagem, bolinha, tempo decorrido e "ainda trabalhando".
+- O `DroneHighlighter-cli.exe` não é mais gerado (o `python -m drone.cli` continua existindo);
+  o teste do CLIP no CI usa o autoteste da janela (`DRONEHIGHLIGHTER_SELFTEST_CLIP`).
+- CapCut: cada arquivo tem o tempo de tela da tomada (os cortes ficam na batida).
+
 ## v0.5.6 — editor mais fluido, linha do vídeo final, CapCut
 
 - Arrastar blocos funcionava mal: o clique selecionava e reconstruía a cena inteira, apagando o

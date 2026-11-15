@@ -13,6 +13,8 @@ from __future__ import annotations
 import dataclasses
 import json
 import os
+import threading
+from concurrent.futures import ThreadPoolExecutor
 import re
 import time
 from dataclasses import asdict, dataclass, field
@@ -92,6 +94,18 @@ class Result:
     seconds: float = 0.0
 
 
+def analysis_workers() -> int:
+    """How many clips to analyse at once. Decoding is the heavy part: with a
+    video card doing it, the processor is free to measure two or three clips
+    side by side; measured without one, two at a time is never slower.
+    ``DRONEHIGHLIGHTER_WORKERS`` overrides (1 = one at a time)."""
+    env = os.environ.get("DRONEHIGHLIGHTER_WORKERS", "")
+    if env.isdigit() and int(env) > 0:
+        return min(8, int(env))
+    n = os.cpu_count() or 2
+    return 1 if n < 4 else 2 if n < 8 else 3
+
+
 class Progress:
     """Maps stage-local progress to one overall 0..100 number."""
     STAGES = [("ingest", 3), ("analysis", 55), ("landscape", 8), ("plan", 4), ("render", 30)]
@@ -140,32 +154,65 @@ def _analyse(job: Job, cfg: DroneConfig, cache: AnalysisCache, prog: Progress, r
     for c in clips:
         for w in c.warnings:
             log_fn(f"ℹ️ {c.name}: {w}")
-    analyses = []
     total_dur = sum(c.info.duration for c in clips) or 1.0
-    done_dur = 0.0
-    for c in clips:
-        if cancel_check is not None and cancel_check():
-            raise RuntimeError("cancelado")
+    results: dict = {}                        # clip index → analysis
+    todo = []
+    for i, c in enumerate(clips):
         hit = cache.get(c.path, cfg.analysis.key())
         if hit is not None:
-            a = hit
+            results[i] = hit
             res.cached += 1
         else:
-            def p(i, n, name, _d=done_dur, _c=c):
-                prog("analysis", _d + _c.info.duration * i / max(1, n), total_dur, f"Analisando {name}")
-            try:
-                a = analyzer.analyze_clip(c, cfg, cache, log_fn=log_fn, progress_fn=p,
-                                          cancel_check=cancel_check)
-                res.analysed += 1
-            except RuntimeError as exc:
-                if "cancel" in str(exc):
-                    raise
-                log_fn(f"⚠️ {c.name}: {exc}")
-                continue
+            todo.append(i)
+    done = {i: clips[i].info.duration for i in results}      # seconds of footage finished, per clip
+    lock = threading.Lock()
+
+    def report(text: str) -> None:
+        with lock:
+            total = sum(done.values())
+        prog("analysis", total, total_dur, text)
+
+    def work(i: int):
+        c = clips[i]
+        if cancel_check is not None and cancel_check():
+            raise RuntimeError("cancelado")
+
+        def p(k, n, name):
+            with lock:
+                done[i] = c.info.duration * k / max(1, n)
+            report(f"Analisando {name}")
+        try:
+            a = analyzer.analyze_clip(c, cfg, cache, log_fn=log_fn, progress_fn=p,
+                                      cancel_check=cancel_check)
+        except RuntimeError as exc:
+            if "cancel" in str(exc):
+                raise
+            log_fn(f"⚠️ {c.name}: {exc}")
+            a = None
+        with lock:
+            done[i] = c.info.duration
+        report(c.name)
+        return a
+
+    report("Análise")
+    workers = min(analysis_workers(), len(todo))
+    if workers > 1:
+        log_fn(f"⚙️ Analisando {len(todo)} vídeos, {workers} ao mesmo tempo")
+        with ThreadPoolExecutor(max_workers=workers, thread_name_prefix="dh-analise") as ex:
+            for i, a in zip(todo, ex.map(work, todo)):
+                results[i] = a
+    else:
+        for i in todo:
+            results[i] = work(i)
+    analyses = []
+    for i, c in enumerate(clips):               # always in shooting order
+        a = results.get(i)
+        if a is None:
+            continue
+        if i in todo:
+            res.analysed += 1
         a["order"] = c.order
         analyses.append(a)
-        done_dur += c.info.duration
-        prog("analysis", done_dur, total_dur, c.name)
     log_fn(f"✅ Análise: {res.analysed} novo(s), {res.cached} do cache")
     backend = landscape.annotate(analyses, cache, use_clip=cfg.use_clip, log_fn=log_fn,
                                  progress_fn=lambda i, n, s: prog("landscape", i, n, s))

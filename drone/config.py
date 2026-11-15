@@ -77,7 +77,8 @@ class Style:
     # (1.6, 1.0, 0.6) = long establishing shots that accelerate into quick cuts.
     pace_curve: tuple = ()
     lively: bool = False             # vary lengths ±1 beat for a less mechanical rhythm
-    chronological: float = 0.0       # 0..1: how strongly to keep shooting order
+    chronological: float = 0.0       # 0..1: how strongly to keep shooting order (1 = strictly)
+    max_per_clip: int = 0            # shots one raw clip may give (0 = config's max_shots_per_clip)
     movement_bias: dict = field(default_factory=dict)   # e.g. {"orbit": 1.3}
     adaptive: bool = False           # each shot's length follows its own character
 
@@ -125,11 +126,13 @@ STYLES: dict[str, Style] = {
         movement_bias={"orbit": 1.3, "rise_reveal": 1.2},
         description="Órbitas em torno de igrejas e casarios, revelações do centro histórico."),
     "diario_viagem": Style(
-        "diario_viagem", "Diário de viagem (ordem cronológica)", 3.0, 5.5, "crossfade", 0.5,
+        "diario_viagem", "Diário de viagem (ordem cronológica)", 3.5, 7.0, "crossfade", 0.5,
         bpm_range=(85, 125), music_tags=("indie", "acoust", "folk", "alternat", "travel"),
         default_duration=90, transition_share=0.35, adaptive=True, chronological=1.0,
-        closer="pull_out",
-        description="Conta a viagem na ordem em que foi filmada, como um diário."),
+        max_per_clip=5,
+        description="Conta a viagem exatamente na ordem em que foi filmada, como um diário: "
+                    "tomadas mais longas e mais trechos de cada vídeo, sem nunca voltar a um "
+                    "vídeo que já passou."),
     "trailer_epico": Style(
         "trailer_epico", "Trailer épico", 2.0, 5.0, "crossfade", 0.4,
         bpm_range=(80, 140), music_tags=("epic", "épic", "trailer", "cinemat", "orquest", "score"),

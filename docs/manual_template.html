@@ -102,7 +102,6 @@ Tudo roda no seu computador: nenhum vídeo é enviado para a internet e não há
   <li><a href="#ia">Assistente de IA (opcional)</a></li>
   <li><a href="#saida">Arquivos gerados</a></li>
   <li><a href="#cache">Cache: por que a segunda vez é rápida</a></li>
-  <li><a href="#cli">Linha de comando</a></li>
   <li><a href="#avancado">Configuração avançada</a></li>
   <li><a href="#desempenho">Desempenho e hardware</a></li>
   <li><a href="#problemas">Solução de problemas</a></li>
@@ -208,13 +207,13 @@ Tudo roda no seu computador: nenhum vídeo é enviado para a internet e não há
 <tr><td><b>Pôr do sol / golden hour</b></td><td>5,5–9 s</td><td>todas fusões de 1,2 s</td><td>55–95</td><td>60 s</td></tr>
 <tr><td><b>Minimalista</b></td><td>7–12 s</td><td>todas fusões de 1,5 s</td><td>50–90</td><td>60 s</td></tr>
 <tr><td><b>Cidade histórica / arquitetura</b></td><td>3,5–6 s</td><td>40% fusões</td><td>70–115</td><td>75 s</td></tr>
-<tr><td><b>Diário de viagem</b></td><td>3–5,5 s</td><td>35% fusões</td><td>85–125</td><td>90 s</td></tr>
+<tr><td><b>Diário de viagem</b></td><td>3,5–7 s</td><td>35% fusões</td><td>85–125</td><td>90 s</td></tr>
 <tr><td><b>Trailer épico</b></td><td>2–5 s, acelerando</td><td>30% fusões</td><td>80–140</td><td>60 s</td></tr>
 <tr><td><b>Viagem dinâmica</b></td><td>1,8–3,6 s</td><td>cortes secos</td><td>100–150</td><td>60 s</td></tr>
 <tr><td><b>Aventura / FPV radical</b></td><td>1,2–2,6 s</td><td>cortes secos</td><td>120–175</td><td>45 s</td></tr>
 <tr><td><b>Redes sociais</b></td><td>1,5–3 s</td><td>cortes secos</td><td>95–150</td><td>30 s</td></tr>
 </table>
-<p class="small">* A duração padrão do estilo só é usada na linha de comando quando nenhuma duração é informada. Na janela, vale o que você escolher no campo Duração.</p>
+<p class="small">* A duração padrão do estilo é só uma referência: vale o que você escolher no campo Duração.</p>
 
 <h3>Quando usar cada um</h3>
 
@@ -239,8 +238,8 @@ Tudo roda no seu computador: nenhum vídeo é enviado para a internet e não há
 <div class="pc"><div class="pro"><h5>Vantagens</h5><ul><li>Feito para cidades como Pirenópolis, Goiás Velho, Ouro Preto</li></ul></div><div class="con"><h5>Desvantagens</h5><ul><li>Em viagens só de natureza, não tem o que priorizar</li></ul></div></div>
 
 <h4>Diário de viagem</h4>
-<p>Monta o vídeo <b>na ordem em que você filmou</b>, contando a viagem como uma história.</p>
-<div class="pc"><div class="pro"><h5>Vantagens</h5><ul><li>Narrativa natural: chegada, passeios, despedida</li><li>Bom para viagens de vários dias</li></ul></div><div class="con"><h5>Desvantagens</h5><ul><li>A abertura nem sempre é a cena mais forte</li><li>Depende da data correta de gravação dos arquivos</li></ul></div></div>
+<p>Monta o vídeo <b>exatamente na ordem em que você filmou</b>, contando a viagem como uma história. Do primeiro ao último trecho, tudo segue a ordem de gravação: arquivo por arquivo e, dentro de cada arquivo, do começo para o fim. Ele <b>nunca volta</b> a um vídeo que já passou. Para isso usa tomadas mais longas (3,5 a 7 s) e pode tirar até 5 trechos de cada vídeo. "Esticar" e "Encurtar" continuam valendo, e na duração automática entra só o que vale a pena.</p>
+<div class="pc"><div class="pro"><h5>Vantagens</h5><ul><li>Narrativa natural: chegada, passeios, despedida</li><li>Bom para viagens de vários dias</li></ul></div><div class="con"><h5>Desvantagens</h5><ul><li>A abertura e o final são o começo e o fim da gravação, não necessariamente as cenas mais fortes</li><li>Depende da data correta de gravação dos arquivos</li></ul></div></div>
 
 <h4>Trailer épico</h4>
 <p>Começa com tomadas longas e grandiosas e <b>acelera</b> até cortes rápidos. Abre com revelação e fecha com afastamento. Num vídeo de 60 s, as tomadas vão de cerca de 7 s no início a menos de 2 s no final.</p>
@@ -325,7 +324,7 @@ Tudo roda no seu computador: nenhum vídeo é enviado para a internet e não há
 <tr><th>Opção</th><th>O que acontece</th><th>Vantagens</th><th>Desvantagens</th></tr>
 <tr><td><b>Perguntar</b> (padrão na janela)</td><td>Mostra quanto material há e você escolhe na hora: encurtar, esticar ou cancelar.</td><td>Você decide caso a caso.</td><td>Interrompe a geração até você responder.</td></tr>
 <tr><td><b>Encurtar o vídeo</b></td><td>Reduz o tempo para o que o material permite no ritmo normal, arredondado de 5 em 5 s.</td><td>Só cenas boas, sem repetição. Melhor qualidade.</td><td>Sai mais curto do que você pediu.</td></tr>
-<tr><td><b>Esticar as tomadas</b> (padrão na linha de comando)</td><td>Mantém o tempo pedido: alonga as tomadas até cerca de 1,6× o tamanho normal do estilo, aceita cenas mais parecidas e mais de um trecho do mesmo voo.</td><td>Fica mais perto do tempo pedido.</td><td>Ritmo mais lento e cenas mais repetidas. Se nem assim der, sai mais curto (o log avisa).</td></tr>
+<tr><td><b>Esticar as tomadas</b></td><td>Mantém o tempo pedido: alonga as tomadas até cerca de 1,6× o tamanho normal do estilo, aceita cenas mais parecidas e mais de um trecho do mesmo voo.</td><td>Fica mais perto do tempo pedido.</td><td>Ritmo mais lento e cenas mais repetidas. Se nem assim der, sai mais curto (o log avisa).</td></tr>
 </table>
 <div class="box warn"><b>O programa nunca "enche" com truques</b>Ele não repete cenas em loop, não usa câmera lenta e não coloca tela preta para completar o tempo. Se o material acabar, o vídeo sai menor e o log mostra a duração real.</div>
 
@@ -423,7 +422,7 @@ Tudo roda no seu computador: nenhum vídeo é enviado para a internet e não há
 <h3>O que aparece na janela</h3>
 <table>
 <tr><th style="width:26%">Parte</th><th>O que é</th></tr>
-<tr><td><b>Monitor (em cima, à esquerda)</b></td><td>Toca a <b>sequência final</b> (botão ▶ ou <kbd>Espaço</kbd>), começando na tomada selecionada, com a música (caixa <b>Música</b>). Embaixo dele fica a <b>linha do vídeo final</b>: um bloco por tomada, do tamanho do tempo que ela fica na tela, na cor da paisagem, com a marca vermelha onde está tocando. Clique ou arraste nela para ir a qualquer ponto. ⏮ ⏭ pulam de tomada e ■ para e volta ao início. <b>Tocar tomada</b> (<kbd>T</kbd>) toca só a tomada selecionada; <b>Tocar clipe original</b> (<kbd>C</kbd>) toca o arquivo bruto inteiro. Na prévia as fusões aparecem como cortes secos no momento certo: elas só aparecem no vídeo renderizado. Para a prévia rodar lisa, o programa faz em segundo plano uma <b>cópia leve</b> (540p) de cada vídeo, uma vez só ("preparando prévia leve 3/8" no alto); o vídeo final usa sempre os originais.</td></tr>
+<tr><td><b>Monitor (em cima, à esquerda)</b></td><td>O botão ▶ toca a <b>sequência final</b>, começando na tomada selecionada, com a música (caixa <b>Música</b>). Embaixo dele fica a <b>linha do vídeo final</b>: um bloco por tomada, do tamanho do tempo que ela fica na tela, na cor da paisagem, com a marca vermelha onde está tocando. Clique ou arraste nela para ir a qualquer ponto. ⏮ ⏭ pulam de tomada e ■ para e volta ao início. <b>Tocar tomada</b> (<kbd>T</kbd>) toca só a tomada selecionada; <b>Tocar clipe original</b> (<kbd>C</kbd>) toca o arquivo bruto inteiro. Na prévia as fusões aparecem como cortes secos no momento certo: elas só aparecem no vídeo renderizado. Para a prévia rodar lisa, o programa faz em segundo plano uma <b>cópia leve</b> (540p) de cada vídeo, uma vez só ("preparando prévia leve 3/8" no alto); o vídeo final usa sempre os originais.</td></tr>
 <tr><td><b>Linha vermelha</b></td><td>Durante a reprodução, mostra nas faixas de baixo qual trecho do vídeo bruto está tocando.</td></tr>
 <tr><td><b>Faixas (uma por vídeo)</b></td><td>Cada vídeo bruto inteiro, com miniaturas, nome, duração e quadros por segundo. A régua no alto mostra os segundos.</td></tr>
 <tr><td><b>Blocos coloridos numerados</b></td><td>As tomadas que estão no vídeo final. O número é a posição na sequência; a cor indica o tipo de paisagem, sempre a mesma (cachoeira azul, rio ciano, mata verde, serra verde-oliva, pôr do sol laranja, cidade histórica terracota, cidade lilás, estrada cinza…). A legenda <b>Paisagens</b>, à direita, mostra as que aparecem no vídeo.</td></tr>
@@ -470,8 +469,9 @@ Tudo roda no seu computador: nenhum vídeo é enviado para a internet e não há
 <tr><td><kbd>[</kbd> / <kbd>]</kbd> ou <kbd>Tab</kbd></td><td>Escolhe a borda ativa: entrada / saída (Tab alterna).</td></tr>
 <tr><td><kbd>↑</kbd> / <kbd>↓</kbd></td><td>Tomada anterior / próxima.</td></tr>
 <tr><td><kbd>Delete</kbd></td><td>Remove a tomada do vídeo (também funciona na sequência).</td></tr>
-<tr><td><kbd>Espaço</kbd></td><td>Toca / pausa o vídeo final a partir da tomada selecionada.</td></tr>
-<tr><td><kbd>T</kbd> / <kbd>C</kbd></td><td>Toca só a tomada selecionada / o vídeo bruto dela.</td></tr>
+<tr><td>Clique num bloco colorido / <kbd>Espaço</kbd></td><td>Toca / pausa a tomada selecionada (clicar de novo pausa, e de novo continua).</td></tr>
+<tr><td>Duplo clique num bloco colorido</td><td>Toca a tomada do início, uma vez.</td></tr>
+<tr><td><kbd>T</kbd> / <kbd>L</kbd> / <kbd>C</kbd></td><td>Toca a tomada do início / a tomada em loop / o vídeo bruto dela.</td></tr>
 <tr><td><kbd>F11</kbd></td><td>Tela cheia (<kbd>Esc</kbd> sai).</td></tr>
 </table>
 <p>As imagens de <b>Entrada</b> e <b>Saída</b> mostram o quadro exato de cada borda e se atualizam a cada ajuste, para você parar no ponto certo.</p>
@@ -535,12 +535,14 @@ Tudo roda no seu computador: nenhum vídeo é enviado para a internet e não há
 <table>
 <tr><th>Arquivo</th><th>Para que serve</th></tr>
 <tr><td><code>Título[_grupo]_16x9_DATA.mp4</code> / <code>_9x16_</code></td><td>Os vídeos prontos.</td></tr>
-<tr><td><code>projeto\….edl.yaml</code></td><td>A "lista de cortes" do vídeo. Pode ser aberta no editor do VideoHighlighter (<code>python main.py</code>) para ajustes manuais e um novo render.</td></tr>
-<tr><td><code>projeto\…_musica.m4a</code></td><td>A música já cortada e com o volume abaixando no final, usada pelo vídeo e pelo arquivo de cortes.</td></tr>
+<tr><td><code>projeto\….edl.yaml</code></td><td>A "lista de cortes", um por vídeo. Pode ser aberta no editor do VideoHighlighter (<code>python main.py</code>) para ajustes manuais e um novo render.</td></tr>
+<tr><td><code>projeto\…_musica.m4a</code></td><td>A música já cortada e com o volume abaixando no final, um por vídeo. Só existe quando há uma <b>biblioteca de música</b> escolhida; sem ela, o vídeo sai sem música e este arquivo não é criado.</td></tr>
 <tr><td><code>…_manual_16x9_DATA.mp4</code></td><td>Vídeos renderizados pela Edição manual (com o próprio <code>.edl.yaml</code>, música e relatório).</td></tr>
 <tr><td><code>projeto\edicao_manual.json</code></td><td>As suas edições na timeline, por grupo, estilo e formato. Apagar este arquivo descarta todas.</td></tr>
-<tr><td><code>projeto\…_relatorio.json</code></td><td>Tudo o que foi decidido: estilo e motivo, material disponível, música, cada tomada (arquivo, tempo de entrada e saída, paisagem, movimento e notas) e eventos da IA. É usado pelo REFAZER e serve para calibrar o programa.</td></tr>
+<tr><td><code>projeto\…_relatorio.json</code></td><td>Um por geração (cobre todos os vídeos daquela vez, 16:9 e 9:16). Tudo o que foi decidido: estilo e motivo, material disponível, música, cada tomada (arquivo, tempo de entrada e saída, paisagem, movimento e notas) e eventos da IA. É usado pelo REFAZER e serve para calibrar o programa.</td></tr>
+<tr><td><code>capcut\…</code></td><td>Só depois de usar <b>Enviar para o CapCut</b>: as tomadas numeradas, a música e o <code>ORDEM.txt</code>.</td></tr>
 </table>
+<p>Os pedaços intermediários do render (cada tomada cortada antes de juntar) vão para a pasta temporária do Windows e são apagados no fim. A análise (cache), as cópias leves da prévia e o <code>erros.log</code> ficam em <code>%LOCALAPPDATA%\DroneHighlighter</code>, fora da pasta dos vídeos.</p>
 
 <!-- ============================================================ -->
 <h2 id="cache">16. Cache: por que a segunda vez é rápida</h2>
@@ -553,35 +555,7 @@ Tudo roda no seu computador: nenhum vídeo é enviado para a internet e não há
 </ul>
 
 <!-- ============================================================ -->
-<h2 id="cli">17. Linha de comando</h2>
-<p>Tudo o que a janela faz também pode ser feito pelo terminal, o que é útil para processar várias pastas.</p>
-<pre><code>python -m drone.cli --pasta "C:\VideosDrone\Pirenopolis\Brutos" --estilo automatico ^
-    --duracao auto --formato ambos --titulo "Pirenópolis — Goiás" --musicas "C:\Musicas" ^
-    --separar voo --resumo</code></pre>
-<table>
-<tr><th>Opção</th><th>Valores</th><th>Descrição</th></tr>
-<tr><td><code>--pasta</code></td><td>caminho</td><td>Pasta dos vídeos (obrigatório)</td></tr>
-<tr><td><code>--estilo</code></td><td>automatico, cinematografico, contemplativo, por_do_sol, minimalista, cidade_historica, diario_viagem, trailer_epico, viagem_dinamica, aventura_fpv, redes_sociais</td><td>Estilo de edição</td></tr>
-<tr><td><code>--duracao</code> / <code>--duracao-vertical</code></td><td>segundos ou <code>auto</code></td><td>Duração de cada formato</td></tr>
-<tr><td><code>--se-faltar</code></td><td>esticar (padrão), encurtar</td><td>O que fazer com pouco material</td></tr>
-<tr><td><code>--separar</code></td><td>nada, voo, dia, local, subpasta</td><td>Um vídeo por grupo</td></tr>
-<tr><td><code>--resumo</code></td><td>—</td><td>Com <code>--separar</code>: também gera o vídeo da viagem inteira</td></tr>
-<tr><td><code>--formato</code></td><td>horizontal, vertical, ambos</td><td>Formatos</td></tr>
-<tr><td><code>--resolucao</code></td><td>4k, 1080p, 720p</td><td>Resolução do horizontal</td></tr>
-<tr><td><code>--titulo</code>, <code>--musicas</code>, <code>--musica</code></td><td>texto / pasta / arquivo</td><td>Título, biblioteca de músicas ou uma música específica</td></tr>
-<tr><td><code>--instrucoes</code></td><td>texto</td><td>Pedido livre</td></tr>
-<tr><td><code>--refazer</code> + <code>--ajustes</code></td><td>relatório JSON + texto</td><td>Refazer uma versão com mudanças</td></tr>
-<tr><td><code>--variacao</code></td><td>1, 2, 3…</td><td>Versões alternativas</td></tr>
-<tr><td><code>--so-analisar</code></td><td>—</td><td>Só lista os melhores trechos, sem renderizar</td></tr>
-<tr><td><code>--sem-clip</code>, <code>--cpu</code></td><td>—</td><td>Desliga o CLIP / desliga a GPU</td></tr>
-<tr><td><code>--recursivo</code></td><td>—</td><td>Também lê subpastas</td></tr>
-<tr><td><code>--ia</code>, <code>--ia-modelo</code>, <code>--ia-url</code>, <code>--ia-chave</code></td><td>ollama, lmstudio, compatible, openai, anthropic</td><td>Liga o assistente de IA</td></tr>
-<tr><td><code>--ia-so-instrucoes</code></td><td>—</td><td>A IA só interpreta o texto; a escolha das cenas fica com o programa</td></tr>
-<tr><td><code>--testar-ia</code></td><td>—</td><td>Só testa a conexão com a IA</td></tr>
-</table>
-
-<!-- ============================================================ -->
-<h2 id="avancado">18. Configuração avançada</h2>
+<h2 id="avancado">17. Configuração avançada</h2>
 <p>Arquivo: <code>%LOCALAPPDATA%\DroneHighlighter\config.json</code>. Ele é criado na primeira geração pela janela e pode ser editado com o Bloco de Notas, com o programa fechado.</p>
 <table>
 <tr><th>Seção</th><th>Para que serve</th></tr>
@@ -596,11 +570,11 @@ Tudo roda no seu computador: nenhum vídeo é enviado para a internet e não há
 <p>Os estilos ficam em <code>drone/config.py</code> (no código). Lá dá para criar novos ou alterar faixa de duração, transições, BPM, paisagens preferidas, abertura e fechamento, curva de ritmo, ordem cronológica e preferência por tipo de movimento.</p>
 
 <!-- ============================================================ -->
-<h2 id="desempenho">19. Desempenho e hardware</h2>
+<h2 id="desempenho">18. Desempenho e hardware</h2>
 <p>Hardware de referência: Intel Core i5-10600K e NVIDIA RTX 2060 (6 GB) ou RTX 4060 (8 GB), no Windows 11. Os números abaixo são estimativas.</p>
 <table>
 <tr><th>Etapa</th><th>Estimativa</th></tr>
-<tr><td>Análise (só na 1ª vez)</td><td>5 a 12× mais rápida que a duração dos vídeos. 45 min de filmagem levam entre 4 e 9 min.</td></tr>
+<tr><td>Análise (só na 1ª vez)</td><td>Estimativa: 5 a 12× mais rápida que a duração dos vídeos (45 min de filmagem em 4 a 9 min). O programa analisa 2 ou 3 vídeos ao mesmo tempo, conforme o processador; o registro mostra "Analisando N vídeos, 3 ao mesmo tempo".</td></tr>
 <tr><td>Classificação de paisagens (CLIP)</td><td>Alguns segundos por vídeo; usa ~600 MB da placa e libera em seguida.</td></tr>
 <tr><td>Render 90 s em 4K</td><td>6 a 10 min.</td></tr>
 <tr><td>Render vertical 45 s (1080×1920)</td><td>Cerca de 1 min.</td></tr>
@@ -609,7 +583,7 @@ Tudo roda no seu computador: nenhum vídeo é enviado para a internet e não há
 <div class="box tip"><b>Dica de velocidade</b>Para testar estilos e ajustes, use resolução Full HD e só o formato horizontal. Quando gostar do resultado, gere a versão final em 4K.</div>
 
 <!-- ============================================================ -->
-<h2 id="problemas">20. Solução de problemas</h2>
+<h2 id="problemas">19. Solução de problemas</h2>
 <table>
 <tr><th>Situação</th><th>O que fazer</th></tr>
 <tr><td>"Nenhum vídeo MP4/MOV encontrado"</td><td>Confira a pasta. Os arquivos <code>.LRF</code> (proxies DJI) são ignorados de propósito. Para ler subpastas, use Organizar → por subpasta ou <code>--recursivo</code>.</td></tr>
@@ -622,13 +596,13 @@ Tudo roda no seu computador: nenhum vídeo é enviado para a internet e não há
 <tr><td>IA: "não consegui conectar… está aberto?"</td><td>Abra o Ollama ou o LM Studio (e ligue o servidor local no LM Studio). Use "Testar conexão".</td></tr>
 <tr><td>IA: "modelo não encontrado"</td><td>No Ollama, rode <code>ollama pull &lt;modelo&gt;</code>. Nas APIs, confira o nome atual do modelo.</td></tr>
 <tr><td>IA: "chave de API recusada" / "limite de uso"</td><td>Confira a chave e o saldo de créditos no site do provedor.</td></tr>
-<tr><td>CLIP indisponível</td><td>Falta o PyTorch/transformers ou o download do modelo. O programa segue com a estimativa por cores. Rode o <code>Instalar_IA_Paisagens.bat</code> de novo (seção 21). Se você trocou de versão do programa, a versão do Python pode ter mudado: o instalador resolve isso.</td></tr>
+<tr><td>CLIP indisponível</td><td>Falta o PyTorch/transformers ou o download do modelo. O programa segue com a estimativa por cores. Rode o <code>Instalar_IA_Paisagens.bat</code> de novo (seção 20). Se você trocou de versão do programa, a versão do Python pode ter mudado: o instalador resolve isso.</td></tr>
 </table>
 
 <!-- ============================================================ -->
-<h2 id="instalar">21. Instalação e atualização</h2>
+<h2 id="instalar">20. Instalação e atualização</h2>
 <h3>Opção 1: programa .exe (sem instalar Python)</h3>
-<p>O DroneHighlighter pode virar um programa comum do Windows: a pasta <code>DroneHighlighter</code> com o <b>DroneHighlighter.exe</b> (a janela); a linha de comando, <b>DroneHighlighter-cli.exe</b>, fica guardada dentro de <code>_internal</code>. O ffmpeg vem junto, e o PC que vai usar o programa não precisa de Python nem de ffmpeg.</p>
+<p>O DroneHighlighter pode virar um programa comum do Windows: a pasta <code>DroneHighlighter</code> com o <b>DroneHighlighter.exe</b>. O ffmpeg vem junto, e o PC que vai usar o programa não precisa de Python nem de ffmpeg.</p>
 <table>
 <tr><th>Como gerar</th><th>Passos</th></tr>
 <tr><td><b>No seu PC</b></td><td>Instale o Python 3.12 (python.org, marcando "Add python.exe to PATH") e dê dois cliques em <code>packaging\drone\build_exe.bat</code>. Em alguns minutos aparecem <code>dist\DroneHighlighter\DroneHighlighter.exe</code> e <code>dist\DroneHighlighter-win64.zip</code>.</td></tr>
@@ -670,7 +644,7 @@ python -m pytest tests/test_drone_*.py -q</code></pre>
 <p>O VideoHighlighter completo (com chat, editor manual e assistente com Ollama/LM Studio) continua disponível em <code>python main.py</code>.</p>
 
 <!-- ============================================================ -->
-<h2 id="limites">22. Limitações conhecidas</h2>
+<h2 id="limites">21. Limitações conhecidas</h2>
 <ul>
   <li>Os limites de pontuação e as regras do modo Automático foram ajustados com vídeos de teste e ainda precisam ser calibrados com filmagens DJI reais.</li>
   <li>Sem o CLIP, o reconhecimento de paisagens é feito só pelas cores e é bem menos preciso.</li>
@@ -682,7 +656,7 @@ python -m pytest tests/test_drone_*.py -q</code></pre>
 </ul>
 
 <!-- ============================================================ -->
-<h2 id="resumo">23. Resumo rápido: qual opção usar</h2>
+<h2 id="resumo">22. Resumo rápido: qual opção usar</h2>
 <table>
 <tr><th>Eu quero…</th><th>Use</th></tr>
 <tr><td>Não pensar em nada</td><td>Estilo <b>Automático</b> + duração <b>Automática</b> + Se faltar material: <b>Perguntar</b></td></tr>

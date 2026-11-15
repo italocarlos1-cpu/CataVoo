@@ -88,6 +88,8 @@ QCheckBox::indicator:hover {{ border-color: #8a8a8a; }}
 QProgressBar {{ background: {FIELD}; border: 0; border-radius: 2px; height: 4px;
                max-height: 4px; text-align: center; color: transparent; }}
 QProgressBar::chunk {{ background: {ACCENT}; border-radius: 2px; }}
+QProgressBar[role="thick"] {{ height: 10px; max-height: 10px; border-radius: 5px; }}
+QProgressBar[role="thick"]::chunk {{ border-radius: 5px; }}
 
 QSlider::groove:horizontal {{ height: 4px; background: {LINE}; border-radius: 2px; }}
 QSlider::sub-page:horizontal {{ background: #9a9a9a; border-radius: 2px; }}

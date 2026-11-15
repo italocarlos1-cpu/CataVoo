@@ -380,3 +380,28 @@ def test_videos_made_by_editors_are_not_footage(tmp_path):
     from drone.ingest import is_derived
     assert is_derived("DJI_0420_DJI_0419_highlight.mp4") and is_derived("DJI_0421_highlight.MP4")
     assert not is_derived("DJI_0421.MP4") and not is_derived("highlights_da_serra.mp4")
+
+
+def test_heartbeat_shows_percent_time_and_quiet_stretches(monkeypatch):
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qtw = pytest.importorskip("PySide6.QtWidgets")
+    if not hasattr(qtw, "QApplication") or "Mock" in type(qtw.QApplication).__name__:
+        pytest.skip("real PySide6 required")
+    qtw.QApplication.instance() or qtw.QApplication([])
+    from drone import progress_ui
+    bar, status, pct = qtw.QProgressBar(), qtw.QLabel(), qtw.QLabel()
+    bar.setRange(0, 1000)
+    now = [100.0]
+    monkeypatch.setattr(progress_ui.time, "monotonic", lambda: now[0])
+    hb = progress_ui.Heartbeat(bar, status, pct)
+    hb.start("Analisando")
+    hb.update(42.4, "Renderizando 16:9")
+    assert pct.text() == "42%" and bar.value() == 424 and "Renderizando 16:9" in status.text()
+    now[0] += 65
+    hb._tick()
+    assert "1:05" in status.text() and "ainda trabalhando" in status.text()
+    hb.touch()
+    hb._tick()
+    assert "ainda trabalhando" not in status.text()
+    hb.finish("Concluído")
+    assert pct.text() == "100%" and status.text() == "Concluído" and not hb.timer.isActive()

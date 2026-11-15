@@ -236,7 +236,9 @@ def iter_frame_pairs(info: MediaInfo, *, sample_hz: float = 4.0,
             "-i", info.path, "-an", "-sn", "-dn", "-vf", vf,
             "-fps_mode", "passthrough", "-f", "rawvideo", "-pix_fmt", "bgr24", "pipe:1"]
         kw = {"creationflags": _NO_WINDOW} if _NO_WINDOW else {}
-        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        # stderr is discarded: a pipe nobody reads fills up and freezes ffmpeg
+        # on a file that prints many warnings.
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
                                 bufsize=frame_bytes * 4, **kw)
         produced = 0
         pending = None
@@ -274,7 +276,7 @@ def grab_frame(path: str, t: float, width: int = 640) -> Optional[np.ndarray]:
     """One BGR frame at ``t`` seconds (for previews and CLIP thumbnails)."""
     cmd = [ffmpeg_bin(), "-v", "error", "-nostdin", "-ss", f"{max(0.0, t):.3f}",
            "-i", path, "-frames:v", "1", "-vf", f"scale={width}:-2",
-           "-f", "image2pipe", "-vcodec", "png", "pipe:1"]
+           "-f", "image2pipe", "-vcodec", "bmp", "pipe:1"]      # bmp: no time lost compressing
     try:
         out = _run(cmd, capture_output=True, timeout=60)
         if out.returncode != 0 or not out.stdout:
