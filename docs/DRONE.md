@@ -58,6 +58,18 @@ ficam menos. A duração total e o encaixe na música não mudam.
   a sua seleção e, no modo Automático, o seu estilo.
 - **Música**: volume abaixando nos últimos ~4 s; uma faixa mais curta que o vídeo é repetida.
 
+## v0.6.5 — barra da prévia em duas linhas (layout A)
+
+- Linha 1: Estilo, Formato, Duração, Música, duração total ("2:10 · 24 tomadas"), Exportar ▾
+  (Enviar para o CapCut) e RENDERIZAR; Cancelar só aparece durante um processamento.
+- Linha 2: ajustes, Foco, Refazer, Outra versão; ↶ ↷, Salvar e Mais ▾ (Restaurar automático).
+- O resumo do material foi para o painel da direita, que agora rola quando o monitor é baixo.
+- Música: "Escolher pasta de músicas…" no fim da lista.
+- Divisórias livres (monitor até 160×90, sequência a partir de 64 px) e lembradas em QSettings
+  (`editor/split`, `editor/upper`); os testes desligam com `DRONEHIGHLIGHTER_NO_LAYOUT_MEMORY`.
+- Monitor mais baixo, sequência mais compacta (miniaturas 96×54, sem o nome da paisagem, que
+  fica na dica e na cor) e mais altura para os clipes originais.
+
 ## v0.6.4 — desfazer/refazer, escolha da música, enquadramento 9:16
 
 - **↶ Desfazer / ↷ Refazer edição** (Ctrl+Z, Ctrl+Y ou Ctrl+Shift+Z) na prévia: histórico de até

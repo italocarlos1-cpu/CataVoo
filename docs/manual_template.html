@@ -119,7 +119,7 @@ Tudo roda no seu computador: nenhum vídeo é enviado para a internet e não há
   <li>Clique em <b>ANALISAR MATERIAL</b> e acompanhe pela barra de progresso. Os vídeos são analisados <b>uma vez só</b>: a análise fica guardada e as próximas vezes são rápidas.</li>
   <li>O programa mostra <b>quanto material existe</b>: tempo bruto, tempo de material bom sem repetir e até quanto dá para esticar, e já deixa escolhida a <b>duração sugerida</b>. Aceite ou escolha outra.</li>
   <li>Clique em <b>GERAR PRÉVIA</b>. O vídeo montado toca na hora, sem renderizar. Ali você troca o <b>estilo</b> (começa no Automático), muda a <b>duração</b>, usa <b>Refazer</b>, <b>Foco</b> e <b>Outra versão</b> e ajusta cada tomada.</li>
-  <li>Quando gostar, clique em <b>RENDERIZAR</b> para gravar o vídeo final, ou em <b>Enviar para o CapCut</b> para fazer o acabamento lá.</li>
+  <li>Quando gostar, clique em <b>RENDERIZAR</b> para gravar o vídeo final, ou em <b>Exportar → Enviar para o CapCut</b> para fazer o acabamento lá.</li>
 </ol>
 <div class="box tip"><b>Nada é gerado à toa</b>Analisar e ver a prévia não grava nenhum vídeo nem ocupa espaço com versões descartadas. Só o RENDERIZAR cria o arquivo final, e você pode renderizar quantas versões quiser (outro estilo, outra duração, o vertical) a partir da mesma análise.</div>
 
@@ -415,7 +415,7 @@ Tudo roda no seu computador: nenhum vídeo é enviado para a internet e não há
 <!-- ============================================================ -->
 <h2 id="manual">12. Prévia e edição</h2>
 <p>O botão <b>GERAR PRÉVIA</b> abre esta janela, já maximizada (<kbd>F11</kbd> deixa em tela cheia). O monitor toca o vídeo como está ficando, com a música, <b>sem renderizar nada</b>. Aqui você escolhe o estilo e a duração, refaz, pede outra versão, ajusta cada tomada até o quadro exato e só então manda renderizar.</p>
-<figure><img src="{{IMG_EDITOR}}" alt="Janela de prévia e edição"><figcaption>No alto, estilo, formato e duração; o monitor com a linha do vídeo final; à direita, a tomada selecionada; no meio, a sequência; embaixo, os vídeos brutos com as tomadas usadas (coloridas) e os trechos bons não usados (cinza); por fim, ajustes, Foco, Refazer, Outra versão e os botões de saída.</figcaption></figure>
+<figure><img src="{{IMG_EDITOR}}" alt="Janela de prévia e edição"><figcaption>Primeira linha: estilo, formato, duração, música, a duração total e as saídas (Exportar e RENDERIZAR). Segunda linha: ajustes, Foco, Refazer, Outra versão, desfazer/refazer, Salvar e Mais. Depois o monitor com a linha do vídeo final; à direita, o material e a tomada selecionada; no meio, a sequência; embaixo, os vídeos brutos com as tomadas usadas (coloridas) e os trechos bons não usados (cinza).</figcaption></figure>
 
 <h3>O que aparece na janela</h3>
 <table>
@@ -428,12 +428,13 @@ Tudo roda no seu computador: nenhum vídeo é enviado para a internet e não há
 <tr><td><b>Linha branca</b></td><td>A borda ativa da tomada selecionada (entrada ou saída): é ela que as setas movem.</td></tr>
 <tr><td><b>Painel da direita</b></td><td>Detalhes da tomada (arquivo, paisagem, movimento, nota, entrada, saída, duração em segundos e em quadros, posição no vídeo, tempo na tela, transição; no 9:16, o enquadramento), as imagens exatas do <b>primeiro e do último quadro</b>, a legenda das paisagens e o registro.</td></tr>
 <tr><td><b>Sequência (no meio)</b></td><td>A ordem do vídeo final, com miniatura, a cor da paisagem, duração, "⇢" quando há fusão para a próxima Um clique leva o monitor até a tomada; <b>duplo clique</b> já toca a tomada.</td></tr>
-<tr><td><b>Barra de cima</b></td><td>Grupo (quando você separa por voo/dia/local), <b>Estilo</b> (começa no Automático), <b>Formato</b> (16:9 ou 9:16), <b>Duração</b> (escolha ou digite; veja a <a href="#duracao">seção 6</a>), <b>Música</b>, o resumo "bruto · bom · até X esticando" e a <b>duração total</b> atual com o número de tomadas.</td></tr>
-<tr><td><b>Segunda linha</b></td><td>Ajustes, <b>Foco</b>, <b>Refazer</b> e <b>Outra versão</b> (<a href="#refazer">seção 10</a>); <b>↶ Desfazer</b>, <b>↷ Refazer edição</b>, Restaurar automático e Salvar edição. Logo abaixo, a barra de progresso. <b>Enviar para o CapCut</b> e <b>RENDERIZAR</b> ficam no fim da barra de cima.</td></tr>
+<tr><td><b>Divisórias</b></td><td>Arraste as linhas entre o monitor, a sequência e os clipes originais (e entre o monitor e o painel da direita) para dar mais espaço a quem você quiser; o monitor pode ficar bem pequeno. A posição fica guardada e volta igual na próxima vez que você abrir a prévia.</td></tr>
+<tr><td><b>Barra de cima</b></td><td>Grupo (quando você separa por voo/dia/local), <b>Estilo</b> (começa no Automático), <b>Formato</b> (16:9 ou 9:16), <b>Duração</b> (escolha ou digite; veja a <a href="#duracao">seção 6</a>), <b>Música</b> (com "Escolher pasta de músicas…" no fim da lista), a <b>duração total</b> com o número de tomadas e, à direita, as saídas: <b>Exportar</b> (menu com <b>Enviar para o CapCut</b>) e <b>RENDERIZAR</b>. O botão Cancelar só aparece enquanto algo está sendo processado.</td></tr>
+<tr><td><b>Segunda linha</b></td><td>Ajustes, <b>Foco</b>, <b>Refazer</b> e <b>Outra versão</b> (<a href="#refazer">seção 10</a>); à direita, <b>↶</b> (Desfazer), <b>↷</b> (Refazer edição), <b>Salvar</b> e <b>Mais</b> (menu com Restaurar automático). Logo abaixo, a barra de progresso. O resumo do material ("bruto · bom · até X esticando") fica no alto do painel da direita.</td></tr>
 </table>
 
 <h3>Enviar para o CapCut</h3>
-<p>O botão <b>Enviar para o CapCut</b>, ao lado de Renderizar, prepara o acabamento no CapCut. O CapCut não abre projetos de outros editores, então o programa entrega o corte pronto em peças: uma pasta em <code>_dh_editados\capcut\</code> com cada tomada já cortada no quadro exato e numerada na ordem do vídeo (<code>01_…mp4</code>, <code>02_…mp4</code>…), a música já no tamanho e com fade (<code>00_musica.m4a</code>) e um <code>ORDEM.txt</code> com os tempos e as transições. A pasta abre sozinha e, se o CapCut estiver instalado, ele também. No CapCut: <b>Importar</b> → selecione todos os arquivos → arraste para a linha do tempo (entram na ordem) → arraste a música para a faixa de áudio.</p>
+<p>O item <b>Enviar para o CapCut</b>, no menu <b>Exportar</b> ao lado de Renderizar, prepara o acabamento no CapCut. O CapCut não abre projetos de outros editores, então o programa entrega o corte pronto em peças: uma pasta em <code>_dh_editados\capcut\</code> com cada tomada já cortada no quadro exato e numerada na ordem do vídeo (<code>01_…mp4</code>, <code>02_…mp4</code>…), a música já no tamanho e com fade (<code>00_musica.m4a</code>) e um <code>ORDEM.txt</code> com os tempos e as transições. A pasta abre sozinha e, se o CapCut estiver instalado, ele também. No CapCut: <b>Importar</b> → selecione todos os arquivos → arraste para a linha do tempo (entram na ordem) → arraste a música para a faixa de áudio.</p>
 
 <h3>Trocar de estilo sem renderizar</h3>
 <p>Escolha outro estilo na lista <b>Estilo</b> e a timeline mostra na hora os cortes daquele estilo. Assim dá para comparar, por exemplo, Cinematográfico, Trailer épico e Contemplativo antes de gastar tempo com o render.</p>
@@ -490,8 +491,8 @@ Tudo roda no seu computador: nenhum vídeo é enviado para a internet e não há
 <h3>Salvar, restaurar e renderizar</h3>
 <table>
 <tr><th>Botão</th><th>O que faz</th></tr>
-<tr><td><b>💾 Salvar edição</b></td><td>Grava as edições em <code>_dh_editados\projeto\edicao_manual.json</code>. Elas também são salvas ao trocar de estilo, ao renderizar e ao fechar a janela. Na próxima vez que abrir a prévia da mesma pasta, elas voltam.</td></tr>
-<tr><td><b>↺ Restaurar automático</b></td><td>Descarta as edições do estilo e formato atuais e volta ao corte automático.</td></tr>
+<tr><td><b>💾 Salvar</b></td><td>Grava as edições em <code>_dh_editados\projeto\edicao_manual.json</code>. Elas também são salvas ao trocar de estilo, ao renderizar e ao fechar a janela. Na próxima vez que abrir a prévia da mesma pasta, elas voltam.</td></tr>
+<tr><td><b>↺ Mais → Restaurar automático</b></td><td>Descarta as edições do estilo e formato atuais e volta ao corte automático.</td></tr>
 <tr><td><b>RENDERIZAR</b></td><td>Pede confirmação mostrando o que vai ser gravado (estilo, formato, duração, número de tomadas) e grava o vídeo do estilo, formato e duração que estão na tela, com a música e o título, em <code>_dh_editados</code>. No fim, oferece <b>Assistir</b> e <b>Abrir pasta</b>. Para gerar outro estilo, outra duração ou o vertical, mude na barra de cima e renderize de novo.</td></tr>
 </table>
 
@@ -676,7 +677,7 @@ python -m pytest tests/test_drone_*.py -q</code></pre>
 <tr><td>Um Reels de 30 s</td><td>Formato <b>Vertical 9:16</b>; na prévia, duração 0:30 e estilo <b>Redes sociais</b></td></tr>
 <tr><td>Algo calmo, para relaxar</td><td><b>Contemplativo</b>, <b>Minimalista</b> ou <b>Pôr do sol</b></td></tr>
 <tr><td>Contar a viagem em ordem</td><td><b>Diário de viagem</b></td></tr>
-<tr><td>Acabamento com efeitos e textos</td><td><b>Enviar para o CapCut</b></td></tr>
+<tr><td>Acabamento com efeitos e textos</td><td><b>Exportar → Enviar para o CapCut</b></td></tr>
 <tr><td>Testar IA sem pagar</td><td>Assistente de IA → <b>Ollama</b> com <code>qwen3:8b</code></td></tr>
 </table>
 

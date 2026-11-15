@@ -42,7 +42,7 @@ from PySide6.QtGui import QBrush, QColor, QCursor, QFont, QIcon, QImage, QPainte
 from PySide6.QtWidgets import (QAbstractItemView, QApplication, QCheckBox, QComboBox, QFrame,
                                QGraphicsItem, QGraphicsRectItem, QGraphicsScene,
                                QGraphicsSimpleTextItem, QGraphicsView, QHBoxLayout, QLabel, QLineEdit,
-                               QListView, QListWidget, QListWidgetItem, QMainWindow, QMenu,
+                               QListView, QListWidget, QListWidgetItem, QMainWindow, QMenu, QScrollArea,
                                QMessageBox, QPlainTextEdit, QProgressBar, QPushButton, QSizePolicy, QSlider,
                                QSplitter, QVBoxLayout, QWidget)
 
@@ -183,8 +183,8 @@ class SequenceStrip(QListWidget):
         self.setViewMode(QListView.IconMode)
         self.setFlow(QListView.LeftToRight)
         self.setWrapping(False)
-        self.setIconSize(QSize(128, 77))
-        self.setGridSize(QSize(146, 124))
+        self.setIconSize(QSize(96, 54))
+        self.setGridSize(QSize(114, 84))
         self.setWordWrap(True)
         self.setTextElideMode(Qt.ElideNone)
         self.setMovement(QListView.Snap)
@@ -197,7 +197,7 @@ class SequenceStrip(QListWidget):
         self.setDragDropMode(QAbstractItemView.InternalMove)
         self.setDefaultDropAction(Qt.MoveAction)
         self.setHorizontalScrollMode(QAbstractItemView.ScrollPerPixel)
-        self.setFixedHeight(146)
+        self.setMinimumHeight(64)
 
     def drop_slot(self, pos) -> int:
         """Insert-before index for a drop at ``pos`` (viewport coordinates)."""
@@ -594,7 +594,8 @@ class EditorWindow(QMainWindow):
         top.addWidget(self.group_box)
         top.addWidget(role(QLabel("Estilo"), "muted"))
         self.style_box = QComboBox()
-        self.style_box.setMinimumWidth(300)
+        self.style_box.setMinimumWidth(240)
+        self.style_box.setMaximumWidth(320)
         top.addWidget(self.style_box)
         top.addWidget(role(QLabel("Formato"), "muted"))
         self.tag_box = QComboBox()
@@ -607,7 +608,7 @@ class EditorWindow(QMainWindow):
         self.dur_box.setEditable(True)
         self.dur_box.setInsertPolicy(QComboBox.NoInsert)
         self.dur_box.lineEdit().editingFinished.connect(self._duration_typed)
-        self.dur_box.setMinimumWidth(150)
+        self.dur_box.setMinimumWidth(130)
         self.dur_box.setToolTip("Remonta o vídeo neste tamanho a partir da mesma análise, sem processar nada de novo.\n"
                                 "Menor: ficam as tomadas mais bem avaliadas. Maior: entram mais tomadas e elas esticam.\n"
                                 "Escolha na lista ou digite o tempo que quiser (90, 1:30, 4:00…) e tecle Enter.\n"
@@ -616,27 +617,17 @@ class EditorWindow(QMainWindow):
         top.addWidget(self.dur_box)
         top.addWidget(role(QLabel("Música"), "muted"))
         self.music_box = QComboBox()
-        self.music_box.setMinimumWidth(190)
-        self.music_box.setMaximumWidth(320)
+        self.music_box.setMinimumWidth(170)
+        self.music_box.setMaximumWidth(260)
         self.music_box.setToolTip("Escolha a música do vídeo entre as faixas da sua biblioteca.\n"
                                   "Ela toca do começo ao fim do vídeo e é cortada no final com o volume abaixando.\n"
                                   "Automática: o programa escolhe pelo estilo.")
-        self.music_box.addItem("Automática (pelo estilo)", "")
-        for path in session.music_tracks():
-            self.music_box.addItem(os.path.splitext(os.path.basename(path))[0], path)
-            self.music_box.setItemData(self.music_box.count() - 1, path, Qt.ToolTipRole)
-        if self.music_box.count() == 1:
-            self.music_box.setItemText(0, "sem biblioteca de música")
-            self.music_box.setEnabled(False)
-        current = getattr(session.job, "music_file", "") or ""
-        self.music_box.setCurrentIndex(max(0, self.music_box.findData(current)))
-        self.music_box.activated.connect(lambda _i: self.set_music(self.music_box.currentData() or ""))
+        self._fill_music()
+        self.music_box.activated.connect(self._music_picked)
         top.addWidget(self.music_box)
         self.material_lbl = role(QLabel(""), "muted")
         self.material_lbl.setToolTip("Bruto: tudo o que foi filmado. Bom: tomadas distintas no ritmo normal do estilo.\n"
                                      "Esticando: o máximo sem repetir cenas.")
-        top.addWidget(self.material_lbl)
-        top.addSpacing(10)
         top.addStretch()
         self.total_lbl = QLabel()
         f = QFont()
@@ -721,6 +712,10 @@ class EditorWindow(QMainWindow):
         sl = QVBoxLayout(side)
         sl.setContentsMargins(14, 12, 14, 12)
         sl.setSpacing(8)
+        sl.addWidget(role(QLabel("MATERIAL"), "section"))
+        self.material_lbl.setWordWrap(True)
+        sl.addWidget(self.material_lbl)
+        sl.addSpacing(4)
         sl.addWidget(role(QLabel("TOMADA SELECIONADA"), "section"))
         self.info = QLabel("Selecione uma tomada colorida.")
         self.info.setWordWrap(True)
@@ -732,7 +727,7 @@ class EditorWindow(QMainWindow):
         for lbl, cap in ((self.in_img, "Entrada"), (self.out_img, "Saída")):
             box = QVBoxLayout()
             t = role(QLabel(cap), "muted")
-            lbl.setFixedSize(148, 83)
+            lbl.setFixedSize(132, 74)
             lbl.setAlignment(Qt.AlignCenter)
             lbl.setStyleSheet("background:#000; border-radius:6px")
             box.addWidget(t)
@@ -754,11 +749,19 @@ class EditorWindow(QMainWindow):
         self.logbox = QPlainTextEdit()
         self.logbox.setReadOnly(True)
         sl.addWidget(self.logbox, 1)
-        upper.addWidget(side)
-        side.setMinimumWidth(300)
-        side.setMaximumWidth(380)               # the monitor gets the rest
+        side_scroll = QScrollArea()             # the panel scrolls when the monitor is short
+        side_scroll.setWidget(side)
+        side_scroll.setWidgetResizable(True)
+        side_scroll.setFrameShape(QFrame.NoFrame)
+        side_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        side_scroll.setMinimumWidth(330)
+        side_scroll.setMaximumWidth(400)        # the monitor gets the rest
+        self.logbox.setMinimumHeight(90)
+        upper.addWidget(side_scroll)
         upper.setStretchFactor(0, 5)
         upper.setStretchFactor(1, 1)
+        upper.setChildrenCollapsible(False)
+        self._upper = upper
         split.addWidget(upper)
 
         # ---- sequence strip
@@ -805,30 +808,49 @@ class EditorWindow(QMainWindow):
         split.setStretchFactor(1, 0)
         split.setStretchFactor(2, 4)
         split.setChildrenCollapsible(False)
+        split.setHandleWidth(7)
+        upper.setHandleWidth(7)
+        split.splitterMoved.connect(lambda *_: self._save_layout())
+        upper.splitterMoved.connect(lambda *_: self._save_layout())
         self._split = split
         self._sized = False
         lay.addWidget(split, 1)
 
         # ---- bottom buttons
         bot = QHBoxLayout()
-        self.undo_btn = QPushButton("↶ Desfazer")
-        self.undo_btn.setToolTip("Desfaz a última mudança: apagar, mover, aparar, trocar transição, enquadrar,\n"
+        self.undo_btn = QPushButton("↶")
+        self.undo_btn.setToolTip("Desfazer: desfaz a última mudança: apagar, mover, aparar, trocar transição, enquadrar,\n"
                                  "Refazer, Outra versão, Duração… (Ctrl+Z)")
         self.undo_btn.clicked.connect(self.undo)
-        self.redo_edit_btn = QPushButton("↷ Refazer edição")
-        self.redo_edit_btn.setToolTip("Volta o que foi desfeito (Ctrl+Y ou Ctrl+Shift+Z)")
+        self.redo_edit_btn = QPushButton("↷")
+        self.redo_edit_btn.setToolTip("Refazer edição: volta o que foi desfeito (Ctrl+Y ou Ctrl+Shift+Z)")
+        for b in (self.undo_btn, self.redo_edit_btn):
+            b.setFixedWidth(40)
+            f = b.font()
+            f.setPointSizeF(f.pointSizeF() * 1.3)
+            b.setFont(f)
         self.redo_edit_btn.clicked.connect(self.redo_edit)
-        self.restore_btn = QPushButton("Restaurar automático")
-        self.restore_btn.setToolTip("Descarta as edições deste estilo/formato e volta ao corte automático")
-        self.save_btn = QPushButton("Salvar edição")
-        self.capcut_btn = QPushButton("Enviar para o CapCut")
-        self.capcut_btn.setToolTip("Corta cada tomada no quadro exato, numera na ordem do vídeo, junta a música\n"
+        self.more_btn = QPushButton("Mais")
+        self.more_btn.setToolTip("Mais opções")
+        more = QMenu(self.more_btn)
+        self.restore_act = more.addAction("Restaurar automático (descarta as edições deste estilo e formato)")
+        self.more_btn.setMenu(more)
+        self.save_btn = QPushButton("Salvar")
+        self.save_btn.setToolTip("Salva a edição deste estilo e formato")
+        self.capcut_btn = QPushButton("Exportar")
+        self.capcut_btn.setToolTip("Outras saídas além do vídeo renderizado")
+        exp = QMenu(self.capcut_btn)
+        self.capcut_act = exp.addAction("Enviar para o CapCut")
+        self.capcut_act.setToolTip("Corta cada tomada no quadro exato, numera na ordem do vídeo, junta a música\n"
                                    "e abre a pasta (e o CapCut, se estiver instalado) para o acabamento.")
+        exp.setToolTipsVisible(True)
+        self.capcut_btn.setMenu(exp)
         self.render_btn = role(QPushButton("RENDERIZAR"), "primary")
         self.render_btn.setMinimumHeight(34)
         self.render_btn.setMinimumWidth(180)
         self.cancel_btn = QPushButton("Cancelar")
         self.cancel_btn.setEnabled(False)
+        self.cancel_btn.setVisible(False)       # only while something is running
         self.bar = QProgressBar()
         self.bar.setRange(0, 1000)
         self.bar.setTextVisible(False)
@@ -842,7 +864,7 @@ class EditorWindow(QMainWindow):
         self.beat = Heartbeat(self.bar, self.bar_status, self.bar_pct, self)
         self.feedback = QLineEdit()
         self.feedback.setPlaceholderText("Ajustes: mais cachoeira, menos cidade, cortes mais rápidos…")
-        self.feedback.setMinimumWidth(380)
+        self.feedback.setMinimumWidth(300)
         self.feedback.returnPressed.connect(lambda: self.redo(False))
         self.focus_box = QComboBox()
         self.focus_box.setEditable(True)
@@ -865,7 +887,7 @@ class EditorWindow(QMainWindow):
         for w in (self.feedback, self.focus_box, self.redo_btn, self.variant_btn):
             bot.addWidget(w)
         bot.addStretch()
-        for w in (self.undo_btn, self.redo_edit_btn, self.restore_btn, self.save_btn):
+        for w in (self.undo_btn, self.redo_edit_btn, self.save_btn, self.more_btn):
             bot.addWidget(w)
         lay.insertLayout(1, bot)                # under the top bar: remake / tidy
         bot = QHBoxLayout()                     # then the progress
@@ -885,10 +907,10 @@ class EditorWindow(QMainWindow):
         top.addWidget(self.render_btn)
         self.setCentralWidget(root)
 
-        self.restore_btn.clicked.connect(self.restore)
+        self.restore_act.triggered.connect(self.restore)
         self.save_btn.clicked.connect(self.save)
         self.render_btn.clicked.connect(self.render)
-        self.capcut_btn.clicked.connect(self.send_to_capcut)
+        self.capcut_act.triggered.connect(self.send_to_capcut)
         self.cancel_btn.clicked.connect(self._cancel_render)
         self.zoom.valueChanged.connect(self._zoom)
 
@@ -905,13 +927,40 @@ class EditorWindow(QMainWindow):
             self._sized = True
             QTimer.singleShot(0, self._initial_sizes)
 
+    def _layout_settings(self):
+        from PySide6.QtCore import QSettings
+        return QSettings("DroneHighlighter", "DroneHighlighter")
+
+    def _save_layout(self) -> None:
+        """Remember where the user left the dividers (monitor / sequence / clips, monitor / panel)."""
+        if not self._sized or os.environ.get("DRONEHIGHLIGHTER_NO_LAYOUT_MEMORY"):
+            return
+        st = self._layout_settings()
+        st.setValue("editor/split", self._split.saveState())
+        st.setValue("editor/upper", self._upper.saveState())
+
+    def _restore_layout(self) -> bool:
+        if os.environ.get("DRONEHIGHLIGHTER_NO_LAYOUT_MEMORY"):
+            return False
+        st = self._layout_settings()
+        split, upper = st.value("editor/split"), st.value("editor/upper")
+        if not split:
+            return False
+        ok = self._split.restoreState(split)
+        if upper:
+            self._upper.restoreState(upper)
+        return bool(ok)
+
     def _initial_sizes(self) -> None:
+        if self._restore_layout():
+            self.fit_zoom()
+            return
         h = max(600, self._split.height())
         lanes = len(self.plan.clips) if self.plan is not None else 4
-        tl = min(int(h * 0.42), RULER_H + lanes * (LANE_H + LANE_GAP) + 50)
-        tl = max(tl, RULER_H + 2 * (LANE_H + LANE_GAP) + 40)
-        strip = 180
-        self._split.setSizes([max(260, h - strip - tl), strip, tl])
+        strip = 112
+        need = RULER_H + lanes * (LANE_H + LANE_GAP) + 50
+        tl = max(int(h * 0.36), min(need, int(h * 0.44)))
+        self._split.setSizes([max(330, h - strip - tl), strip, tl])
         self.fit_zoom()
 
     def fit_zoom(self) -> None:
@@ -1146,6 +1195,35 @@ class EditorWindow(QMainWindow):
         self.focus_box.setEditText(keep or "Sem foco")
         self.focus_box.blockSignals(False)
 
+    PICK_FOLDER = "\x00pasta"
+
+    def _fill_music(self) -> None:
+        box = self.music_box
+        box.blockSignals(True)
+        box.clear()
+        box.addItem("Automática (pelo estilo)", "")
+        for path in self.session.music_tracks():
+            box.addItem(os.path.splitext(os.path.basename(path))[0], path)
+            box.setItemData(box.count() - 1, path, Qt.ToolTipRole)
+        box.addItem("Escolher pasta de músicas…", self.PICK_FOLDER)
+        current = getattr(self.session.job, "music_file", "") or ""
+        box.setCurrentIndex(max(0, box.findData(current)))
+        box.blockSignals(False)
+
+    def _music_picked(self, _i: int) -> None:
+        data = self.music_box.currentData() or ""
+        if data == self.PICK_FOLDER:
+            from PySide6.QtWidgets import QFileDialog
+            folder = QFileDialog.getExistingDirectory(self, "Pasta de músicas",
+                                                      self.session.job.music_dir or os.path.expanduser("~"))
+            if folder:
+                self.session.job.music_dir = folder
+                n = len(self.session.music_tracks())
+                self.log(f"🎶 Biblioteca: {folder} ({n} faixa(s))")
+            self._fill_music()
+            return
+        self.set_music(data)
+
     def set_music(self, path: str) -> None:
         """Use this track for the films of this group. Automatic cuts are planned
         again on its beats; edited ones keep their shots and get the new track."""
@@ -1377,7 +1455,9 @@ class EditorWindow(QMainWindow):
                     _t, pm = min(thumbs, key=lambda tp: abs(tp[0] - s.start - 0.3))
             icon = _card_icon(pm, _colour(s.category))
             tr = " ⇢" if self.plan.trans_out(i) else ""
-            it = QListWidgetItem(icon, f"#{i + 1}  {s.length:.1f}s{tr}\n{LABEL_PT.get(s.category, s.category)}")
+            it = QListWidgetItem(icon, f"#{i + 1}  {s.length:.1f} s{tr}")
+            it.setToolTip(f"#{i + 1} · {LABEL_PT.get(s.category, s.category)} · {s.length:.1f} s\n"
+                          "Clique: vai até a tomada · Duplo clique: toca")
             it.setData(Qt.UserRole, i)
             it.setToolTip(f"{os.path.basename(s.path)} {fmt_time(s.start)}–{fmt_time(s.end)}")
             self.strip.addItem(it)
@@ -1388,7 +1468,8 @@ class EditorWindow(QMainWindow):
     def _update_info(self) -> None:
         p = self.plan
 
-        self.total_lbl.setText(f"{_clock(p.total)} ({p.total:.1f} s) · {len(p.shots)} tomadas")
+        self.total_lbl.setText(f"{_clock(p.total)} · {len(p.shots)} tomadas")
+        self.total_lbl.setToolTip(f"Duração do vídeo: {p.total:.1f} s")
         if self.sel is None or self.sel >= len(p.shots):
             self.info.setText("Selecione uma tomada colorida.")
             return
@@ -2092,6 +2173,7 @@ class EditorWindow(QMainWindow):
         self.render_btn.setEnabled(False)
         self.capcut_btn.setEnabled(False)
         self.cancel_btn.setEnabled(True)
+        self.cancel_btn.setVisible(True)
         self._render_thread = QThread()
         self._render_worker = _RenderWorker(self.session, self.gp, plan, self.plan.tag)
         self._render_worker.moveToThread(self._render_thread)
@@ -2124,6 +2206,7 @@ class EditorWindow(QMainWindow):
         self.render_btn.setEnabled(False)
         self.capcut_btn.setEnabled(False)
         self.cancel_btn.setEnabled(True)
+        self.cancel_btn.setVisible(True)
         self._render_thread = QThread()
         self._render_worker = _CapCutWorker(self.plan, kwargs)
         self._render_worker.moveToThread(self._render_thread)
@@ -2144,6 +2227,7 @@ class EditorWindow(QMainWindow):
         self.render_btn.setEnabled(True)
         self.capcut_btn.setEnabled(True)
         self.cancel_btn.setEnabled(False)
+        self.cancel_btn.setVisible(False)
         QDesktopServices.openUrl(QUrl.fromLocalFile(folder))
         exe = find_capcut()
         if exe:
@@ -2163,6 +2247,7 @@ class EditorWindow(QMainWindow):
         self.render_btn.setEnabled(True)
         self.capcut_btn.setEnabled(True)
         self.cancel_btn.setEnabled(False)
+        self.cancel_btn.setVisible(False)
         self.rendered.emit(out)
         box = QMessageBox(self)
         box.setWindowTitle("Edição manual")
@@ -2182,6 +2267,7 @@ class EditorWindow(QMainWindow):
         self.render_btn.setEnabled(True)
         self.capcut_btn.setEnabled(True)
         self.cancel_btn.setEnabled(False)
+        self.cancel_btn.setVisible(False)
         if "cancel" not in msg:
             QMessageBox.critical(self, "Edição manual", msg)
 
@@ -2196,6 +2282,7 @@ class EditorWindow(QMainWindow):
         self._remember()
         if any(p.edited for p in self.plans.values()):
             self.store.save()
+        self._save_layout()
         self.preview.stop()
         super().closeEvent(e)
 

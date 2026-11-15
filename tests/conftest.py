@@ -179,3 +179,8 @@ def _no_ui_language_leaks():
             core.set_language("en")
     except Exception:
         pass
+
+
+# The drone editor remembers its divider positions in the user's settings;
+# tests must neither read nor overwrite the tester's own layout.
+os.environ.setdefault("DRONEHIGHLIGHTER_NO_LAYOUT_MEMORY", "1")

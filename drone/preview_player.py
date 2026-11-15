@@ -40,7 +40,7 @@ class _Monitor(QGraphicsView):
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.setMinimumSize(320, 180)
+        self.setMinimumSize(160, 90)
         self.setStyleSheet("background:#000; border:0; border-radius:8px")
         self.aspect = 16 / 9            # of the source frame
         self.crop = None                # centre 0..1, or None = no 9:16 frame
