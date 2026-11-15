@@ -109,7 +109,7 @@ acelera a exportação e a IA de paisagens. Vídeos MP4 e MOV, incluindo DJI em 
 - Rodar pelo Python: `pip install numpy opencv-python PySide6 pyyaml pillow imageio-ffmpeg av` e depois `python -m drone` (janela) ou
   `python -m drone.cli --help` (linha de comando).
 - Os testes rodam no Windows a cada alteração, e o GitHub Actions gera o `.exe` sozinho.
-- O histórico de versões fica em [`docs/DRONE.md`](../docs/DRONE.md).
+- As novidades de cada versão ficam em [`docs/NOVIDADES.md`](../docs/NOVIDADES.md); as notas técnicas, em [`docs/DRONE.md`](../docs/DRONE.md).
 
 ## Créditos e licença
 

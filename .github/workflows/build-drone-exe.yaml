@@ -119,8 +119,8 @@ jobs:
           Compress-Archive -Path dist\DroneHighlighter\* -DestinationPath $zip -Force
           $manual = "dist\DroneHighlighter-$v-Manual.pdf"
           Copy-Item docs\DroneHighlighter_Manual.pdf $manual
-          # notes: how to install, then this version's changes from docs/DRONE.md
-          $md = Get-Content docs\DRONE.md -Raw -Encoding utf8
+          # notes: how to install, then this version's changes from docs/NOVIDADES.md
+          $md = Get-Content docs\NOVIDADES.md -Raw -Encoding utf8
           $m = [regex]::Match($md, "(?ms)^## v$([regex]::Escape($v))\b.*?(?=^## v|\z)")
           $news = if ($m.Success) { ($m.Value -replace "^## [^\n]*\n", "").Trim() } else { "" }
           $body = @"
