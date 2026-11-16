@@ -52,7 +52,7 @@ def export(plan, *, out_dir: str, music=None, src_sizes: dict | None = None, tit
     os.makedirs(folder, exist_ok=True)
     vertical = plan.tag == "9x16"
     n = len(plan.shots)
-    lines = [f"DroneHighlighter → CapCut  ·  {title or ''}  ·  estilo {plan.style_label or plan.style_key}"
+    lines = [f"CataVoo → CapCut  ·  {title or ''}  ·  estilo {plan.style_label or plan.style_key}"
              f"  ·  {'vertical 9:16' if vertical else 'horizontal 16:9'}",
              f"Duração total: {plan.total:.2f} s  ·  {n} tomadas", "",
              "No CapCut: Importar → selecione todos os arquivos → arraste para a linha do tempo",

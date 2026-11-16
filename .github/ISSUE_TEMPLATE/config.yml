@@ -1,7 +1,7 @@
 blank_issues_enabled: true
 contact_links:
   - name: Manual completo (PDF)
-    url: https://github.com/italocarlos1-cpu/VideoHighlighter/blob/drone/docs/DroneHighlighter_Manual.pdf
+    url: https://github.com/italocarlos1-cpu/CataVoo/blob/drone/docs/CataVoo_Manual.pdf
     about: Antes de abrir um pedido, vale ver se o manual já explica
   - name: VideoHighlighter (projeto original)
     url: https://github.com/Aseiel/VideoHighlighter

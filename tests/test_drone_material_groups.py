@@ -162,7 +162,7 @@ def test_parallel_analysis_matches_one_at_a_time(trip, tmp_path, monkeypatch):
     from drone.config import DroneConfig
 
     def analyse(workers, name):
-        monkeypatch.setenv("DRONEHIGHLIGHTER_WORKERS", str(workers))
+        monkeypatch.setenv("CATAVOO_WORKERS", str(workers))
         cfg = DroneConfig()
         cfg.use_clip = False
         job = pipeline.Job(folder=str(trip["root"] / "Brutos"), output_dir=str(tmp_path / name))

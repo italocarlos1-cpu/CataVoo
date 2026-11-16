@@ -1,19 +1,20 @@
-# Novidades do DroneHighlighter
+# Novidades do CataVoo
 
 Escritas para quem usa o programa; as notas técnicas ficam em `DRONE.md`. A seção da versão
 publicada vira o texto da página de download.
 
-## v0.6.6
+## v1.0.0
 
-- **Texto sobre a tomada:** botão **T Texto** na prévia. Uma caixa por linha, à esquerda ou
-  centralizada, embaixo, no meio ou no alto; fontes básicas, tamanho, negrito, maiúsculas, cor do
-  texto e fundo preenchido ou transparente. Aparece na prévia e sai igual no vídeo final.
-- **Barra da prévia em duas linhas**, mais organizada: o vídeo e as saídas em cima; ajustes e
-  edição embaixo.
-- **Divisórias ajustáveis:** aumente ou diminua o vídeo, a sequência e os clipes originais; a
-  posição fica salva.
-- **Escolha a música** numa lista com as faixas da sua pasta (ou "Escolher pasta de músicas…").
-  Uma faixa só, do começo ao fim, com fade no final.
-- **Desfazer e refazer** (Ctrl+Z / Ctrl+Y) qualquer mudança da edição.
-- **Vertical 9:16:** arraste o quadro de recorte para os lados em cada tomada.
-- Formatos simplificados: Horizontal 16:9 ou Vertical 9:16.
+Primeira versão do **CataVoo — edição automática de vídeos de drones**.
+
+- **Analisa a filmagem:** separa tremedeira de movimento de câmera, dá nota a cada trecho, descarta
+  cenas repetidas e reconhece paisagens com uma IA local opcional.
+- **Monta sozinho:** 11 estilos mais o Automático, cortes no ritmo da música, duração sugerida
+  pelo material, em 16:9 (até 4K) ou 9:16.
+- **Prévia sem renderizar:** troque estilo, formato, duração e música e veja na hora; peça
+  *Refazer* com ajustes escritos ("mais cachoeira") ou *Outra versão*.
+- **Editor:** aparar quadro a quadro, arrastar para reordenar, desfazer e refazer (Ctrl+Z / Ctrl+Y),
+  recorte 9:16 arrastável por tomada, texto sobre a tomada e divisórias ajustáveis que ficam salvas.
+- **Saídas:** RENDERIZAR grava o vídeo final; *Exportar → Enviar para o CapCut* entrega as tomadas
+  cortadas e numeradas na ordem, com a música.
+- 100% local, grátis e de código aberto. Os vídeos originais nunca são alterados.

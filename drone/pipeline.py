@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
-"""Folder in, finished films out: the whole DroneHighlighter run.
+"""Folder in, finished films out: the whole CataVoo run.
 
 Stages: ingest → per-clip analysis (cached) → landscape pass (CLIP once, then
 released) → candidates → music → plan per format → render. Re-running on the
@@ -100,8 +100,8 @@ def analysis_workers() -> int:
     """How many clips to analyse at once. Decoding is the heavy part: with a
     video card doing it, the processor is free to measure two or three clips
     side by side; measured without one, two at a time is never slower.
-    ``DRONEHIGHLIGHTER_WORKERS`` overrides (1 = one at a time)."""
-    env = os.environ.get("DRONEHIGHLIGHTER_WORKERS", "")
+    ``CATAVOO_WORKERS`` overrides (1 = one at a time)."""
+    env = os.environ.get("CATAVOO_WORKERS", "")
     if env.isdigit() and int(env) > 0:
         return min(8, int(env))
     n = os.cpu_count() or 2
@@ -223,7 +223,7 @@ def _analyse(job: Job, cfg: DroneConfig, cache: AnalysisCache, prog: Progress, r
 
 
 def _naming(job: Job) -> tuple[str, str, str]:
-    out_dir = job.output_dir or os.path.join(job.folder, "_dh_editados")
+    out_dir = job.output_dir or os.path.join(job.folder, "_CataVoo")
     base = (job.title or os.path.basename(os.path.normpath(job.folder)) or "drone")
     safe = re.sub(r"[^\w-]+", "_", base, flags=re.UNICODE).strip("_") or "drone"
     return out_dir, time.strftime("%Y%m%d_%H%M%S"), safe
@@ -282,7 +282,7 @@ def run(job: Job, cfg: DroneConfig | None = None, *, cache: AnalysisCache | None
 
 
 def project_dir(out_dir: str) -> str:
-    """Where the working files go: ``_dh_editados/projeto``."""
+    """Where the working files go: ``_CataVoo/projeto``."""
     return os.path.join(out_dir, edl_adapter.PROJECT_DIR)
 
 

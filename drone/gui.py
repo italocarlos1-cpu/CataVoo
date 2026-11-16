@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
-"""DroneHighlighter window: choose a folder, a style, click GERAR VÍDEO.
+"""CataVoo window: choose a folder, a style, click GERAR VÍDEO.
 
 One screen, no tabs: settings on the left; on the right, ANALISAR MATERIAL
 (the footage is analysed once and cached), then what there is, the length
@@ -67,9 +67,9 @@ class SessionWorker(QObject):
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle(f"DroneHighlighter {__version__}")
+        self.setWindowTitle(f"CataVoo {__version__}")
         self.resize(1240, 820)
-        self.settings = QSettings("DroneHighlighter", "DroneHighlighter")
+        self.settings = QSettings("CataVoo", "CataVoo")
         self.thread = None
         self.worker = None
 
@@ -80,8 +80,8 @@ class MainWindow(QMainWindow):
 
         # ---- header
         head = QHBoxLayout()
-        title = role(QLabel("DroneHighlighter"), "title")
-        sub = role(QLabel(f"v{__version__}  ·  edição automática de vídeos de drone, 100% local"), "muted")
+        title = role(QLabel("CataVoo"), "title")
+        sub = role(QLabel(f"v{__version__}  ·  edição automática de vídeos de drones, 100% local"), "muted")
         head.addWidget(title)
         head.addSpacing(12)
         head.addWidget(sub, 0, Qt.AlignBottom)
@@ -360,7 +360,7 @@ class MainWindow(QMainWindow):
         """Analyse the folder (cached) and show how much good material there is."""
         job = self.build_job()
         if not os.path.isdir(job.folder):
-            QMessageBox.warning(self, "DroneHighlighter", "Selecione uma pasta com vídeos.")
+            QMessageBox.warning(self, "CataVoo", "Selecione uma pasta com vídeos.")
             return
         for k, v in (("folder", job.folder), ("music_dir", job.music_dir),
                      ("group_by", job.group_by),
@@ -496,12 +496,12 @@ class MainWindow(QMainWindow):
         self.cancel.setEnabled(False)
         self.beat.finish("Cancelado." if "cancel" in msg else "Falhou.", ok=False)
         if "cancel" not in msg:
-            QMessageBox.critical(self, "DroneHighlighter", msg)
+            QMessageBox.critical(self, "CataVoo", msg)
 
 
 def _crash_log() -> str:
     """If the program dies, leave a trace the user can send:
-    ``%LOCALAPPDATA%\\DroneHighlighter\\erros.log`` — native crashes (faulthandler)
+    ``%LOCALAPPDATA%\\CataVoo\\erros.log`` — native crashes (faulthandler)
     and Python errors that reach the top (logged instead of lost)."""
     import faulthandler
     import time
@@ -510,7 +510,7 @@ def _crash_log() -> str:
     try:
         os.makedirs(os.path.dirname(path), exist_ok=True)
         fh = open(path, "a", encoding="utf-8", buffering=1)
-        fh.write(f"\n===== DroneHighlighter {__version__} aberto em {time.strftime('%Y-%m-%d %H:%M:%S')} =====\n")
+        fh.write(f"\n===== CataVoo {__version__} aberto em {time.strftime('%Y-%m-%d %H:%M:%S')} =====\n")
         faulthandler.enable(fh, all_threads=True)
         _crash_log.fh = fh                     # keep it open for the whole run
 
@@ -545,26 +545,26 @@ def main() -> int:
     from drone.win_console import hide_child_consoles
     hide_child_consoles()                  # no ffmpeg console windows flashing
     app = QApplication.instance() or QApplication(sys.argv)
-    app.setApplicationName("DroneHighlighter")
+    app.setApplicationName("CataVoo")
     theme.apply(app)
     try:
         from PySide6.QtGui import QIcon
         base = getattr(sys, "_MEIPASS", os.path.join(os.path.dirname(__file__), ".."))
-        icon = os.path.join(base, "packaging", "drone", "DroneHighlighter.ico")
+        icon = os.path.join(base, "packaging", "drone", "CataVoo.ico")
         if os.path.exists(icon):
             app.setWindowIcon(QIcon(icon))
     except Exception:
         pass
     w = MainWindow()
     w.show()
-    selftest = os.environ.get("DRONEHIGHLIGHTER_SELFTEST")
+    selftest = os.environ.get("CATAVOO_SELFTEST")
     if selftest:
         # Used by the .exe build: open the window, write a marker, close.
         from PySide6.QtCore import QTimer
 
         def _done():
             lines = [f"ok {__version__} {w.windowTitle()}"]
-            if os.environ.get("DRONEHIGHLIGHTER_SELFTEST_CLIP"):
+            if os.environ.get("CATAVOO_SELFTEST_CLIP"):
                 lines.append(_clip_selftest())
             with open(selftest, "w", encoding="utf-8") as fh:
                 fh.write("\n".join(lines))

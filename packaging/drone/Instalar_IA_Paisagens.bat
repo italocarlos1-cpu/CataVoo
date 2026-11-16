@@ -1,9 +1,9 @@
 @echo off
 REM SPDX-License-Identifier: AGPL-3.0-or-later
 REM ===================================================================
-REM  DroneHighlighter - instala a IA de paisagens (CLIP)
+REM  CataVoo - instala a IA de paisagens (CLIP)
 REM
-REM  Duplo clique neste arquivo, na pasta do DroneHighlighter.exe.
+REM  Duplo clique neste arquivo, na pasta do CataVoo.exe.
 REM  Baixa o PyTorch + transformers (~2,5 GB com placa NVIDIA, ~400 MB sem)
 REM  para a subpasta packs\clip e o modelo CLIP (~600 MB). Nao precisa ter
 REM  Python instalado: o instalador usa um Python temporario e apaga depois.
@@ -17,7 +17,7 @@ REM  Para desinstalar: apague a pasta packs\clip.
 REM ===================================================================
 setlocal EnableExtensions
 cd /d "%~dp0"
-title DroneHighlighter - instalando a IA de paisagens (CLIP)
+title CataVoo - instalando a IA de paisagens (CLIP)
 
 set "SILENT="
 set "FORCE_CPU="
@@ -27,17 +27,17 @@ for %%A in (%*) do (
 )
 
 echo.
-echo === DroneHighlighter: instalando a IA de paisagens (CLIP) ===
+echo === CataVoo: instalando a IA de paisagens (CLIP) ===
 echo.
 
-if not exist "DroneHighlighter.exe" (
-  echo [ERRO] Coloque este arquivo na mesma pasta do DroneHighlighter.exe.
+if not exist "CataVoo.exe" (
+  echo [ERRO] Coloque este arquivo na mesma pasta do CataVoo.exe.
   goto :falha
 )
 
 set "PYXY=3.12"
-if exist "_internal\dh_python.txt" set /p PYXY=<"_internal\dh_python.txt"
-if exist "dh_python.txt" set /p PYXY=<dh_python.txt
+if exist "_internal\catavoo_python.txt" set /p PYXY=<"_internal\catavoo_python.txt"
+if exist "catavoo_python.txt" set /p PYXY=<catavoo_python.txt
 set "PYTAG=%PYXY:.=%"
 set "EMBED_VER=3.12.10"
 echo Versao do Python do programa: %PYXY%
@@ -63,7 +63,7 @@ echo Versao do PyTorch: %KIND%
 echo.
 
 REM --- espaco ---------------------------------------------------------
-echo Isto baixa varios GB. Feche o DroneHighlighter antes de continuar.
+echo Isto baixa varios GB. Feche o CataVoo antes de continuar.
 if not defined SILENT pause
 
 if exist "%TARGET%" (
@@ -114,7 +114,7 @@ rmdir /s /q "%WORK%" >nul 2>nul
 
 echo.
 echo === Pronto! IA de paisagens instalada em packs\clip ===
-echo Abra o DroneHighlighter: no registro deve aparecer "CLIP carregado".
+echo Abra o CataVoo: no registro deve aparecer "CLIP carregado".
 echo Para desinstalar, apague a pasta packs\clip.
 if not defined SILENT pause
 exit /b 0
@@ -132,7 +132,7 @@ echo [ERRO] A instalacao do PyTorch falhou (internet ou falta de espaco em disco
 if exist "%TARGET%" rmdir /s /q "%TARGET%" >nul 2>nul
 goto :falha
 :falha_uso
-echo [ERRO] A pasta packs\clip esta em uso. Feche o DroneHighlighter e tente de novo.
+echo [ERRO] A pasta packs\clip esta em uso. Feche o CataVoo e tente de novo.
 goto :falha
 :falha
 if exist "%WORK%" rmdir /s /q "%WORK%" >nul 2>nul

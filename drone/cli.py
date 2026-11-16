@@ -32,7 +32,7 @@ from drone.pipeline import Job, run
 
 
 def build_parser() -> argparse.ArgumentParser:
-    ap = argparse.ArgumentParser(prog="drone", description="DroneHighlighter — edição automática de vídeos de drone")
+    ap = argparse.ArgumentParser(prog="drone", description="CataVoo — edição automática de vídeos de drone")
     ap.add_argument("--pasta", required=True, help="pasta com os vídeos brutos")
     ap.add_argument("--estilo", default="cinematografico", choices=sorted(STYLES))
     ap.add_argument("--duracao", default="", help="duração do horizontal em segundos, ou 'auto'")
@@ -48,7 +48,7 @@ def build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--musicas", default="", help="pasta da biblioteca de músicas")
     ap.add_argument("--musica", default="", help="um arquivo de música específico")
     ap.add_argument("--instrucoes", default="", help="texto livre com preferências")
-    ap.add_argument("--saida", default="", help="pasta de saída (padrão: <pasta>/_dh_editados)")
+    ap.add_argument("--saida", default="", help="pasta de saída (padrão: <pasta>/_CataVoo)")
     ap.add_argument("--resolucao", default="4k", choices=["4k", "1080p", "720p"])
     ap.add_argument("--recursivo", action="store_true")
     ap.add_argument("--sem-clip", action="store_true", help="não usar CLIP (heurística de cores)")

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>DroneHighlighter — Manual de uso</title>
+<title>CataVoo — Manual de uso</title>
 <style>
   :root{
     --ink:#1d2430; --muted:#5b6575; --line:#dfe3ea; --bg:#ffffff; --soft:#f5f7fa;
@@ -73,13 +73,13 @@
 <div class="wrap">
 
 <header class="cover">
-  <img src="{{IMG_ICONE}}" alt="Ícone do DroneHighlighter" style="width:96px;height:96px;float:right;margin:0 0 10px 16px">
-  <h1>DroneHighlighter</h1>
-  <p class="sub">Manual de uso: editor automático de vídeos de drone, 100% local</p>
-  <p class="meta">Versão do programa: 0.5.7 · Manual atualizado em 13/11/2026 · Licença AGPL-3.0</p>
+  <img src="{{IMG_ICONE}}" alt="Ícone do CataVoo" style="width:96px;height:96px;float:right;margin:0 0 10px 16px">
+  <h1>CataVoo</h1>
+  <p class="sub">Edição automática de vídeos de drones · manual de uso · 100% local</p>
+  <p class="meta">Versão do programa: 1.0.0 · Manual atualizado em 15/11/2026 · Licença AGPL-3.0</p>
 </header>
 
-<p>O DroneHighlighter transforma uma pasta de vídeos brutos de drone em vídeos prontos para publicar. O trabalho tem três passos: <b>ANALISAR MATERIAL</b> (o programa assiste tudo uma vez só, dá nota a cada trecho e descarta o que tremeu, ficou borrado ou repetiu), <b>GERAR PRÉVIA</b> (o vídeo montado no ritmo da música toca na hora, sem renderizar; ali você escolhe o estilo e a duração, refaz, pede outra versão e ajusta as tomadas) e <b>RENDERIZAR</b> (grava o vídeo final, em 16:9 até 4K ou 9:16, só quando você gostar).</p>
+<p>O CataVoo transforma uma pasta de vídeos brutos de drone em vídeos prontos para publicar. O trabalho tem três passos: <b>ANALISAR MATERIAL</b> (o programa assiste tudo uma vez só, dá nota a cada trecho e descarta o que tremeu, ficou borrado ou repetiu), <b>GERAR PRÉVIA</b> (o vídeo montado no ritmo da música toca na hora, sem renderizar; ali você escolhe o estilo e a duração, refaz, pede outra versão e ajusta as tomadas) e <b>RENDERIZAR</b> (grava o vídeo final, em 16:9 até 4K ou 9:16, só quando você gostar).</p>
 
 <div class="box ok"><b>Princípios do programa</b>
 Tudo roda no seu computador: nenhum vídeo é enviado para a internet e não há mensalidade nem cobrança de API. Os arquivos originais nunca são alterados, movidos ou apagados. O assistente de IA existe, mas é <b>opcional e vem desligado</b>.</div>
@@ -113,7 +113,7 @@ Tudo roda no seu computador: nenhum vídeo é enviado para a internet e não há
 <!-- ============================================================ -->
 <h2 id="inicio">1. Primeiros passos</h2>
 <ol class="steps">
-  <li><b>Abra o programa:</b> <code>DroneHighlighter.exe</code> (ou <code>python -m drone</code> na pasta do projeto).</li>
+  <li><b>Abra o programa:</b> <code>CataVoo.exe</code> (ou <code>python -m drone</code> na pasta do projeto).</li>
   <li><b>Selecione a pasta</b> com os vídeos brutos, por exemplo <code>C:\VideosDrone\Pirenopolis\Brutos</code>. São aceitos MP4 e MOV, incluindo DJI em 4K e 10 bits.</li>
   <li>(Opcional) Indique a <b>pasta de músicas</b>, escreva o <b>título</b> (por exemplo "Pirenópolis — Goiás") e escolha o <b>formato</b>.</li>
   <li>Clique em <b>ANALISAR MATERIAL</b> e acompanhe pela barra de progresso. Os vídeos são analisados <b>uma vez só</b>: a análise fica guardada e as próximas vezes são rápidas.</li>
@@ -125,11 +125,11 @@ Tudo roda no seu computador: nenhum vídeo é enviado para a internet e não há
 
 <!-- ============================================================ -->
 <h2 id="tela">2. A tela principal, campo por campo</h2>
-<figure><img src="{{IMG_TELA}}" alt="Tela principal do DroneHighlighter"><figcaption>Tela principal: as configurações à esquerda; à direita, ANALISAR MATERIAL, o progresso, o registro e, depois da análise, o resumo do material com a Duração e o botão GERAR PRÉVIA.</figcaption></figure>
+<figure><img src="{{IMG_TELA}}" alt="Tela principal do CataVoo"><figcaption>Tela principal: as configurações à esquerda; à direita, ANALISAR MATERIAL, o progresso, o registro e, depois da análise, o resumo do material com a Duração e o botão GERAR PRÉVIA.</figcaption></figure>
 
 <table>
 <tr><th style="width:24%">Campo</th><th>O que faz</th></tr>
-<tr><td><b>Pasta</b></td><td>Pasta com os vídeos brutos. O programa só lê os arquivos e grava os resultados na subpasta <code>_dh_editados</code>. Vídeos que outro editor gravou na mesma pasta (por exemplo <code>…_highlight.mp4</code>) são ignorados.</td></tr>
+<tr><td><b>Pasta</b></td><td>Pasta com os vídeos brutos. O programa só lê os arquivos e grava os resultados na subpasta <code>_CataVoo</code>. Vídeos que outro editor gravou na mesma pasta (por exemplo <code>…_highlight.mp4</code>) são ignorados.</td></tr>
 <tr><td><b>Título</b></td><td>Texto escrito sobre a primeira cena. Acentos funcionam.</td></tr>
 <tr><td><b>Música: Biblioteca e Tipo</b></td><td>Pasta das suas músicas (MP3, WAV, M4A, FLAC, OGG…), incluindo subpastas. O Tipo filtra pelo nome do arquivo ou da pasta: Automática (pelo estilo), Instrumental cinematográfica, Instrumental, Tranquila / natureza, Eletrônica ambiente, Alternativa / indie, Animada. Sem biblioteca, o vídeo sai sem música. Veja a <a href="#musica">seção 8</a>.</td></tr>
 <tr><td><b>Formato e Resolução</b></td><td><b>Horizontal 16:9</b> ou <b>Vertical 9:16</b>; no horizontal, resolução em 4K ou Full HD (no vertical a linha some). A prévia abre nesse formato, e a lista Formato da prévia troca para o outro.</td></tr>
@@ -434,7 +434,7 @@ Tudo roda no seu computador: nenhum vídeo é enviado para a internet e não há
 </table>
 
 <h3>Enviar para o CapCut</h3>
-<p>O item <b>Enviar para o CapCut</b>, no menu <b>Exportar</b> ao lado de Renderizar, prepara o acabamento no CapCut. O CapCut não abre projetos de outros editores, então o programa entrega o corte pronto em peças: uma pasta em <code>_dh_editados\capcut\</code> com cada tomada já cortada no quadro exato e numerada na ordem do vídeo (<code>01_…mp4</code>, <code>02_…mp4</code>…), a música já no tamanho e com fade (<code>00_musica.m4a</code>) e um <code>ORDEM.txt</code> com os tempos e as transições. A pasta abre sozinha e, se o CapCut estiver instalado, ele também. No CapCut: <b>Importar</b> → selecione todos os arquivos → arraste para a linha do tempo (entram na ordem) → arraste a música para a faixa de áudio.</p>
+<p>O item <b>Enviar para o CapCut</b>, no menu <b>Exportar</b> ao lado de Renderizar, prepara o acabamento no CapCut. O CapCut não abre projetos de outros editores, então o programa entrega o corte pronto em peças: uma pasta em <code>_CataVoo\capcut\</code> com cada tomada já cortada no quadro exato e numerada na ordem do vídeo (<code>01_…mp4</code>, <code>02_…mp4</code>…), a música já no tamanho e com fade (<code>00_musica.m4a</code>) e um <code>ORDEM.txt</code> com os tempos e as transições. A pasta abre sozinha e, se o CapCut estiver instalado, ele também. No CapCut: <b>Importar</b> → selecione todos os arquivos → arraste para a linha do tempo (entram na ordem) → arraste a música para a faixa de áudio.</p>
 
 <h3>Trocar de estilo sem renderizar</h3>
 <p>Escolha outro estilo na lista <b>Estilo</b> e a timeline mostra na hora os cortes daquele estilo. Assim dá para comparar, por exemplo, Cinematográfico, Trailer épico e Contemplativo antes de gastar tempo com o render.</p>
@@ -500,9 +500,9 @@ Tudo roda no seu computador: nenhum vídeo é enviado para a internet e não há
 <h3>Salvar, restaurar e renderizar</h3>
 <table>
 <tr><th>Botão</th><th>O que faz</th></tr>
-<tr><td><b>💾 Salvar</b></td><td>Grava as edições em <code>_dh_editados\projeto\edicao_manual.json</code>. Elas também são salvas ao trocar de estilo, ao renderizar e ao fechar a janela. Na próxima vez que abrir a prévia da mesma pasta, elas voltam.</td></tr>
+<tr><td><b>💾 Salvar</b></td><td>Grava as edições em <code>_CataVoo\projeto\edicao_manual.json</code>. Elas também são salvas ao trocar de estilo, ao renderizar e ao fechar a janela. Na próxima vez que abrir a prévia da mesma pasta, elas voltam.</td></tr>
 <tr><td><b>↺ Mais → Restaurar automático</b></td><td>Descarta as edições do estilo e formato atuais e volta ao corte automático.</td></tr>
-<tr><td><b>RENDERIZAR</b></td><td>Pede confirmação mostrando o que vai ser gravado (estilo, formato, duração, número de tomadas) e grava o vídeo do estilo, formato e duração que estão na tela, com a música e o título, em <code>_dh_editados</code>. No fim, oferece <b>Assistir</b> e <b>Abrir pasta</b>. Para gerar outro estilo, outra duração ou o vertical, mude na barra de cima e renderize de novo.</td></tr>
+<tr><td><b>RENDERIZAR</b></td><td>Pede confirmação mostrando o que vai ser gravado (estilo, formato, duração, número de tomadas) e grava o vídeo do estilo, formato e duração que estão na tela, com a música e o título, em <code>_CataVoo</code>. No fim, oferece <b>Assistir</b> e <b>Abrir pasta</b>. Para gerar outro estilo, outra duração ou o vertical, mude na barra de cima e renderize de novo.</td></tr>
 </table>
 
 <div class="pc"><div class="pro"><h5>Vantagens</h5><ul><li>Controle total, até o quadro</li><li>Compara estilos sem esperar o render</li><li>Aproveita o que a análise encontrou (os blocos cinza)</li><li>As edições ficam salvas por estilo e formato</li></ul></div><div class="con"><h5>Desvantagens</h5><ul><li>Dá mais trabalho que o modo automático</li><li>Ajustes livres podem tirar cortes do ritmo da música</li><li>Na prévia, as fusões aparecem como cortes secos; elas só aparecem no vídeo renderizado</li></ul></div></div>
@@ -538,12 +538,12 @@ Tudo roda no seu computador: nenhum vídeo é enviado para a internet e não há
   <li>Toda resposta da IA é verificada. Estilos, paisagens ou números fora do permitido são ignorados, e trechos inventados pela IA são descartados.</li>
   <li>Se a IA não responder, a chave estiver errada ou a resposta não fizer sentido, o log mostra o motivo e o programa <b>segue com o modo automático</b>. Um problema na IA nunca impede o vídeo de ser gerado.</li>
   <li>O botão <b>Testar conexão</b> confere se a IA responde antes de você gerar.</li>
-  <li>A chave da API fica salva só no seu PC, em <code>%LOCALAPPDATA%\DroneHighlighter\config.json</code>. Se preferir não gravá-la, deixe o campo vazio e use a variável de ambiente.</li>
+  <li>A chave da API fica salva só no seu PC, em <code>%LOCALAPPDATA%\CataVoo\config.json</code>. Se preferir não gravá-la, deixe o campo vazio e use a variável de ambiente.</li>
 </ul>
 
 <!-- ============================================================ -->
 <h2 id="saida">14. Arquivos gerados</h2>
-<p>Vídeos feitos por outros editores a partir dos originais (por exemplo <code>DJI_0421_highlight.mp4</code>, criado pelo VideoHighlighter) são ignorados na análise: só os originais entram. Os vídeos prontos vão para <code>&lt;pasta dos vídeos&gt;\_dh_editados\</code>, e os arquivos de trabalho ficam numa subpasta dela, <code>projeto\</code>, para a pasta principal mostrar só os vídeos. Os originais não são tocados.</p>
+<p>Vídeos feitos por outros editores a partir dos originais (por exemplo <code>DJI_0421_highlight.mp4</code>, criado pelo VideoHighlighter) são ignorados na análise: só os originais entram. Os vídeos prontos vão para <code>&lt;pasta dos vídeos&gt;\_CataVoo\</code>, e os arquivos de trabalho ficam numa subpasta dela, <code>projeto\</code>, para a pasta principal mostrar só os vídeos. Os originais não são tocados.</p>
 <table>
 <tr><th>Arquivo</th><th>Para que serve</th></tr>
 <tr><td><code>Título[_grupo]_16x9_DATA.mp4</code> / <code>_9x16_</code></td><td>Os vídeos prontos.</td></tr>
@@ -554,21 +554,21 @@ Tudo roda no seu computador: nenhum vídeo é enviado para a internet e não há
 <tr><td><code>projeto\…_relatorio.json</code></td><td>Um por vídeo renderizado. Tudo o que foi decidido: estilo e motivo, material disponível, música, cada tomada (arquivo, tempo de entrada e saída, paisagem, movimento e notas) e eventos da IA. Serve para conferir o que foi feito e para calibrar o programa.</td></tr>
 <tr><td><code>capcut\…</code></td><td>Só depois de usar <b>Enviar para o CapCut</b>: as tomadas numeradas, a música e o <code>ORDEM.txt</code>.</td></tr>
 </table>
-<p>Os pedaços intermediários do render (cada tomada cortada antes de juntar) vão para a pasta temporária do Windows e são apagados no fim. A análise (cache), as cópias leves da prévia e o <code>erros.log</code> ficam em <code>%LOCALAPPDATA%\DroneHighlighter</code>, fora da pasta dos vídeos.</p>
+<p>Os pedaços intermediários do render (cada tomada cortada antes de juntar) vão para a pasta temporária do Windows e são apagados no fim. A análise (cache), as cópias leves da prévia e o <code>erros.log</code> ficam em <code>%LOCALAPPDATA%\CataVoo</code>, fora da pasta dos vídeos.</p>
 
 <!-- ============================================================ -->
 <h2 id="cache">15. Cache: por que a segunda vez é rápida</h2>
 <ul>
-  <li>Cada vídeo é analisado <b>uma única vez</b>. O resultado fica em <code>%LOCALAPPDATA%\DroneHighlighter\analysis.sqlite</code>.</li>
+  <li>Cada vídeo é analisado <b>uma única vez</b>. O resultado fica em <code>%LOCALAPPDATA%\CataVoo\analysis.sqlite</code>.</li>
   <li>Mudar estilo, duração, formato, organização, música ou ajustes <b>não</b> refaz a análise.</li>
   <li>O cache reconhece o vídeo pelo conteúdo: se você <b>renomear ou mover</b> o arquivo, a análise é reaproveitada. Se o arquivo for <b>alterado</b>, ele é analisado de novo.</li>
   <li>A classificação de paisagens do CLIP e a análise das músicas também ficam salvas.</li>
-  <li>Para começar do zero, feche o programa e apague a pasta <code>%LOCALAPPDATA%\DroneHighlighter</code>. Isso também apaga as configurações.</li>
+  <li>Para começar do zero, feche o programa e apague a pasta <code>%LOCALAPPDATA%\CataVoo</code>. Isso também apaga as configurações.</li>
 </ul>
 
 <!-- ============================================================ -->
 <h2 id="avancado">16. Configuração avançada</h2>
-<p>Arquivo: <code>%LOCALAPPDATA%\DroneHighlighter\config.json</code>. Ele é criado na primeira análise pela janela e pode ser editado com o Bloco de Notas, com o programa fechado.</p>
+<p>Arquivo: <code>%LOCALAPPDATA%\CataVoo\config.json</code>. Ele é criado na primeira análise pela janela e pode ser editado com o Bloco de Notas, com o programa fechado.</p>
 <table>
 <tr><th>Seção</th><th>Para que serve</th></tr>
 <tr><td><code>weights</code></td><td>Pesos dos critérios (qualidade, suavidade, interesse, movimento, variedade).</td></tr>
@@ -614,11 +614,11 @@ Tudo roda no seu computador: nenhum vídeo é enviado para a internet e não há
 <!-- ============================================================ -->
 <h2 id="instalar">19. Instalação e atualização</h2>
 <h3>Opção 1: programa .exe (sem instalar Python)</h3>
-<p>O DroneHighlighter pode virar um programa comum do Windows: a pasta <code>DroneHighlighter</code> com o <b>DroneHighlighter.exe</b>. O ffmpeg vem junto, e o PC que vai usar o programa não precisa de Python nem de ffmpeg.</p>
+<p>O CataVoo pode virar um programa comum do Windows: a pasta <code>CataVoo</code> com o <b>CataVoo.exe</b>. O ffmpeg vem junto, e o PC que vai usar o programa não precisa de Python nem de ffmpeg.</p>
 <table>
 <tr><th>Como gerar</th><th>Passos</th></tr>
-<tr><td><b>No seu PC</b></td><td>Instale o Python 3.12 (python.org, marcando "Add python.exe to PATH") e dê dois cliques em <code>packaging\drone\build_exe.bat</code>. Em alguns minutos aparecem <code>dist\DroneHighlighter\DroneHighlighter.exe</code> e <code>dist\DroneHighlighter-win64.zip</code>.</td></tr>
-<tr><td><b>No GitHub</b></td><td>No seu fork, aba <b>Actions</b> → <b>Build DroneHighlighter.exe</b> → <b>Run workflow</b>. Ele roda os testes no Windows, gera o programa e deixa o <code>.zip</code> para baixar.</td></tr>
+<tr><td><b>No seu PC</b></td><td>Instale o Python 3.12 (python.org, marcando "Add python.exe to PATH") e dê dois cliques em <code>packaging\drone\build_exe.bat</code>. Em alguns minutos aparecem <code>dist\CataVoo\CataVoo.exe</code> e <code>dist\CataVoo-win64.zip</code>.</td></tr>
+<tr><td><b>No GitHub</b></td><td>No seu fork, aba <b>Actions</b> → <b>Build CataVoo.exe</b> → <b>Run workflow</b>. Ele roda os testes no Windows, gera o programa e deixa o <code>.zip</code> para baixar.</td></tr>
 </table>
 <ul>
   <li>Mantenha a pasta inteira (o <code>.exe</code> usa os arquivos de <code>_internal</code>). Para levar a outro PC, copie a pasta ou o <code>.zip</code>.</li>
@@ -626,7 +626,7 @@ Tudo roda no seu computador: nenhum vídeo é enviado para a internet e não há
   <li>Pela AGPL, ao distribuir o <code>.exe</code> você deve oferecer também o código-fonte (por exemplo, o link do seu fork).</li>
 </ul>
 <h3>IA de paisagens (CLIP): Instalar_IA_Paisagens.bat</h3>
-<p>Na pasta do <code>.exe</code> vem o arquivo <b>Instalar_IA_Paisagens.bat</b>. Com o programa fechado, dê dois cliques nele: ele baixa o PyTorch e o transformers para a subpasta <code>packs\clip</code> e já baixa o modelo CLIP. Não é preciso ter Python instalado (o instalador usa um Python temporário e apaga depois). Na próxima vez que você abrir o DroneHighlighter, o registro mostra <b>"CLIP carregado na placa NVIDIA"</b> e <b>"Classificação de paisagem: clip"</b>.</p>
+<p>Na pasta do <code>.exe</code> vem o arquivo <b>Instalar_IA_Paisagens.bat</b>. Com o programa fechado, dê dois cliques nele: ele baixa o PyTorch e o transformers para a subpasta <code>packs\clip</code> e já baixa o modelo CLIP. Não é preciso ter Python instalado (o instalador usa um Python temporário e apaga depois). Na próxima vez que você abrir o CataVoo, o registro mostra <b>"CLIP carregado na placa NVIDIA"</b> e <b>"Classificação de paisagem: clip"</b>.</p>
 <table>
 <tr><th>Item</th><th>Detalhe</th></tr>
 <tr><td>Placa de vídeo</td><td>Se houver placa NVIDIA (RTX 2060, 4060…), instala o PyTorch com CUDA (~2,5 GB). Sem NVIDIA, instala a versão para processador (~400 MB), que funciona mas é mais lenta. Para forçar a versão sem placa: <code>Instalar_IA_Paisagens.bat /cpu</code>.</td></tr>
@@ -641,7 +641,7 @@ Tudo roda no seu computador: nenhum vídeo é enviado para a internet e não há
 <h3>Opção 2: rodar pelo Python</h3>
 <ol class="steps">
   <li>No GitHub, faça um <b>fork</b> de <code>Aseiel/VideoHighlighter</code> e clone o seu fork.</li>
-  <li>Copie o conteúdo do pacote do DroneHighlighter (pastas <code>drone/</code>, <code>tests/</code>, <code>docs/</code>) para a raiz do clone.</li>
+  <li>Copie o conteúdo do pacote do CataVoo (pastas <code>drone/</code>, <code>tests/</code>, <code>docs/</code>) para a raiz do clone.</li>
   <li>Crie o ambiente: <code>python -m venv .venv</code> e <code>.venv\Scripts\activate</code>.</li>
   <li>Instale o PyTorch com CUDA e as dependências: <code>pip install -r requirements.txt</code>.</li>
   <li>Teste: <code>python -m pytest tests/test_drone_*.py -q</code>.</li>
@@ -652,7 +652,7 @@ Tudo roda no seu computador: nenhum vídeo é enviado para a internet e não há
 git fetch upstream
 git merge upstream/main
 python -m pytest tests/test_drone_*.py -q</code></pre>
-<p>O DroneHighlighter só <b>acrescenta</b> arquivos e não altera nenhum arquivo do VideoHighlighter, por isso as atualizações entram sem conflito. Se o autor original mudar alguma função usada aqui, os testes mostram na hora o que precisa de ajuste.</p>
+<p>O CataVoo só <b>acrescenta</b> arquivos e não altera nenhum arquivo do VideoHighlighter, por isso as atualizações entram sem conflito. Se o autor original mudar alguma função usada aqui, os testes mostram na hora o que precisa de ajuste.</p>
 <p>O VideoHighlighter completo (com chat, editor manual e assistente com Ollama/LM Studio) continua disponível em <code>python main.py</code>.</p>
 
 <!-- ============================================================ -->
@@ -691,7 +691,7 @@ python -m pytest tests/test_drone_*.py -q</code></pre>
 </table>
 
 <footer>
-DroneHighlighter: camada de edição de vídeos de drone construída sobre o VideoHighlighter (Aseiel/VideoHighlighter). Licença GNU AGPL-3.0-or-later. Os projetos SkyGrid serviram apenas como referência de ideias; todo o código é original.
+CataVoo: camada de edição de vídeos de drone construída sobre o VideoHighlighter (Aseiel/VideoHighlighter). Licença GNU AGPL-3.0-or-later. Os projetos SkyGrid serviram apenas como referência de ideias; todo o código é original.
 </footer>
 </div>
 </body>

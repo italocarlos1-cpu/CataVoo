@@ -182,7 +182,7 @@ def test_render_an_edited_plan(session):
 # ------------------------------------------------------------ the window
 def test_timeline_window_offscreen(session, tmp_path):
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    os.environ["DRONEHIGHLIGHTER_NO_VIDEO_PREVIEW"] = "1"
+    os.environ["CATAVOO_NO_VIDEO_PREVIEW"] = "1"
     qtw = pytest.importorskip("PySide6.QtWidgets")
     from PySide6.QtCore import Qt
     from PySide6.QtTest import QTest
@@ -228,7 +228,7 @@ def test_mini_editor_reorder_preview_and_colours(session, tmp_path):
     """Dragging a card moves the shot; the preview plays the film's pieces in
     order and on time; landscape colours are fixed between runs."""
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    os.environ["DRONEHIGHLIGHTER_NO_VIDEO_PREVIEW"] = "1"
+    os.environ["CATAVOO_NO_VIDEO_PREVIEW"] = "1"
     qtw = pytest.importorskip("PySide6.QtWidgets")
     if not hasattr(qtw, "QApplication") or "Mock" in type(qtw.QApplication).__name__:
         pytest.skip("real PySide6 required")
@@ -304,7 +304,7 @@ def test_dragging_a_block_with_the_mouse(session, tmp_path):
     """A real press-move-release on a block slides it, and on its edge trims it —
     also on the block that is already selected (its outline used to eat the click)."""
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    os.environ["DRONEHIGHLIGHTER_NO_VIDEO_PREVIEW"] = "1"
+    os.environ["CATAVOO_NO_VIDEO_PREVIEW"] = "1"
     qtw = pytest.importorskip("PySide6.QtWidgets")
     if not hasattr(qtw, "QApplication") or "Mock" in type(qtw.QApplication).__name__:
         pytest.skip("real PySide6 required")
@@ -369,7 +369,7 @@ def test_capcut_folder_has_every_shot_cut_in_order(session, tmp_path):
 
 def test_proxy_is_small_and_same_length(session, tmp_path, monkeypatch):
     from drone import proxy
-    monkeypatch.setenv("DRONEHIGHLIGHTER_CACHE", str(tmp_path))
+    monkeypatch.setenv("CATAVOO_CACHE", str(tmp_path))
     clip = next(iter(_edit(session).clips.values()))
     out = proxy.make(clip.path, clip.content_hash or "abc")
     assert out and proxy.existing(clip.content_hash or "abc") == out
@@ -412,7 +412,7 @@ def test_duration_is_refitted_from_the_same_analysis(session, tmp_path):
     """Editor's Duração: another length is planned from the analysis already done
     (no new analysis), shorter and longer, for every style of that format."""
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    os.environ["DRONEHIGHLIGHTER_NO_VIDEO_PREVIEW"] = "1"
+    os.environ["CATAVOO_NO_VIDEO_PREVIEW"] = "1"
     qtw = pytest.importorskip("PySide6.QtWidgets")
     if not hasattr(qtw, "QApplication") or "Mock" in type(qtw.QApplication).__name__:
         pytest.skip("real PySide6 required")
@@ -462,7 +462,7 @@ def test_redo_and_another_version_inside_the_editor(session, tmp_path):
     """Refazer / Outra versão live in the editor: re-planned from the same
     analysis; another version stays away from the shots on screen."""
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    os.environ["DRONEHIGHLIGHTER_NO_VIDEO_PREVIEW"] = "1"
+    os.environ["CATAVOO_NO_VIDEO_PREVIEW"] = "1"
     qtw = pytest.importorskip("PySide6.QtWidgets")
     if not hasattr(qtw, "QApplication") or "Mock" in type(qtw.QApplication).__name__:
         pytest.skip("real PySide6 required")
@@ -558,7 +558,7 @@ def test_edits_keep_the_scroll_and_render_matches_the_preview(session, tmp_path)
     """After trimming, the views stay where they were; the rendered cut list is
     exactly the edited sequence (order, in and out)."""
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    os.environ["DRONEHIGHLIGHTER_NO_VIDEO_PREVIEW"] = "1"
+    os.environ["CATAVOO_NO_VIDEO_PREVIEW"] = "1"
     qtw = pytest.importorskip("PySide6.QtWidgets")
     if not hasattr(qtw, "QApplication") or "Mock" in type(qtw.QApplication).__name__:
         pytest.skip("real PySide6 required")
@@ -594,7 +594,7 @@ def test_vertical_frame_is_moved_per_shot(session, tmp_path):
     """9:16: the monitor shows the crop frame of the shot on screen; dragging it
     sideways changes only that shot, is saved, and reaches the render."""
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    os.environ["DRONEHIGHLIGHTER_NO_VIDEO_PREVIEW"] = "1"
+    os.environ["CATAVOO_NO_VIDEO_PREVIEW"] = "1"
     qtw = pytest.importorskip("PySide6.QtWidgets")
     if not hasattr(qtw, "QApplication") or "Mock" in type(qtw.QApplication).__name__:
         pytest.skip("real PySide6 required")
@@ -640,7 +640,7 @@ def test_undo_and_redo_in_the_preview(session, tmp_path):
     """Delete the wrong shot → Desfazer brings it back → Refazer edição deletes
     it again; remakes (Outra versão) can be undone too."""
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    os.environ["DRONEHIGHLIGHTER_NO_VIDEO_PREVIEW"] = "1"
+    os.environ["CATAVOO_NO_VIDEO_PREVIEW"] = "1"
     qtw = pytest.importorskip("PySide6.QtWidgets")
     if not hasattr(qtw, "QApplication") or "Mock" in type(qtw.QApplication).__name__:
         pytest.skip("real PySide6 required")
@@ -676,7 +676,7 @@ def test_undo_and_redo_in_the_preview(session, tmp_path):
 
 def test_choose_a_specific_music_track(session, tmp_path):
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    os.environ["DRONEHIGHLIGHTER_NO_VIDEO_PREVIEW"] = "1"
+    os.environ["CATAVOO_NO_VIDEO_PREVIEW"] = "1"
     qtw = pytest.importorskip("PySide6.QtWidgets")
     if not hasattr(qtw, "QApplication") or "Mock" in type(qtw.QApplication).__name__:
         pytest.skip("real PySide6 required")
@@ -706,7 +706,7 @@ def test_text_over_a_shot_in_preview_and_render(session, tmp_path):
     """A caption stays the whole shot: drawn on the monitor, saved with the edit,
     undoable, and burned into the rendered file only during that shot."""
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    os.environ["DRONEHIGHLIGHTER_NO_VIDEO_PREVIEW"] = "1"
+    os.environ["CATAVOO_NO_VIDEO_PREVIEW"] = "1"
     qtw = pytest.importorskip("PySide6.QtWidgets")
     if not hasattr(qtw, "QApplication") or "Mock" in type(qtw.QApplication).__name__:
         pytest.skip("real PySide6 required")

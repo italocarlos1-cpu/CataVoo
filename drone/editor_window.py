@@ -533,7 +533,7 @@ class EditorWindow(QMainWindow):
         self.main_style = main_style or style_key
         self._first = (tag, float(target or 0.0))   # the length chosen after the analysis
         self.variation = 0
-        self.setWindowTitle("DroneHighlighter — Prévia e edição")
+        self.setWindowTitle("CataVoo — Prévia e edição")
         self.resize(1400, 900)
         self.plans: dict = {}               # (group, style, tag) → EditPlan
         self.preps: dict = {}
@@ -935,18 +935,18 @@ class EditorWindow(QMainWindow):
 
     def _layout_settings(self):
         from PySide6.QtCore import QSettings
-        return QSettings("DroneHighlighter", "DroneHighlighter")
+        return QSettings("CataVoo", "CataVoo")
 
     def _save_layout(self) -> None:
         """Remember where the user left the dividers (monitor / sequence / clips, monitor / panel)."""
-        if not self._sized or os.environ.get("DRONEHIGHLIGHTER_NO_LAYOUT_MEMORY"):
+        if not self._sized or os.environ.get("CATAVOO_NO_LAYOUT_MEMORY"):
             return
         st = self._layout_settings()
         st.setValue("editor/split", self._split.saveState())
         st.setValue("editor/upper", self._upper.saveState())
 
     def _restore_layout(self) -> bool:
-        if os.environ.get("DRONEHIGHLIGHTER_NO_LAYOUT_MEMORY"):
+        if os.environ.get("CATAVOO_NO_LAYOUT_MEMORY"):
             return False
         st = self._layout_settings()
         split, upper = st.value("editor/split"), st.value("editor/upper")

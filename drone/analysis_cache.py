@@ -27,13 +27,13 @@ from drone import ANALYZER_VERSION
 
 
 def default_cache_dir() -> str:
-    base = os.environ.get("DRONEHIGHLIGHTER_CACHE")
+    base = os.environ.get("CATAVOO_CACHE")
     if base:
         return base
     if os.name == "nt":
         root = os.environ.get("LOCALAPPDATA") or os.path.expanduser("~")
-        return os.path.join(root, "DroneHighlighter")
-    return os.path.join(os.path.expanduser("~"), ".cache", "dronehighlighter")
+        return os.path.join(root, "CataVoo")
+    return os.path.join(os.path.expanduser("~"), ".cache", "catavoo")
 
 
 def quick_hash(path: str, chunk: int = 1 << 20) -> str:

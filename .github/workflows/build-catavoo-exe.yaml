@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
-# DroneHighlighter: tests on Windows + DroneHighlighter.exe as a downloadable artifact.
+# CataVoo: tests on Windows + CataVoo.exe as a downloadable artifact.
 # Runs on every push to the drone branch that touches the program, on tags like
 # drone-v0.5.2, or from the Actions tab ("Run workflow", once the file is on the default branch).
-name: Build DroneHighlighter.exe
+name: Build CataVoo.exe
 
 on:
   workflow_dispatch:
@@ -49,27 +49,27 @@ jobs:
         run: |
           pip install torch --index-url https://download.pytorch.org/whl/cu128
           pip install transformers
-      - name: Tests (DroneHighlighter)
+      - name: Tests (CataVoo)
         env:
           QT_QPA_PLATFORM: offscreen
-          DRONEHIGHLIGHTER_NO_VIDEO_PREVIEW: '1'
+          CATAVOO_NO_VIDEO_PREVIEW: '1'
         run: python -m pytest tests/test_drone_pipeline.py tests/test_drone_ai_feedback.py tests/test_drone_styles.py tests/test_drone_material_groups.py tests/test_drone_manual_edit.py -q
       - name: Build
         env:
           DH_WITH_CLIP: ${{ inputs.with_clip && '1' || '' }}
-        run: pyinstaller packaging/drone/DroneHighlighter.spec --noconfirm --distpath dist --workpath build/drone
+        run: pyinstaller packaging/drone/CataVoo.spec --noconfirm --distpath dist --workpath build/drone
       - name: Smoke test the .exe
         shell: pwsh
         env:
           QT_QPA_PLATFORM: offscreen
         run: |
-          $env:DRONEHIGHLIGHTER_SELFTEST = "$env:RUNNER_TEMP\selftest.txt"
-          Start-Process -Wait -FilePath "dist\DroneHighlighter\DroneHighlighter.exe"
-          Get-Content $env:DRONEHIGHLIGHTER_SELFTEST
-          Remove-Item Env:DRONEHIGHLIGHTER_SELFTEST
-          foreach ($f in 'LEIA-ME.txt', 'Instalar_IA_Paisagens.bat', '_internal\dh_python.txt') {
-            if (-not (Test-Path "dist\DroneHighlighter\$f")) { throw "missing $f" } }
-      # The download is named after the version (DroneHighlighter-0.5.5-win64.zip),
+          $env:CATAVOO_SELFTEST = "$env:RUNNER_TEMP\selftest.txt"
+          Start-Process -Wait -FilePath "dist\CataVoo\CataVoo.exe"
+          Get-Content $env:CATAVOO_SELFTEST
+          Remove-Item Env:CATAVOO_SELFTEST
+          foreach ($f in 'LEIA-ME.txt', 'Instalar_IA_Paisagens.bat', '_internal\catavoo_python.txt') {
+            if (-not (Test-Path "dist\CataVoo\$f")) { throw "missing $f" } }
+      # The download is named after the version (CataVoo-0.5.5-win64.zip),
       # so several versions can sit side by side on the user's PC. The folder is
       # uploaded as it is: GitHub zips it once, and "Extrair tudo" gives a folder
       # with the same versioned name.
@@ -79,11 +79,11 @@ jobs:
         run: |
           $v = (Select-String -Path drone\__init__.py -Pattern '__version__ = "([^"]+)"').Matches[0].Groups[1].Value
           "version=$v" >> $env:GITHUB_OUTPUT
-          Write-Host "DroneHighlighter $v"
+          Write-Host "CataVoo $v"
       - uses: actions/upload-artifact@v4
         with:
-          name: DroneHighlighter-${{ steps.ver.outputs.version }}-win64
-          path: dist/DroneHighlighter/
+          name: CataVoo-${{ steps.ver.outputs.version }}-win64
+          path: dist/CataVoo/
           retention-days: 30
       # The artifact above stays "lite". Now prove the CLIP installer works:
       # in a copy of the folder, run the .bat (CPU torch) and check that the
@@ -96,15 +96,15 @@ jobs:
           PYTHONIOENCODING: 'utf-8'
         run: |
           $t = "$env:RUNNER_TEMP\cliptest"
-          Copy-Item -Recurse dist\DroneHighlighter $t
+          Copy-Item -Recurse dist\CataVoo $t
           & "$t\Instalar_IA_Paisagens.bat" /silencioso /cpu
           if ($LASTEXITCODE -ne 0) { throw "installer failed ($LASTEXITCODE)" }
           Get-Content "$t\packs\clip\pack.json"
           if (Test-Path "$t\packs\.instalador") { throw "installer left its temp folder" }
-          $env:DRONEHIGHLIGHTER_SELFTEST = "$env:RUNNER_TEMP\clip_selftest.txt"
-          $env:DRONEHIGHLIGHTER_SELFTEST_CLIP = "1"
-          Start-Process -FilePath "$t\DroneHighlighter.exe" -Wait
-          $r = Get-Content $env:DRONEHIGHLIGHTER_SELFTEST -Raw
+          $env:CATAVOO_SELFTEST = "$env:RUNNER_TEMP\clip_selftest.txt"
+          $env:CATAVOO_SELFTEST_CLIP = "1"
+          Start-Process -FilePath "$t\CataVoo.exe" -Wait
+          $r = Get-Content $env:CATAVOO_SELFTEST -Raw
           $r
           if ($r -notmatch 'clip ok') { throw "CLIP was not usable after the installer" }
       # Public download: only when asked (Run workflow → release), after every check passed.
@@ -115,19 +115,19 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $v = "${{ steps.ver.outputs.version }}"
-          $zip = "dist\DroneHighlighter-$v-win64.zip"
-          Compress-Archive -Path dist\DroneHighlighter\* -DestinationPath $zip -Force
-          $manual = "dist\DroneHighlighter-$v-Manual.pdf"
-          Copy-Item docs\DroneHighlighter_Manual.pdf $manual
+          $zip = "dist\CataVoo-$v-win64.zip"
+          Compress-Archive -Path dist\CataVoo\* -DestinationPath $zip -Force
+          $manual = "dist\CataVoo-$v-Manual.pdf"
+          Copy-Item docs\CataVoo_Manual.pdf $manual
           # notes: how to install, then this version's changes from docs/NOVIDADES.md
           $md = Get-Content docs\NOVIDADES.md -Raw -Encoding utf8
           $m = [regex]::Match($md, "(?ms)^## v$([regex]::Escape($v))\b.*?(?=^## v|\z)")
           $news = if ($m.Success) { ($m.Value -replace "^## [^\n]*\n", "").Trim() } else { "" }
           $body = @"
           ## Como instalar (Windows 10/11, 64 bits)
-          1. Baixe **DroneHighlighter-$v-win64.zip** abaixo e extraia numa pasta.
+          1. Baixe **CataVoo-$v-win64.zip** abaixo e extraia numa pasta.
           2. *(Recomendado, uma vez só)* rode ``Instalar_IA_Paisagens.bat`` para a IA de paisagens.
-          3. Abra ``DroneHighlighter.exe``. Se o Windows avisar *"O Windows protegeu o computador"*, clique em *Mais informações* → *Executar assim mesmo* (o programa não tem assinatura digital paga).
+          3. Abra ``CataVoo.exe``. Se o Windows avisar *"O Windows protegeu o computador"*, clique em *Mais informações* → *Executar assim mesmo* (o programa não tem assinatura digital paga).
 
           O **manual completo** está no PDF abaixo, e o ``LEIA-ME.txt`` vem dentro do .zip.
           Encontrou um problema? [Conte aqui](https://github.com/${{ github.repository }}/issues/new/choose).
@@ -137,4 +137,4 @@ jobs:
           "@
           $body = ($body -split "`n" | ForEach-Object { $_ -replace "^          ", "" }) -join "`n"
           Set-Content -Path notes.md -Value $body -Encoding utf8
-          gh release create "drone-v$v" $zip $manual --repo "${{ github.repository }}" --target "${{ github.sha }}" --title "DroneHighlighter $v" --notes-file notes.md --latest
+          gh release create "CataVoo-v$v" $zip $manual --repo "${{ github.repository }}" --target "${{ github.sha }}" --title "CataVoo $v" --notes-file notes.md --latest

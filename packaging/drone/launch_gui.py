@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
-"""Entry point of DroneHighlighter.exe (the window)."""
+"""Entry point of CataVoo.exe (the window)."""
 import multiprocessing
 import sys
 

@@ -25,7 +25,7 @@ PROJECT_DIR = "projeto"
 
 def side_path(out_path: str, suffix: str) -> str:
     """``<saída>/projeto/<nome do vídeo><suffix>``: the working files (EDL, music,
-    report) live one folder down, so ``_dh_editados`` shows only the videos."""
+    report) live one folder down, so ``_CataVoo`` shows only the videos."""
     folder = os.path.join(os.path.dirname(out_path), PROJECT_DIR)
     os.makedirs(folder, exist_ok=True)
     return os.path.join(folder, os.path.splitext(os.path.basename(out_path))[0] + suffix)

@@ -1,6 +1,6 @@
-# DroneHighlighter — edição automática de vídeos de drone
+# CataVoo — edição automática de vídeos de drone
 
-> **Manual completo para o usuário:** `docs/DroneHighlighter_Manual.html` (ou `.pdf`). Este arquivo é a referência técnica.
+> **Manual completo para o usuário:** `docs/CataVoo_Manual.html` (ou `.pdf`). Este arquivo é a referência técnica.
 
 Camada especializada em filmagens aéreas, construída sobre o VideoHighlighter.
 Tudo roda localmente: não usa API externa, não cobra assinatura e funciona offline
@@ -58,6 +58,17 @@ ficam menos. A duração total e o encaixe na música não mudam.
   a sua seleção e, no modo Automático, o seu estilo.
 - **Música**: volume abaixando nos últimos ~4 s; uma faixa mais curta que o vídeo é repetida.
 
+## v1.0.0 — CataVoo
+
+- Primeira versão com o nome **CataVoo** (antes o projeto se chamava DroneHighlighter): produto,
+  `.exe`, janela, manual (`docs/CataVoo_Manual.*`), spec/ícone (`packaging/drone/CataVoo.*`),
+  workflow (`build-catavoo-exe.yaml`, artefato `CataVoo-X-win64`, tag `CataVoo-vX`), variáveis
+  `CATAVOO_*`, pasta de saída `_CataVoo` e `%LOCALAPPDATA%\CataVoo`. O pacote Python continua `drone/`.
+- Executável limpo: **sem compatibilidade** com as versões anteriores (configurações, cache e pastas
+  do nome antigo não são lidos nem migrados).
+- Ícone novo (arte do usuário, fundo recortado com borda suave); 16–32 px usam um desenho
+  simplificado (céu, sol e o drone em branco engrossado).
+
 ## v0.6.6 — texto sobre a tomada
 
 - Botão **T Texto** (linha 1, depois de Música) e "Texto…" no menu da tomada abrem `TextDialog`:
@@ -78,7 +89,7 @@ ficam menos. A duração total e o encaixe na música não mudam.
 - O resumo do material foi para o painel da direita, que agora rola quando o monitor é baixo.
 - Música: "Escolher pasta de músicas…" no fim da lista.
 - Divisórias livres (monitor até 160×90, sequência a partir de 64 px) e lembradas em QSettings
-  (`editor/split`, `editor/upper`); os testes desligam com `DRONEHIGHLIGHTER_NO_LAYOUT_MEMORY`.
+  (`editor/split`, `editor/upper`); os testes desligam com `CATAVOO_NO_LAYOUT_MEMORY`.
 - Monitor mais baixo, sequência mais compacta (miniaturas 96×54, sem o nome da paisagem, que
   fica na dica e na cor) e mais altura para os clipes originais.
 
@@ -150,7 +161,7 @@ ficam menos. A duração total e o encaixe na música não mudam.
 ## v0.6.0 — revisão de desempenho, diário estrito, progresso vivo
 
 - **Análise em paralelo** (`pipeline.analysis_workers`): 2 vídeos ao mesmo tempo com 4–7 threads
-  de CPU, 3 com 8 ou mais; `DRONEHIGHLIGHTER_WORKERS=1` volta a um por vez. O gargalo é decodificar
+  de CPU, 3 com 8 ou mais; `CATAVOO_WORKERS=1` volta a um por vez. O gargalo é decodificar
   o 4K (medido: a decodificação é ~todo o tempo; opções do decodificador não ajudam), então com a
   placa decodificando sobra processador para medir vídeos lado a lado. O resultado é idêntico ao
   sequencial (teste compara as timelines).
@@ -162,8 +173,8 @@ ficam menos. A duração total e o encaixe na música não mudam.
   tomadas de 3,5–7 s, até 5 trechos por vídeo (`Style.max_per_clip`).
 - Clique/Espaço = tocar/pausar a tomada; duplo clique/T = do início, uma vez; L = loop.
 - `progress_ui.Heartbeat`: porcentagem, bolinha, tempo decorrido e "ainda trabalhando".
-- O `DroneHighlighter-cli.exe` não é mais gerado (o `python -m drone.cli` continua existindo);
-  o teste do CLIP no CI usa o autoteste da janela (`DRONEHIGHLIGHTER_SELFTEST_CLIP`).
+- O `CataVoo-cli.exe` não é mais gerado (o `python -m drone.cli` continua existindo);
+  o teste do CLIP no CI usa o autoteste da janela (`CATAVOO_SELFTEST_CLIP`).
 - CapCut: cada arquivo tem o tempo de tela da tomada (os cortes ficam na batida).
 
 ## v0.5.6 — editor mais fluido, linha do vídeo final, CapCut
@@ -195,7 +206,7 @@ ficam menos. A duração total e o encaixe na música não mudam.
   principal em duas colunas.
 - **Sem janelas de cmd piscando**: `drone/win_console.py` põe `CREATE_NO_WINDOW` como padrão em
   todo `subprocess.Popen` da janela (inclui o motor do VideoHighlighter).
-- **`_dh_editados/projeto/`** guarda `.edl.yaml`, `_musica.m4a`, `_relatorio.json` e
+- **`_CataVoo/projeto/`** guarda `.edl.yaml`, `_musica.m4a`, `_relatorio.json` e
   `edicao_manual.json` (movido automaticamente da versão anterior).
 
 ## Base do VideoHighlighter
@@ -207,9 +218,9 @@ rodar os testes `tests/test_drone_*.py` (o workflow do Windows faz isso a cada p
 ## CLIP no .exe — `Instalar_IA_Paisagens.bat` (v0.5.3)
 
 O `.exe` sai sem PyTorch. O `Instalar_IA_Paisagens.bat`, copiado ao lado dele pelo
-`DroneHighlighter.spec`, baixa um Python embutido temporário + `pip.pyz` e instala `torch`
+`CataVoo.spec`, baixa um Python embutido temporário + `pip.pyz` e instala `torch`
 (índice `cu126` se `nvidia-smi -L` responder, senão `cpu`) e `transformers` em
-`packs\clip\site-packages`, com `--python-version` igual ao do build (`_internal\dh_python.txt`).
+`packs\clip\site-packages`, com `--python-version` igual ao do build (`_internal\catavoo_python.txt`).
 Grava `packs\clip\pack.json` (`dep: torch`) e já baixa `openai/clip-vit-base-patch32`.
 
 No arranque, o runtime hook do upstream (`packaging/packs/rthook_packs.py`) acrescenta o pack
@@ -277,7 +288,7 @@ de IA** na janela ou use `--ia <provedor>` na linha de comando. A IA pode:
 | Claude | nuvem | pago por uso | chave no campo ou na variável `ANTHROPIC_API_KEY`; modelo padrão `claude-haiku-5-5` (editável) |
 
 Cada execução manda uma ou duas mensagens de poucos milhares de tokens, então o custo
-nas APIs pagas é baixo. A chave fica em `%LOCALAPPDATA%\DroneHighlighter\config.json`,
+nas APIs pagas é baixo. A chave fica em `%LOCALAPPDATA%\CataVoo\config.json`,
 só no seu PC. Se preferir não gravá-la, deixe o campo vazio e use a variável de ambiente.
 
 **Segurança da resposta:** toda resposta da IA é validada. Valores desconhecidos ou
@@ -346,7 +357,7 @@ VideoHighlighter já instala.
 ## Pontuação (`drone/config.py`)
 
 Os pesos são os da especificação: 30 / 25 / 20 / 15 / 10. Cada estilo pode
-sobrescrevê-los, e você pode calibrá-los em `%LOCALAPPDATA%\DroneHighlighter\config.json`.
+sobrescrevê-los, e você pode calibrá-los em `%LOCALAPPDATA%\CataVoo\config.json`.
 
 Os limiares atuais foram ajustados com filmagem sintética, que testa se o algoritmo
 reage ao tipo certo de mudança. **Eles ainda precisam ser calibrados com clipes DJI reais.**

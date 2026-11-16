@@ -1,11 +1,11 @@
 # -*- mode: python ; coding: utf-8 -*-
 # SPDX-License-Identifier: AGPL-3.0-or-later
-"""PyInstaller recipe for DroneHighlighter (Windows .exe; also builds on Linux/macOS).
+"""PyInstaller recipe for CataVoo (Windows .exe; also builds on Linux/macOS).
 
-Produces one folder ``dist/DroneHighlighter/`` with two programs sharing the
+Produces one folder ``dist/CataVoo/`` with two programs sharing the
 same libraries:
 
-    DroneHighlighter.exe       the window (no console)
+    CataVoo.exe       the window (no console)
 
 ffmpeg comes from the imageio-ffmpeg wheel (a static build), so nothing has to
 be installed on the PC that runs the program.
@@ -21,7 +21,7 @@ in, and packages both sides use are bundled whole.
 DH_WITH_CLIP=1 when building bundles torch + transformers instead (huge;
 for a self-contained offline copy).
 
-Build:  pyinstaller packaging/drone/DroneHighlighter.spec --noconfirm
+Build:  pyinstaller packaging/drone/CataVoo.spec --noconfirm
 (run from the repository root; ``packaging\\drone\\build_exe.bat`` does it all)
 """
 import importlib.util
@@ -34,7 +34,7 @@ from PyInstaller.utils.hooks import collect_dynamic_libs, collect_submodules
 ROOT = os.path.abspath(os.path.join(SPECPATH, "..", ".."))
 sys.path.insert(0, ROOT)
 WITH_CLIP = os.environ.get("DH_WITH_CLIP", "") == "1"
-ICON = os.path.join(SPECPATH, "DroneHighlighter.ico")
+ICON = os.path.join(SPECPATH, "CataVoo.ico")
 
 hidden = collect_submodules("drone") + [
     # VideoHighlighter engine pieces the drone package imports inside functions
@@ -68,7 +68,7 @@ for name in _core.SHARED:
     if importlib.util.find_spec(name.split(".")[0]) is not None:
         hidden += collect_submodules(name)
 
-# Heavy packages VideoHighlighter can use but DroneHighlighter does not need.
+# Heavy packages VideoHighlighter can use but CataVoo does not need.
 excludes = ["tkinter", "matplotlib", "IPython", "jupyter", "notebook", "pandas", "sklearn",
             "tensorflow", "keras", "ultralytics", "onnxruntime", "openvino", "optimum",
             "pytest", "faster_whisper", "whisper", "speechbrain", "pyannote", "ollama"]
@@ -91,17 +91,17 @@ def analysis(script):
 a_gui = analysis("launch_gui.py")
 pyz_gui = PYZ(a_gui.pure)
 
-exe_gui = EXE(pyz_gui, a_gui.scripts, [], exclude_binaries=True, name="DroneHighlighter",
+exe_gui = EXE(pyz_gui, a_gui.scripts, [], exclude_binaries=True, name="CataVoo",
               console=False, icon=ICON, upx=False)
 coll = COLLECT(exe_gui,
                a_gui.binaries, a_gui.datas,
-               strip=False, upx=False, name="DroneHighlighter")
+               strip=False, upx=False, name="CataVoo")
 
 # Next to the .exe: the CLIP installer and the LEIA-ME; the Python X.Y the pack must match.
-_out = os.path.join(DISTPATH, "DroneHighlighter")
+_out = os.path.join(DISTPATH, "CataVoo")
 if os.path.isdir(_out):
     shutil.copy2(os.path.join(SPECPATH, "Instalar_IA_Paisagens.bat"), _out)
     shutil.copy2(os.path.join(SPECPATH, "LEIA-ME.txt"), _out)
     # Inside _internal, out of the user's way; only the installer reads it.
-    with open(os.path.join(_out, "_internal", "dh_python.txt"), "w", encoding="ascii") as fh:
+    with open(os.path.join(_out, "_internal", "catavoo_python.txt"), "w", encoding="ascii") as fh:
         fh.write(f"{sys.version_info.major}.{sys.version_info.minor}")

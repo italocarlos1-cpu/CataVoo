@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
-"""DroneHighlighter tests on synthetic aerial footage with known ground truth."""
+"""CataVoo tests on synthetic aerial footage with known ground truth."""
 from __future__ import annotations
 
 import os
@@ -255,3 +255,4 @@ def test_clip_backend_plumbing_and_embedding_cache(trip, monkeypatch):
     calls["infer"] = 0
     ls.annotate(analyses, trip["cache"], use_clip=True, log_fn=lambda *_: None)
     assert calls["infer"] == 0
+

@@ -1,8 +1,9 @@
 <p align="center">
-  <img src="../docs/manual_imagens/icone.png" alt="DroneHighlighter" width="140">
+  <img src="../docs/manual_imagens/icone.png" alt="CataVoo" width="140">
 </p>
 
-<h1 align="center">DroneHighlighter</h1>
+<h1 align="center">CataVoo</h1>
+<p align="center"><i>edição automática de vídeos de drones</i></p>
 
 <p align="center">
   <b>Transforma pastas de vídeos brutos de drone em vídeos cinematográficos, sozinho e no seu PC.</b><br>
@@ -10,26 +11,26 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/italocarlos1-cpu/VideoHighlighter/releases/latest"><img alt="Baixar para Windows" src="https://img.shields.io/badge/baixar-Windows%2064%20bits-111111?style=for-the-badge&logo=windows&logoColor=white"></a>
+  <a href="https://github.com/italocarlos1-cpu/CataVoo/releases/latest"><img alt="Baixar para Windows" src="https://img.shields.io/badge/baixar-Windows%2064%20bits-111111?style=for-the-badge&logo=windows&logoColor=white"></a>
   <img alt="Licença AGPL-3.0" src="https://img.shields.io/badge/licen%C3%A7a-AGPL--3.0-444444?style=for-the-badge">
   <img alt="100% local" src="https://img.shields.io/badge/100%25-local-444444?style=for-the-badge">
 </p>
 
 <p align="center">
-  <a href="https://github.com/italocarlos1-cpu/VideoHighlighter/releases/latest"><b>⬇ Baixar a versão mais recente</b></a> ·
-  <a href="../docs/DroneHighlighter_Manual.pdf">📖 Manual (PDF)</a> ·
-  <a href="https://github.com/italocarlos1-cpu/VideoHighlighter/issues/new/choose">💬 Relatar um problema ou dar uma ideia</a>
+  <a href="https://github.com/italocarlos1-cpu/CataVoo/releases/latest"><b>⬇ Baixar a versão mais recente</b></a> ·
+  <a href="../docs/CataVoo_Manual.pdf">📖 Manual (PDF)</a> ·
+  <a href="https://github.com/italocarlos1-cpu/CataVoo/issues/new/choose">💬 Relatar um problema ou dar uma ideia</a>
 </p>
 
 ---
 
 Você volta de uma viagem com 40 minutos de filmagem aérea em 4K e quer um vídeo de 1 a 2 minutos
-que dê vontade de assistir. O DroneHighlighter assiste tudo por você: descarta o que tremeu, ficou
+que dê vontade de assistir. O CataVoo assiste tudo por você: descarta o que tremeu, ficou
 escuro ou repetiu, escolhe as melhores tomadas, monta no ritmo da música e entrega o vídeo pronto em
 **16:9 (até 4K)** e **9:16** para Reels, Shorts e TikTok.
 
 <p align="center">
-  <img src="../docs/manual_imagens/tela_principal.png" alt="Tela principal do DroneHighlighter" width="900">
+  <img src="../docs/manual_imagens/tela_principal.png" alt="Tela principal do CataVoo" width="900">
 </p>
 
 ## O que ele faz
@@ -75,16 +76,16 @@ escuro ou repetiu, escolhe as melhores tomadas, monta no ritmo da música e entr
 
 ## Baixar e usar (Windows)
 
-1. Baixe o `.zip` da [versão mais recente](https://github.com/italocarlos1-cpu/VideoHighlighter/releases/latest)
+1. Baixe o `.zip` da [versão mais recente](https://github.com/italocarlos1-cpu/CataVoo/releases/latest)
    e extraia numa pasta.
 2. *(Recomendado, uma vez só)* Dê dois cliques em `Instalar_IA_Paisagens.bat` para instalar a IA
    de paisagens. Com placa NVIDIA, são uns 3 GB.
-3. Abra o `DroneHighlighter.exe`, escolha a pasta dos vídeos e clique em **ANALISAR MATERIAL**. O programa mostra
+3. Abra o `CataVoo.exe`, escolha a pasta dos vídeos e clique em **ANALISAR MATERIAL**. O programa mostra
    quanto material bom existe e sugere a duração; **GERAR PRÉVIA** toca o vídeo montado sem renderizar, e
    **RENDERIZAR** grava o vídeo final quando você gostar.
 
 Não precisa instalar Python nem ffmpeg: vem tudo junto. O `LEIA-ME.txt` na pasta explica passo a
-passo, e o [manual completo](../docs/DroneHighlighter_Manual.pdf) descreve cada recurso com as
+passo, e o [manual completo](../docs/CataVoo_Manual.pdf) descreve cada recurso com as
 vantagens e desvantagens de cada um.
 
 Na primeira vez, o Windows pode mostrar *"O Windows protegeu o computador"*. Clique em *Mais
@@ -94,17 +95,17 @@ digital paga.
 ## Testou? Conte como foi
 
 O projeto está em fase de testes e cada retorno ajuda. Abra um
-[pedido aqui](https://github.com/italocarlos1-cpu/VideoHighlighter/issues/new/choose) para contar
+[pedido aqui](https://github.com/italocarlos1-cpu/CataVoo/issues/new/choose) para contar
 um problema ou sugerir uma ideia: diga a versão (aparece no alto da janela), o seu PC e o drone, e
 o que aconteceu. Se o programa fechar sozinho, o arquivo
-`%LOCALAPPDATA%\DroneHighlighter\erros.log` mostra o motivo.
+`%LOCALAPPDATA%\CataVoo\erros.log` mostra o motivo.
 
 **Requisitos:** Windows 10 ou 11, 64 bits, 8 GB de RAM (16 GB para 4K). Placa NVIDIA é opcional:
 acelera a exportação e a IA de paisagens. Vídeos MP4 e MOV, incluindo DJI em 4K e 10 bits.
 
 ## Para quem programa
 
-- O código do DroneHighlighter está em [`drone/`](../drone). As notas técnicas ficam em
+- O código do CataVoo está em [`drone/`](../drone). As notas técnicas ficam em
   [`docs/DRONE.md`](../docs/DRONE.md) e o empacotamento em [`packaging/drone/`](../packaging/drone).
 - Rodar pelo Python: `pip install numpy opencv-python PySide6 pyyaml pillow imageio-ffmpeg av` e depois `python -m drone` (janela) ou
   `python -m drone.cli --help` (linha de comando).
@@ -113,7 +114,7 @@ acelera a exportação e a IA de paisagens. Vídeos MP4 e MOV, incluindo DJI em 
 
 ## Créditos e licença
 
-O DroneHighlighter é construído sobre o **[VideoHighlighter](https://github.com/Aseiel/VideoHighlighter)**,
+O CataVoo é construído sobre o **[VideoHighlighter](https://github.com/Aseiel/VideoHighlighter)**,
 de Aseiel. Ele reaproveita o motor de renderização, as transições, a análise de batidas da música e
 o sistema de pacotes do VideoHighlighter. A análise de drone, a montagem, os estilos e o editor são
 próprios. Este repositório é um fork e segue as atualizações do original.
@@ -126,7 +127,7 @@ desde que mantenha o código aberto sob a mesma licença.
 <details>
 <summary><b>English</b></summary>
 
-**DroneHighlighter** turns folders of raw drone footage into cinematic edits, automatically and
+**CataVoo** turns folders of raw drone footage into cinematic edits, automatically and
 entirely on your PC. Free, open source (AGPL-3.0), no cloud, no API key.
 
 It tells shake from deliberate camera moves, scores every shot (sharpness, exposure, smoothness,
@@ -136,6 +137,6 @@ and 9:16. A built-in mini editor previews the film live and allows frame-accurat
 reordering and style switching without rendering, and can hand the cut to CapCut. An optional AI
 assistant (local Ollama or LM Studio, or paid OpenAI or Claude) is off by default.
 
-Windows build: see [Releases](https://github.com/italocarlos1-cpu/VideoHighlighter/releases/latest).
+Windows build: see [Releases](https://github.com/italocarlos1-cpu/CataVoo/releases/latest).
 Built on [VideoHighlighter](https://github.com/Aseiel/VideoHighlighter) by Aseiel.
 </details>

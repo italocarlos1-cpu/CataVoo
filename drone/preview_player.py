@@ -8,9 +8,9 @@ film; the music (if any) plays alongside on its own player, kept in step with
 that clock. Transitions are shown as straight cuts at the right moment — the
 timing is exact, the dissolves appear only in the rendered video.
 
-Without QtMultimedia (or with ``DRONEHIGHLIGHTER_NO_VIDEO_PREVIEW`` set) the
+Without QtMultimedia (or with ``CATAVOO_NO_VIDEO_PREVIEW`` set) the
 widget is a plain still-frame monitor and :attr:`available` is False.
-``DRONEHIGHLIGHTER_NO_AUDIO`` keeps it silent (no sound device needed).
+``CATAVOO_NO_AUDIO`` keeps it silent (no sound device needed).
 """
 from __future__ import annotations
 
@@ -314,7 +314,7 @@ class PreviewPlayer(QObject):
         self.available = False
         # raw clip → the file actually played (a light proxy once it exists)
         self.resolve = lambda path: path
-        if os.environ.get("DRONEHIGHLIGHTER_NO_VIDEO_PREVIEW"):
+        if os.environ.get("CATAVOO_NO_VIDEO_PREVIEW"):
             self.stack.show_still(None, "Prévia em vídeo desligada")
             return
         try:
@@ -484,7 +484,7 @@ class PreviewPlayer(QObject):
         self.position_changed.emit(self.t)
 
     def _music_play(self) -> None:
-        if not self.music_path or os.environ.get("DRONEHIGHLIGHTER_NO_AUDIO"):
+        if not self.music_path or os.environ.get("CATAVOO_NO_AUDIO"):
             return
         try:
             if self._music is None:

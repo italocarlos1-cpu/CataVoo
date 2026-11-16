@@ -93,7 +93,7 @@ def _sidecar(path: str) -> str:
 # Outputs of editors, not footage: VideoHighlighter writes "<video>_highlight.mp4"
 # next to the original, and those copies would otherwise be analysed as new
 # clips and their scenes used twice.
-_DERIVED = re.compile(r"(_highlights?|_highlight_\d+|_edit(ado)?|_dh_\w+)$", re.IGNORECASE)
+_DERIVED = re.compile(r"(_highlights?|_highlight_\d+|_edit(ado)?|_catavoo\w*)$", re.IGNORECASE)
 
 
 def is_derived(path: str) -> bool:
@@ -108,7 +108,7 @@ def scan_folder(folder: str, *, recursive: bool = False, log_fn=print,
     paths: list[str] = []
     if recursive:
         for root, dirs, files in os.walk(folder):
-            dirs[:] = [d for d in dirs if not d.startswith((".", "_dh_"))]
+            dirs[:] = [d for d in dirs if not d.lower().startswith((".", "_catavoo"))]
             paths += [os.path.join(root, f) for f in files]
     else:
         paths = [os.path.join(folder, f) for f in os.listdir(folder)]

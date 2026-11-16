@@ -2,7 +2,7 @@
 """No black console windows flashing on Windows.
 
 The window program is built ``--windowed``, so every ffmpeg/ffprobe it starts
-would open a console of its own for a split second. DroneHighlighter's own
+would open a console of its own for a split second. CataVoo's own
 calls already pass ``CREATE_NO_WINDOW``, but the rendering engine it reuses
 from VideoHighlighter starts processes too. :func:`hide_child_consoles` makes
 ``CREATE_NO_WINDOW`` the default for every ``subprocess.Popen`` in the process

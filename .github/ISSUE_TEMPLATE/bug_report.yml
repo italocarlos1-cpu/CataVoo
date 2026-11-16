@@ -1,5 +1,5 @@
 name: Problema / erro
-description: Algo não funcionou no DroneHighlighter
+description: Algo não funcionou no CataVoo
 title: "[erro] "
 labels:
   - bug
@@ -8,7 +8,7 @@ body:
     attributes:
       value: |
         Obrigado por testar! Quanto mais detalhes, mais rápido dá para corrigir.
-        O registro de erros fica em `%LOCALAPPDATA%\DroneHighlighter\erros.log` (cole o final dele abaixo, se existir).
+        O registro de erros fica em `%LOCALAPPDATA%\CataVoo\erros.log` (cole o final dele abaixo, se existir).
   - type: input
     id: version
     attributes:

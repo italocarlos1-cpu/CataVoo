@@ -1,7 +1,7 @@
 @echo off
 REM SPDX-License-Identifier: AGPL-3.0-or-later
 REM ===================================================================
-REM  DroneHighlighter - gera o DroneHighlighter.exe no Windows
+REM  CataVoo - gera o CataVoo.exe no Windows
 REM
 REM  Duplo clique neste arquivo (ou rode no Prompt de Comando).
 REM  Requisito: Python 3.12 (python.org, marcar "Add python.exe to PATH").
@@ -10,14 +10,14 @@ REM    build_exe.bat          edicao "lite": sem PyTorch/CLIP (~350 MB)
 REM    build_exe.bat clip     com o CLIP DENTRO do .exe (varios GB; o normal e
 REM                           usar o Instalar_IA_Paisagens.bat ao lado do .exe)
 REM
-REM  Resultado: dist\DroneHighlighter\DroneHighlighter.exe
-REM             dist\DroneHighlighter-VERSAO-win64.zip  (a pasta inteira, para copiar/compartilhar)
+REM  Resultado: dist\CataVoo\CataVoo.exe
+REM             dist\CataVoo-VERSAO-win64.zip  (a pasta inteira, para copiar/compartilhar)
 REM ===================================================================
 setlocal EnableExtensions
 cd /d "%~dp0\..\.."
-title DroneHighlighter - gerando o .exe
+title CataVoo - gerando o .exe
 echo.
-echo === DroneHighlighter: gerando o .exe (pasta: %CD%) ===
+echo === CataVoo: gerando o .exe (pasta: %CD%) ===
 echo.
 
 where py >nul 2>nul
@@ -50,16 +50,16 @@ if /i "%~1"=="clip" (
 
 echo.
 echo Empacotando com PyInstaller ...
-"%PY%" -m PyInstaller packaging\drone\DroneHighlighter.spec --noconfirm --distpath dist --workpath build\drone || goto :erro
+"%PY%" -m PyInstaller packaging\drone\CataVoo.spec --noconfirm --distpath dist --workpath build\drone || goto :erro
 
 echo.
 echo Autoteste: abrindo e fechando a janela ...
-set "DRONEHIGHLIGHTER_SELFTEST=%TEMP%\dronehighlighter_selftest.txt"
-del "%DRONEHIGHLIGHTER_SELFTEST%" >nul 2>nul
-start "" /wait "dist\DroneHighlighter\DroneHighlighter.exe"
-set "DRONEHIGHLIGHTER_SELFTEST="
-if exist "%TEMP%\dronehighlighter_selftest.txt" (
-  type "%TEMP%\dronehighlighter_selftest.txt" & echo.
+set "CATAVOO_SELFTEST=%TEMP%\catavoo_selftest.txt"
+del "%CATAVOO_SELFTEST%" >nul 2>nul
+start "" /wait "dist\CataVoo\CataVoo.exe"
+set "CATAVOO_SELFTEST="
+if exist "%TEMP%\catavoo_selftest.txt" (
+  type "%TEMP%\catavoo_selftest.txt" & echo.
 ) else (
   echo [AVISO] O autoteste da janela nao confirmou. Tente abrir o .exe manualmente.
 )
@@ -68,17 +68,17 @@ echo Compactando a pasta para compartilhar ...
 for /f "tokens=2 delims==" %%V in ('findstr /b "__version__" drone\__init__.py') do set "DHV=%%~V"
 set "DHV=%DHV: =%"
 set "DHV=%DHV:"=%"
-powershell -NoProfile -Command "Compress-Archive -Path 'dist\DroneHighlighter\*' -DestinationPath 'dist\DroneHighlighter-%DHV%-win64.zip' -Force"
+powershell -NoProfile -Command "Compress-Archive -Path 'dist\CataVoo\*' -DestinationPath 'dist\CataVoo-%DHV%-win64.zip' -Force"
 
 echo.
 echo ===================================================================
 echo  PRONTO!
-echo    Programa:  %CD%\dist\DroneHighlighter\DroneHighlighter.exe
-echo    Pacote:    %CD%\dist\DroneHighlighter-%DHV%-win64.zip
+echo    Programa:  %CD%\dist\CataVoo\CataVoo.exe
+echo    Pacote:    %CD%\dist\CataVoo-%DHV%-win64.zip
 echo  Para usar em outro PC: copie a pasta inteira (ou o .zip). Nao precisa
 echo  instalar Python nem ffmpeg.
 echo ===================================================================
-explorer "dist\DroneHighlighter"
+explorer "dist\CataVoo"
 pause
 exit /b 0
 

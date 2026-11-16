@@ -148,13 +148,13 @@ def apply(app) -> None:
     f.setPointSizeF(10)
     app.setFont(f)
     app.setStyleSheet(QSS.replace("@ARROW@", _arrow_png()).replace("@DOT@", _dot_png()))
-    app._dh_no_wheel = _NoWheelOnChoices(app)
-    app.installEventFilter(app._dh_no_wheel)
+    app._cv_no_wheel = _NoWheelOnChoices(app)
+    app.installEventFilter(app._cv_no_wheel)
 
 
 def _dot_png() -> str:
     """Checked boxes show a white dot: a fully white box read as empty."""
-    path = os.path.join(tempfile.gettempdir(), "dronehighlighter_dot.png")
+    path = os.path.join(tempfile.gettempdir(), "catavoo_dot.png")
     try:
         pm = QPixmap(32, 32)
         pm.fill(Qt.transparent)
@@ -172,7 +172,7 @@ def _dot_png() -> str:
 
 def _arrow_png() -> str:
     """A small grey chevron for combo boxes (style sheets need a file)."""
-    path = os.path.join(tempfile.gettempdir(), "dronehighlighter_arrow.png")
+    path = os.path.join(tempfile.gettempdir(), "catavoo_arrow.png")
     try:
         pm = QPixmap(20, 12)
         pm.fill(Qt.transparent)
