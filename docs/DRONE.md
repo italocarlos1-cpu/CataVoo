@@ -58,6 +58,12 @@ ficam menos. A duração total e o encaixe na música não mudam.
   a sua seleção e, no modo Automático, o seu estilo.
 - **Música**: volume abaixando nos últimos ~4 s; uma faixa mais curta que o vídeo é repetida.
 
+## v1.0.1 — ícone definitivo
+
+- Ícone novo (arte do usuário, já com transparência; a sombra fraca em volta é cortada). 16–32 px
+  usam o recorte do sol e do drone sobre o fundo preto; o nome "CataVoo" só aparece de 40 px para cima.
+  Os ícones anteriores foram removidos.
+
 ## v1.0.0 — CataVoo
 
 - Primeira versão com o nome **CataVoo** (antes o projeto se chamava DroneHighlighter): produto,
@@ -66,8 +72,6 @@ ficam menos. A duração total e o encaixe na música não mudam.
   `CATAVOO_*`, pasta de saída `_CataVoo` e `%LOCALAPPDATA%\CataVoo`. O pacote Python continua `drone/`.
 - Executável limpo: **sem compatibilidade** com as versões anteriores (configurações, cache e pastas
   do nome antigo não são lidos nem migrados).
-- Ícone novo (arte do usuário, fundo recortado com borda suave); 16–32 px usam um desenho
-  simplificado (céu, sol e o drone em branco engrossado).
 
 ## v0.6.6 — texto sobre a tomada
 

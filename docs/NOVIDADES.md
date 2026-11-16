@@ -3,6 +3,10 @@
 Escritas para quem usa o programa; as notas técnicas ficam em `DRONE.md`. A seção da versão
 publicada vira o texto da página de download.
 
+## v1.0.1
+
+- **Ícone novo e definitivo** do CataVoo, com uma versão simplificada (drone e sol) que continua nítida na barra de tarefas.
+
 ## v1.0.0
 
 Primeira versão do **CataVoo — edição automática de vídeos de drones**.
