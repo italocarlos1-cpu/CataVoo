@@ -148,7 +148,53 @@ class EditPlan:
     def _min_len(self, i: int) -> float:
         return max(MIN_SHOT, self.trans_out(i) + 0.2)
 
+    # ---- neighbours on the same raw clip: an edge stops where the next shot
+    # begins; when two shots touch, moving the shared edge moves both
+    def _touching(self, i: int, edge: str):
+        """Index of the shot of the same clip whose opposite edge touches ``edge`` of shot ``i``."""
+        s, tol = self.shots[i], 0.5 * self.frame(self.shots[i].path) + 1e-4
+        for k, o in enumerate(self.shots):
+            if k != i and o.path == s.path:
+                if edge == "end" and abs(o.start - s.end) <= tol:
+                    return k
+                if edge == "start" and abs(o.end - s.start) <= tol:
+                    return k
+        return None
+
+    def _room(self, i: int, exclude=()) -> tuple[float, float]:
+        """How far shot ``i`` may extend inside its clip without covering another shot."""
+        s = self.shots[i]
+        lo, hi = self._bounds(s)
+        for k, o in enumerate(self.shots):
+            if k == i or k in exclude or o.path != s.path:
+                continue
+            if o.start >= s.end - 1e-4:
+                hi = min(hi, o.start)
+            elif o.end <= s.start + 1e-4:
+                lo = max(lo, o.end)
+        return lo, hi
+
     def trim(self, i: int, edge: str, t: float, snap: bool | None = None) -> None:
+        s = self.shots[i]
+        k = self._touching(i, edge)
+        if k is not None and not snap:          # shared edge: one grows, the other shrinks
+            o = self.shots[k]
+            if edge == "end":
+                t = min(o.end - self._min_len(k), max(s.start + self._min_len(i), t))
+                s.end = o.start = self._q(t, s.path)
+            else:
+                t = max(o.start + self._min_len(k), min(s.end - self._min_len(i), t))
+                s.start = o.end = self._q(t, s.path)
+            self.edited = True
+            return
+        lo, hi = self._room(i)
+        if edge == "end":
+            t = min(t, hi)
+        else:
+            t = max(t, lo)
+        self._trim(i, edge, t, snap)
+
+    def _trim(self, i: int, edge: str, t: float, snap: bool | None = None) -> None:
         """Move the in ('start') or out ('end') point of shot ``i`` to ``t``."""
         s = self.shots[i]
         lo, hi = self._bounds(s)
@@ -187,10 +233,47 @@ class EditPlan:
         cur += seconds + beats * self.unit
         self.trim(i, edge, cur, snap=False)
 
+    def split(self, i: int) -> int | None:
+        """Cut shot ``i`` in two halves (5 becomes 5 and 6). They touch, so
+        dragging the edge between them moves both. Returns the new index."""
+        if not 0 <= i < len(self.shots):
+            return None
+        s = self.shots[i]
+        if s.length < 2 * MIN_SHOT:
+            return None
+        mid = self._q(s.start + s.length / 2, s.path)
+        b = EditShot(**{**s.__dict__, "uid": f"{s.uid}~{len(self.shots)}", "start": mid,
+                        "caption": dict(s.caption), "parts": dict(s.parts)})
+        s.end = mid
+        s.transition, s.transition_duration = "cut", 0.0      # seamless: the same take goes on
+        self.shots.insert(i + 1, b)
+        self._fix_last()
+        self.edited = True
+        return i + 1
+
+    def roll(self, i: int, dt: float) -> float:
+        """Move the cut between shots ``i`` and ``i+1`` by ``dt`` seconds of film:
+        one gets longer, the other shorter, the film keeps its length.
+        Returns the move actually made."""
+        if not 0 <= i < len(self.shots) - 1 or not dt:
+            return 0.0
+        a, b = self.shots[i], self.shots[i + 1]
+        same = a.path == b.path and abs(a.end - b.start) <= self.frame(a.path)
+        _, a_hi = self._room(i, exclude=(i + 1,) if same else ())
+        b_lo, _ = self._room(i + 1, exclude=(i,) if same else ())
+        dt = min(dt, a_hi - a.end, b.length - self._min_len(i + 1))
+        dt = max(dt, -(a.length - self._min_len(i)), b_lo - b.start)
+        if abs(dt) < 1e-4:
+            return 0.0
+        a.end = self._q(a.end + dt, a.path)
+        b.start = self._q(b.start + dt, b.path)
+        self.edited = True
+        return dt
+
     def slide(self, i: int, dt: float) -> None:
         """Move the whole shot inside its clip, keeping its length."""
         s = self.shots[i]
-        lo, hi = self._bounds(s)
+        lo, hi = self._room(i)
         length = s.length
         new_start = min(max(lo, s.start + dt), hi - length)
         s.start = self._q(new_start, s.path)

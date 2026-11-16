@@ -73,9 +73,9 @@ nem ffmpeg no computador.
  4. O programa mostra quanto material bom existe e sugere uma
     duração. Aceite a sugestão ou escolha outra.
  5. Clique em GERAR PRÉVIA: o vídeo montado toca na hora, sem
-    renderizar. Ali você muda o estilo, a duração e a música, usa
-    "Refazer" e "Outra versão", ajusta as tomadas e coloca texto
-    (botão "T Texto"). Errou? Use
+    renderizar. Ali você muda o estilo, a duração e a música, pede
+    uma "Nova versão" (com ajustes como "mais cachoeira"), ajusta as
+    tomadas e coloca texto (botão "T Texto"). Errou? Use
     "Desfazer" (Ctrl+Z) e "Refazer edição" (Ctrl+Y). No 9:16,
     arraste o quadro branco para escolher o recorte de cada tomada.
  6. Quando gostar, clique em RENDERIZAR para gravar o vídeo final.

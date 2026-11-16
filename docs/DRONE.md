@@ -58,6 +58,22 @@ ficam menos. A duração total e o encaixe na música não mudam.
   a sua seleção e, no modo Automático, o seu estilo.
 - **Música**: volume abaixando nos últimos ~4 s; uma faixa mais curta que o vídeo é repetida.
 
+## v1.0.2 — sequência unificada, dividir, roll edit
+
+- `FilmTimeline` substitui `ProgramTimeline` + `SequenceStrip`: régua (seek → Espaço = vídeo todo),
+  blocos com miniatura (clique seleciona → Espaço = tomada; duplo clique toca; arrastar reordena;
+  linha entre blocos = `EditPlan.roll`; botão direito = menu). Divisórias: chave `editor/split2`.
+- `EditPlan.split`, `roll`, `_touching`, `_room`: bordas param na próxima tomada do mesmo clipe; borda
+  compartilhada move as duas. `slide` também respeita os vizinhos.
+- Transporte em grade de 3 colunas (botões centralizados); total + tomadas à esquerda; ↶ ↷ Salvar
+  Mais à direita. "Nova versão" (`drone/version_dialog.py`) substitui na barra o campo de ajustes, o
+  Foco, Refazer e Outra versão: pedido com sugestões, Foco, leitura "Entendi" (`understood`) e um
+  botão que chama `redo(True)` (sempre varia as tomadas). Sem confirmação ao substituir edição
+  manual: o Ctrl+Z traz de volta.
+- `_Monitor`: o recorte 9:16 só se move segurando dentro do quadro (cursor de mão).
+- Tela principal: "Tipo" de música → lista das faixas da pasta (`Job.music_file`, salvo em QSettings;
+  `Session.set_music` se trocar depois da análise). Botões principais com `BIG_BUTTON` (230×44).
+
 ## v1.0.1 — ícone definitivo
 
 - Ícone novo (arte do usuário, já com transparência; a sombra fraca em volta é cortada). 16–32 px

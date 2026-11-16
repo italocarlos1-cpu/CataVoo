@@ -196,7 +196,7 @@ def test_timeline_window_offscreen(session, tmp_path):
     w.show()
     app.processEvents()
     n = len(w.plan.shots)
-    assert n >= 2 and len(w.shot_items) == n and w.strip.count() == n
+    assert n >= 2 and len(w.shot_items) == n and len(w.scrub.blocks) == n
     w.select(0, "end")
     end = w.plan.shots[0].end
     w.view.setFocus()
@@ -243,14 +243,14 @@ def test_mini_editor_reorder_preview_and_colours(session, tmp_path):
     app.processEvents()
     uids = [s.uid for s in w.plan.shots]
     assert len(uids) >= 3
-    # drop slot: left half of a card = before it, right half = after it
-    r1 = w.strip.visualItemRect(w.strip.item(1))
-    assert w.strip.drop_slot(QPoint(r1.left() + 2, r1.center().y())) == 1
-    assert w.strip.drop_slot(QPoint(r1.right() - 2, r1.center().y())) == 2
-    w.strip.moved.emit(0, 2)
+    # drop slot: left half of a block = before it, right half = after it
+    b1 = w.scrub.blocks[1]
+    x0, x1 = w.scrub._x(b1["start"]), w.scrub._x(b1["start"] + b1["length"])
+    assert w.scrub._slot(x0 + 2) == 1 and w.scrub._slot(x1 - 2) == 2
+    w.scrub.moved.emit(0, 2)
     app.processEvents()
     assert [s.uid for s in w.plan.shots][:3] == [uids[1], uids[2], uids[0]] and w.sel == 2
-    assert w.plan.edited and w.strip.count() == len(uids)
+    assert w.plan.edited and len(w.scrub.blocks) == len(uids)
     pieces = w._sequence_pieces()
     assert [p.path for p in pieces] == [s.path for s in w.plan.shots]
     assert abs(pieces[-1].film_end - w.plan.total) < 1e-6
@@ -580,7 +580,7 @@ def test_edits_keep_the_scroll_and_render_matches_the_preview(session, tmp_path)
     w.commit_drag()
     app.processEvents()
     assert vb.value() == before
-    w.strip.moved.emit(0, len(w.plan.shots) - 1)
+    w.scrub.moved.emit(0, len(w.plan.shots) - 1)
     app.processEvents()
     app.processEvents()
     want = [(s.path, round(s.start, 2), round(s.end, 2)) for s in w.plan.shots]
@@ -668,7 +668,7 @@ def test_undo_and_redo_in_the_preview(session, tmp_path):
     assert other != first
     w.undo()
     assert [s.uid for s in w.plan.shots] == first
-    assert not any("♪" in w.strip.item(i).text() for i in range(w.strip.count()))
+    assert not any("♪" in b["label"] for b in w.scrub.blocks)
     assert not hasattr(w, "snap_btn")
     w.close()
     session.readjust("", 0, [])
@@ -737,7 +737,7 @@ def test_text_over_a_shot_in_preview_and_render(session, tmp_path):
     w.sel = 1
     w._update_crop()
     assert w.preview.stack.caption.isVisible()
-    assert "T" in w.strip.item(1).text()
+    assert w.scrub.blocks[1]["caption"]
     d = w.plan.to_dict()
     assert d["shots"][1]["caption"]["text"].startswith("Dicas")
     w.undo()
@@ -767,3 +767,152 @@ def test_text_over_a_shot_in_preview_and_render(session, tmp_path):
     assert blue_px(frame_at((t0 + t1) / 2)) > 500
     assert blue_px(frame_at(t1 + 0.6)) < 50
     w.close()
+
+
+def test_split_roll_and_no_overlap(session, tmp_path):
+    """Dividir ao meio: 5 becomes 5 and 6, touching; dragging their shared edge
+    (in the raw clip or between the blocks of the film) moves both; a free edge
+    stops at the next shot of the same clip instead of covering it."""
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    os.environ["CATAVOO_NO_VIDEO_PREVIEW"] = "1"
+    qtw = pytest.importorskip("PySide6.QtWidgets")
+    if not hasattr(qtw, "QApplication") or "Mock" in type(qtw.QApplication).__name__:
+        pytest.skip("real PySide6 required")
+    app = qtw.QApplication.instance() or qtw.QApplication([])
+    from drone.editor_window import EditorWindow
+    w = EditorWindow(session, style_key="cinematografico", tag="16x9",
+                     store=EditStore(str(tmp_path / "sp.json")), title="T", main_style="cinematografico")
+    w.show()
+    app.processEvents()
+    p = w.plan
+    i = max(range(len(p.shots)), key=lambda k: p.shots[k].length)
+    a0 = p.shots[i]
+    n, total, start, end, path = len(p.shots), p.total, a0.start, a0.end, a0.path
+    w.split_shot(i)
+    p = w.plan
+    a, b = p.shots[i], p.shots[i + 1]
+    assert len(p.shots) == n + 1 and a.path == b.path == path
+    assert a.start == start and b.end == end and abs(a.end - b.start) < 1e-6
+    assert abs(p.total - total) < 0.05                      # same picture, same length
+    # shared edge in the raw clip: one grows, the other shrinks
+    mid = a.end
+    p.trim(i, "end", mid + 0.4)
+    assert abs(a.end - (mid + 0.4)) < 0.05 and abs(b.start - a.end) < 1e-6 and b.end == end
+    # the cut between the two blocks of the film: same thing, film length kept
+    before = p.total
+    assert p.roll(i, -0.3) < 0
+    assert abs(b.start - a.end) < 1e-6 and abs(p.total - before) < 0.05
+    w.undo()
+    w.undo()                                                 # back to before the split
+    assert len(w.plan.shots) == n
+    # a free edge never covers another shot of the same clip
+    p = w.plan
+    for k, s in enumerate(p.shots):
+        others = [o for j, o in enumerate(p.shots) if j != k and o.path == s.path and o.start >= s.end]
+        if others:
+            nxt = min(o.start for o in others)
+            p.trim(k, "end", nxt + 5.0)
+            assert s.end <= nxt + 1e-6
+            break
+    w.close()
+    session.readjust("", 0, [])
+
+
+def test_space_follows_the_last_click(session, tmp_path):
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    os.environ["CATAVOO_NO_VIDEO_PREVIEW"] = "1"
+    qtw = pytest.importorskip("PySide6.QtWidgets")
+    if not hasattr(qtw, "QApplication") or "Mock" in type(qtw.QApplication).__name__:
+        pytest.skip("real PySide6 required")
+    app = qtw.QApplication.instance() or qtw.QApplication([])
+    from drone.editor_window import EditorWindow
+    w = EditorWindow(session, style_key="cinematografico", tag="16x9",
+                     store=EditStore(str(tmp_path / "sp2.json")), title="T", main_style="cinematografico")
+    w.show()
+    app.processEvents()
+    calls = []
+    w.toggle_film = lambda: calls.append("film")
+    w.click_shot = lambda i=None: calls.append("shot")
+    w._film_picked(1)                     # click on a block of the film line
+    assert w.sel == 1
+    w.space()
+    w._film_seek(2.0)                     # click on the time ruler
+    w.space()
+    w.select(0)                           # click on a shot in the raw clips
+    w.space()
+    w.stop()                              # player buttons
+    w.space()
+    assert calls == ["shot", "film", "shot", "film"]
+    assert "tomadas" in w.total_lbl.text()
+    w.close()
+
+
+def test_vertical_frame_moves_only_from_inside():
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qtw = pytest.importorskip("PySide6.QtWidgets")
+    if not hasattr(qtw, "QApplication") or "Mock" in type(qtw.QApplication).__name__:
+        pytest.skip("real PySide6 required")
+    app = qtw.QApplication.instance() or qtw.QApplication([])
+    from PySide6.QtCore import QPoint, Qt
+    from PySide6.QtTest import QTest
+    from drone.preview_player import _Monitor
+    m = _Monitor()
+    m.resize(640, 360)
+    m.show()
+    app.processEvents()
+    m.set_crop(0.5)
+    moved = []
+    m.crop_moved.connect(moved.append)
+    vp = m.viewport()
+    QTest.mouseClick(vp, Qt.LeftButton, pos=QPoint(20, 180))      # dark side: nothing happens
+    assert m.crop == 0.5 and not moved
+    c = m.crop_rect()
+    QTest.mousePress(vp, Qt.LeftButton, pos=QPoint(int(c.center().x()), 180))
+    QTest.mouseMove(vp, QPoint(int(c.center().x()) + 80, 180))
+    QTest.mouseRelease(vp, Qt.LeftButton, pos=QPoint(int(c.center().x()) + 80, 180))
+    assert m.crop > 0.55 and moved
+
+
+def test_new_version_window(session, tmp_path, monkeypatch):
+    """Nova versão: the request window reads back what it understood, and its
+    one button makes a different cut with the request applied (Ctrl+Z goes back)."""
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    os.environ["CATAVOO_NO_VIDEO_PREVIEW"] = "1"
+    qtw = pytest.importorskip("PySide6.QtWidgets")
+    if not hasattr(qtw, "QApplication") or "Mock" in type(qtw.QApplication).__name__:
+        pytest.skip("real PySide6 required")
+    app = qtw.QApplication.instance() or qtw.QApplication([])
+    from drone import version_dialog
+    from drone.editor_window import EditorWindow
+    got = version_dialog.understood("mais cachoeira, menos cidade, cortes mais rápidos, terminar com pôr do sol")
+    assert "mais cachoeira" in got.lower() and "menos cidade" in got.lower()
+    assert "cortes mais rápidos" in got and "terminar com" in got
+    assert version_dialog.understood("blá blá") == ""
+    d = version_dialog.VersionDialog(None, request="", focus="", focus_options=[("Mata", 30)],
+                                     landscapes=["Mata"], edited=False, ai_on=False)
+    d._add("mais mata")
+    d._add("cortes mais lentos")
+    assert d.request == "mais mata, cortes mais lentos" and "Entendi" in d.got.text()
+    assert d.focus_text == ""
+    w = EditorWindow(session, style_key="cinematografico", tag="16x9",
+                     store=EditStore(str(tmp_path / "nv.json")), title="T", main_style="cinematografico")
+    w.show()
+    app.processEvents()
+    assert not hasattr(w, "redo_btn") and not hasattr(w, "variant_btn")
+    first = [s.uid for s in w.plan.shots]
+
+    def fake_exec(self):
+        self.edit.setPlainText("cortes mais rápidos")
+        return 1
+    monkeypatch.setattr(version_dialog.VersionDialog, "exec", fake_exec)
+    w.open_version()
+    while w._redo_busy:
+        app.processEvents()
+        w._redo_thread.wait(20)
+    app.processEvents()
+    assert [s.uid for s in w.plan.shots] != first
+    assert w.feedback.text() == "cortes mais rápidos" and "•" in w.version_btn.text()
+    w.undo()
+    assert [s.uid for s in w.plan.shots] == first
+    w.close()
+    session.readjust("", 0, [])

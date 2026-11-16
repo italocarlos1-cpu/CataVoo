@@ -12,7 +12,7 @@ import os
 import sys
 import traceback
 
-from PySide6.QtCore import QObject, QSettings, Qt, QThread, Signal
+from PySide6.QtCore import QObject, QSettings, QSize, Qt, QThread, Signal
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QFileDialog, QFormLayout,
                                QFrame, QHBoxLayout, QLabel, QLineEdit, QMainWindow,
@@ -28,10 +28,7 @@ from drone.progress_ui import Heartbeat
 from drone import theme
 from drone.pipeline import Job, Session, edit_store_path
 
-MUSIC_CHOICES = [("Automática (pelo estilo)", ""), ("Instrumental cinematográfica", "cinematografica"),
-                 ("Instrumental", "instrumental"), ("Tranquila / natureza", "tranquila"),
-                 ("Eletrônica ambiente", "eletronica"), ("Alternativa / indie", "indie"),
-                 ("Animada", "animada")]
+BIG_BUTTON = QSize(230, 44)                 # ANALISAR MATERIAL and GERAR PRÉVIA, the same size
 FORMATS = [("Horizontal 16:9", (True, False)), ("Vertical 9:16", (False, True))]
 RESOLUTIONS = [("4K (3840×2160)", (3840, 2160)), ("Full HD (1920×1080)", (1920, 1080))]
 
@@ -133,14 +130,16 @@ class MainWindow(QMainWindow):
         self.music_dir.setPlaceholderText("Pasta com as suas músicas")
         mb = QPushButton("Selecionar")
         mb.clicked.connect(self._pick_music)
-        self.music_kind = QComboBox()
-        for label, key in MUSIC_CHOICES:
-            self.music_kind.addItem(label, key)
+        self.music_track = QComboBox()
+        self.music_track.setToolTip("As músicas da pasta escolhida (com subpastas). Ela toca do começo ao fim do vídeo.\n"
+                                    "Automática: o programa escolhe pelo estilo. Dá para trocar depois, na prévia.")
         mrow = QHBoxLayout()
         mrow.addWidget(self.music_dir)
         mrow.addWidget(mb)
         form.addRow("Biblioteca", mrow)
-        form.addRow("Tipo", self.music_kind)
+        form.addRow("Música", self.music_track)
+        self._fill_tracks(self.settings.value("music_file", ""))
+        self.music_dir.editingFinished.connect(lambda: self._fill_tracks())
 
         form = card("Saída")
         self.formats = QComboBox()
@@ -192,18 +191,16 @@ class MainWindow(QMainWindow):
         self.go = role(QPushButton("ANALISAR MATERIAL"), "primary")
         self.go.setToolTip("Analisa os vídeos da pasta (uma vez só; fica guardado) e mostra quanto material bom existe.\n"
                            "Nenhum vídeo é gerado ainda: você escolhe a duração depois de ver o resultado.")
-        self.go.setMinimumHeight(52)
-        f = self.go.font()
-        f.setPointSize(12)
-        self.go.setFont(f)
+        self.go.setFixedSize(BIG_BUTTON)
         self.go.clicked.connect(lambda: self._analyse())
         self.cancel = QPushButton("Cancelar")
         self.cancel.setEnabled(False)
-        self.cancel.setMinimumHeight(52)
+        self.cancel.setFixedHeight(BIG_BUTTON.height())
         self.cancel.clicked.connect(self._cancel)
         brow = QHBoxLayout()
-        brow.addWidget(self.go, 4)
-        brow.addWidget(self.cancel, 1)
+        brow.addWidget(self.go)
+        brow.addWidget(self.cancel)
+        brow.addStretch()
         right.addLayout(brow)
 
         self.bar = QProgressBar()
@@ -255,11 +252,12 @@ class MainWindow(QMainWindow):
                                  "(90, 1:30, 4:00…). Dá para mudar de novo depois, dentro da prévia.")
         drow.addWidget(self.duration)
         self.preview_btn = role(QPushButton("GERAR PRÉVIA"), "primary")
-        self.preview_btn.setMinimumHeight(44)
+        self.preview_btn.setFixedSize(BIG_BUTTON)
         self.preview_btn.setToolTip("Abre a prévia: o vídeo montado toca na hora, sem renderizar. Lá você muda o estilo e a\n"
                                     "duração, refaz, pede outra versão, ajusta as tomadas e só então renderiza o vídeo final.")
         self.preview_btn.clicked.connect(self._preview)
-        drow.addWidget(self.preview_btn, 1)
+        drow.addWidget(self.preview_btn)
+        drow.addStretch()
         rl.addLayout(drow)
         self.result_card.setVisible(False)
         right.addWidget(self.result_card)
@@ -365,7 +363,8 @@ class MainWindow(QMainWindow):
         for k, v in (("folder", job.folder), ("music_dir", job.music_dir),
                      ("group_by", job.group_by),
                      ("summary", "true" if self.summary.isChecked() else "false"),
-                     ("title", job.title), ("use_clip", "true" if self.use_clip.isChecked() else "false")):
+                     ("title", job.title), ("music_file", job.music_file),
+                     ("use_clip", "true" if self.use_clip.isChecked() else "false")):
             self.settings.setValue(k, v)
         cfg = self.ai_settings()
         cfg.save()
@@ -445,6 +444,8 @@ class MainWindow(QMainWindow):
             self._analyse(then_open=True)        # something changed: analyse (from the cache) first
             return
         session = self.session
+        if (session.job.music_file or "") != job.music_file:
+            session.set_music(job.music_file)    # another track picked after the analysis
         self.session = None                      # a session belongs to one editor; the next one is re-read
         self._session_key = None
         target = material.parse_clock(self.duration.currentText())
@@ -467,10 +468,27 @@ class MainWindow(QMainWindow):
         d = QFileDialog.getExistingDirectory(self, "Biblioteca de músicas", self.music_dir.text())
         if d:
             self.music_dir.setText(d)
+            self._fill_tracks()
+
+    def _fill_tracks(self, keep: str | None = None) -> None:
+        """The tracks of the music folder, by name, plus Automática."""
+        from drone import music_selector
+        keep = self.music_track.currentData() if keep is None else keep
+        folder = self.music_dir.text().strip()
+        tracks = music_selector.scan_library(folder) if folder and os.path.isdir(folder) else []
+        box = self.music_track
+        box.clear()
+        box.addItem("Automática (pelo estilo)", "")
+        for path in sorted(tracks, key=lambda t: os.path.basename(t).lower()):
+            box.addItem(os.path.splitext(os.path.basename(path))[0], path)
+            box.setItemData(box.count() - 1, path, Qt.ToolTipRole)
+        if not tracks:
+            box.setItemText(0, "Automática (escolha a pasta de músicas)" if not folder else
+                            "Automática (nenhuma música nessa pasta)")
+        box.setCurrentIndex(max(0, box.findData(keep or "")))
 
     def build_job(self) -> Job:
         h, v = self.formats.currentData()
-        tag = self.music_kind.currentData()
         # No length here: it is chosen after the analysis (0 = the material decides).
         # The style starts on Automático; it is chosen in the preview.
         return Job(folder=self.folder.text().strip(), style="automatico",
@@ -478,7 +496,7 @@ class MainWindow(QMainWindow):
                    shortfall="esticar", group_by=self.group_by.currentData(),
                    summary=self.summary.isChecked() and self.group_by.currentData() != "nada",
                    horizontal=h, vertical=v, title=self.title.text().strip(),
-                   music_dir=self.music_dir.text().strip(), music_tags=[tag] if tag else [],
+                   music_dir=self.music_dir.text().strip(), music_file=self.music_track.currentData() or "",
                    prompt=self.prompt.toPlainText(),
                    horizontal_size=self.resolution.currentData())
 

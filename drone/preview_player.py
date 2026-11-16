@@ -126,7 +126,9 @@ class _Monitor(QGraphicsView):
             self.masks[0].setRect(QRectF(r.left(), r.top(), c.left() - r.left(), r.height()))
             self.masks[1].setRect(QRectF(c.right(), r.top(), r.right() - c.right(), r.height()))
             self.frame.setRect(c.adjusted(1, 1, -1, -1))
-        self.setCursor(Qt.SizeHorCursor if on else Qt.ArrowCursor)
+        self.setMouseTracking(on)
+        if not on:
+            self.setCursor(Qt.ArrowCursor)
         self._place_caption()
 
     def set_caption(self, spec, vertical: bool = False) -> None:
@@ -186,17 +188,23 @@ class _Monitor(QGraphicsView):
         r = self.area()
         return min(1.0, max(0.0, (x - r.left()) / max(1.0, r.width())))
 
+    def _inside_frame(self, pos) -> bool:
+        c = self.crop_rect()
+        return c is not None and c.contains(pos)
+
     def mousePressEvent(self, e):
         c = self.crop_rect()
         if c is not None and e.button() == Qt.LeftButton:
-            x = e.position().x()
-            # grab the frame where it was clicked (no jump), or move it to the click
-            self._drag = (x - c.center().x()) if c.left() <= x <= c.right() else 0.0
-            self.mouseMoveEvent(e)
+            # only the bright part (inside the frame) grabs it; the dark sides do nothing
+            if self._inside_frame(e.position()):
+                self._drag = e.position().x() - c.center().x()
+                self.setCursor(Qt.ClosedHandCursor)
             return
         super().mousePressEvent(e)
 
     def mouseMoveEvent(self, e):
+        if self._drag is None and self.crop is not None:
+            self.setCursor(Qt.OpenHandCursor if self._inside_frame(e.position()) else Qt.ArrowCursor)
         if self._drag is not None and self.crop is not None:
             self.crop = self._centre_at(e.position().x() - self._drag)
             self.relayout()
@@ -207,6 +215,7 @@ class _Monitor(QGraphicsView):
     def mouseReleaseEvent(self, e):
         if self._drag is not None:
             self._drag = None
+            self.setCursor(Qt.OpenHandCursor if self._inside_frame(e.position()) else Qt.ArrowCursor)
             if self.crop is not None:
                 self.crop_done.emit(self.crop)
             return

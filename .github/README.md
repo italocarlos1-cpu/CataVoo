@@ -50,8 +50,8 @@ escuro ou repetiu, escolhe as melhores tomadas, monta no ritmo da música e entr
 - **Cortes no ritmo da música**, com fade-out no final.
 - **Duração automática** ou escolhida por você, com aviso quando falta material bom.
 - **Um vídeo por voo, dia, local ou pasta**, e um resumo da viagem inteira.
-- **Não gostou?** Escreva o ajuste ("mais cachoeira, cortes mais rápidos") e clique em *Refazer*,
-  ou peça *Outra versão*. Tudo sem IA paga.
+- **Não gostou?** Clique em *Nova versão*, escreva o ajuste ("mais cachoeira, cortes mais rápidos")
+  ou use as sugestões, e gere outra montagem. Tudo sem IA paga.
 
 **Edição manual: um mini editor**
 - O monitor toca o vídeo final com a música **sem renderizar nada**.
