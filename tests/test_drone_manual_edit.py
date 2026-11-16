@@ -916,3 +916,40 @@ def test_new_version_window(session, tmp_path, monkeypatch):
     assert [s.uid for s in w.plan.shots] == first
     w.close()
     session.readjust("", 0, [])
+
+
+def test_caption_right_size_opacity_and_indent():
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qtw = pytest.importorskip("PySide6.QtWidgets")
+    if not hasattr(qtw, "QApplication") or "Mock" in type(qtw.QApplication).__name__:
+        pytest.skip("real PySide6 required")
+    qtw.QApplication.instance() or qtw.QApplication([])
+    import numpy as np
+    from drone import text_overlay as T
+
+    def alpha(spec, w=640, h=360):
+        img = T.draw(spec, w, h)
+        return np.frombuffer(img.constBits(), np.uint8).reshape(h, img.bytesPerLine() // 4, 4)[:, :w, 3].copy()
+
+    base = {"text": "TESTE", "size": 60, "bg_opacity": 100, "bg_color": "#000000"}
+    assert T.normalize({"text": "a"})["bg_color"] == "#000000"            # black by default
+    assert T.normalize({"text": "a", "size": "grande"})["size"] == 97     # old captions still open
+    assert T.normalize({"text": "a", "fill": False})["bg_opacity"] == 0
+    right = np.nonzero(alpha({**base, "align": "right"}).any(axis=0))[0]
+    left = np.nonzero(alpha({**base, "align": "left"}).any(axis=0))[0]
+    assert right.min() > 320 and left.max() < 320
+    small, big = alpha({**base, "size": 30}), alpha({**base, "size": 90})
+    assert (big > 0).sum() > 4 * (small > 0).sum()
+    half = alpha({**base, "bg_opacity": 50})
+    assert 100 < np.percentile(half[half > 0], 50) < 160                  # half-transparent box
+    indented = np.nonzero(alpha({**base, "text": "      TESTE"}).any(axis=0))[0]
+    assert indented.min() > left.min() + 20                               # spaces push it right
+
+
+def test_registro_keeps_it_short():
+    from drone.editor_window import _short_log
+    assert _short_log("🎬 Roteiro 16x9:\n22 tomadas, 120.0s, unidade 0.469s\n   0.0s  [open] x") == \
+        "🎬 Roteiro 16x9: 22 tomadas, 120.0s"
+    assert _short_log("⏱️ Duração escolhida 16x9: 120 s") == "⏱️ Duração escolhida 16x9: 120 s"
+    assert _short_log("📱 Recorte 9:16 3/22 (centro 0.50)") == ""
+    assert _short_log("   12.3s  [body] 3.0s  DJI_0001") == ""

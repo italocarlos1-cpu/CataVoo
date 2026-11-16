@@ -58,6 +58,15 @@ ficam menos. A duração total e o encaixe na música não mudam.
   a sua seleção e, no modo Automático, o seu estilo.
 - **Música**: volume abaixando nos últimos ~4 s; uma faixa mais curta que o vídeo é repetida.
 
+## v1.0.3 — texto, registro, manual enxuto
+
+- `text_overlay`: `align` right; Comic Sans MS; `size` numérico = altura em px num quadro de 1080
+  (`REF`), legendas antigas ("pequeno/medio/grande") convertidas; `bg_opacity` 0–100 no lugar de
+  `fill` (lido das legendas antigas); `bg_color` padrão preto; espaços iniciais viram recuo.
+- REGISTRO: `_short_log` resume "🎬 Roteiro" numa linha e manda o detalhe por tomada/clipe para o
+  `print()` (debug.log); edições manuais registradas; rolagem sempre no fim.
+- Manual reescrito em 10 seções curtas (o antigo, longo, ficou no histórico do git).
+
 ## v1.0.2 — sequência unificada, dividir, roll edit
 
 - `FilmTimeline` substitui `ProgramTimeline` + `SequenceStrip`: régua (seek → Espaço = vídeo todo),

@@ -10,14 +10,15 @@ from __future__ import annotations
 
 import os
 
-FONTS = ["Arial", "Verdana", "Trebuchet MS", "Georgia", "Impact", "Courier New"]
-SIZES = {"pequeno": 0.045, "medio": 0.065, "grande": 0.090}      # of the frame's short side
-SIZE_LABELS = [("Pequeno", "pequeno"), ("Médio", "medio"), ("Grande", "grande")]
+FONTS = ["Arial", "Verdana", "Trebuchet MS", "Georgia", "Impact", "Comic Sans MS", "Courier New"]
 POSITIONS = [("Embaixo", "baixo"), ("No meio", "meio"), ("No alto", "alto")]
-ALIGNS = [("Esquerda", "left"), ("Centro", "center")]
+ALIGNS = [("Esquerda", "left"), ("Centro", "center"), ("Direita", "right")]
+REF = 1080.0                    # the size is the letter height in pixels on a 1080-pixel frame
+SIZE_MIN, SIZE_MAX = 12, 240
+OLD_SIZES = {"pequeno": 49, "medio": 70, "grande": 97}
 
-DEFAULT = {"text": "", "align": "left", "font": "Arial", "size": "medio", "pos": "baixo",
-           "bold": True, "upper": True, "color": "#ffffff", "fill": True, "bg_color": "#0b1f4d"}
+DEFAULT = {"text": "", "align": "left", "font": "Arial", "size": 70, "pos": "baixo",
+           "bold": True, "upper": True, "color": "#ffffff", "bg_color": "#000000", "bg_opacity": 100}
 
 
 def normalize(spec) -> dict | None:
@@ -26,28 +27,41 @@ def normalize(spec) -> dict | None:
         return None
     out = dict(DEFAULT)
     out.update({k: v for k, v in spec.items() if k in DEFAULT})
-    if out["size"] not in SIZES:
-        out["size"] = "medio"
+    if "bg_opacity" not in spec and "fill" in spec:      # captions written before the slider
+        out["bg_opacity"] = 100 if spec["fill"] else 0
+    size = OLD_SIZES.get(out["size"], out["size"]) if isinstance(out["size"], str) else out["size"]
+    try:
+        out["size"] = int(min(SIZE_MAX, max(SIZE_MIN, float(size))))
+    except (TypeError, ValueError):
+        out["size"] = DEFAULT["size"]
+    out["bg_opacity"] = int(min(100, max(0, int(out["bg_opacity"]))))
+    if out["align"] not in {a for _l, a in ALIGNS}:
+        out["align"] = "left"
     return out
 
 
 def _lines(text: str, fm, max_w: float) -> list:
-    """The text's own line breaks, then word wrap to the frame's width."""
+    """``[(indent, line)]``: the text's own line breaks, spaces typed before a
+    line (they move it right), then word wrap to the frame's width."""
     out = []
     for para in text.splitlines() or [""]:
-        words, cur = para.split(), ""
+        lead = para[:len(para) - len(para.lstrip(" "))]
+        indent = fm.horizontalAdvance(lead) if lead else 0.0
+        words, cur, first = para.split(), "", True
         if not words:
-            out.append("")
+            out.append((0.0, ""))
             continue
         for w in words:
             cand = f"{cur} {w}".strip()
-            if cur and fm.horizontalAdvance(cand) > max_w:
-                out.append(cur)
+            room = max_w - (indent if first else 0.0)
+            if cur and fm.horizontalAdvance(cand) > room:
+                out.append((indent if first else 0.0, cur))
+                first = False
                 cur = w
             else:
                 cur = cand
-        out.append(cur)
-    while out and not out[-1]:
+        out.append((indent if first else 0.0, cur))
+    while out and not out[-1][1]:
         out.pop()
     return out
 
@@ -64,7 +78,7 @@ def draw(spec, width: int, height: int):
     if spec is None:
         return img
     short = min(width, height)
-    px = max(8.0, short * SIZES[spec["size"]])
+    px = max(6.0, short * spec["size"] / REF)
     font = QFont(spec["font"])
     font.setPixelSize(int(round(px)))
     font.setBold(bool(spec["bold"]))
@@ -89,16 +103,24 @@ def draw(spec, width: int, height: int):
     p.setFont(font)
     color = QColor(spec["color"])
     bg = QColor(spec["bg_color"])
-    for line in lines:
+    bg.setAlpha(round(255 * spec["bg_opacity"] / 100))
+    filled = spec["bg_opacity"] > 0
+    for indent, line in lines:
         tw = fm.horizontalAdvance(line)
         box_w = tw + 2 * pad_x
-        x = margin if spec["align"] == "left" else (width - box_w) / 2
-        if spec["fill"] and line:
+        if spec["align"] == "left":
+            x = margin + indent
+        elif spec["align"] == "right":
+            x = width - margin - box_w
+        else:
+            x = (width - box_w) / 2 + indent / 2
+        x = min(max(0.0, x), max(0.0, width - box_w))
+        if filled and line:
             p.setPen(Qt.NoPen)
             p.setBrush(bg)
             p.drawRoundedRect(QRectF(x, y, box_w, line_h), px * 0.08, px * 0.08)
         base = y + pad_y + fm.ascent()
-        if line and not spec["fill"]:
+        if line and spec["bg_opacity"] < 40:
             # no box: a dark outline keeps the letters readable on bright sky
             path = QPainterPath()
             path.addText(x + pad_x, base, font, line)

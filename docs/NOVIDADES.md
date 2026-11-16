@@ -3,6 +3,16 @@
 Escritas para quem usa o programa; as notas técnicas ficam em `DRONE.md`. A seção da versão
 publicada vira o texto da página de download.
 
+## v1.0.3
+
+- **Texto:** alinhamento à **direita**, fonte **Comic Sans MS**, **tamanho em números** (altura das
+  letras em pixels), **fundo com transparência** de 100 (sólido) a 0 (sem fundo), fundo **preto** por
+  padrão, e espaços no começo da linha empurram o texto para a direita.
+- **Registro mais limpo:** some a lista tomada por tomada e o progresso de cada clipe; ficam as
+  decisões (duração, roteiro, música, estilo) e agora também **as suas edições** (aparar, mover,
+  dividir, remover, transição, texto, recorte). Ele sempre rola até a última linha.
+- **Manual enxuto:** passo a passo, estilos e comandos básicos, em bem menos páginas.
+
 ## v1.0.2
 
 - **Sequência numa linha só:** a linha do vídeo e as miniaturas viraram uma coisa só, com régua de

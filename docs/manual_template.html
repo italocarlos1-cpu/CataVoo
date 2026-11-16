@@ -76,629 +76,155 @@
   <img src="{{IMG_ICONE}}" alt="Ícone do CataVoo" style="width:96px;height:96px;float:right;margin:0 0 10px 16px">
   <h1>CataVoo</h1>
   <p class="sub">Edição automática de vídeos de drones · manual de uso · 100% local</p>
-  <p class="meta">Versão do programa: 1.0.2 · Manual atualizado em 16/11/2026 · Licença AGPL-3.0</p>
+  <p class="meta">Versão do programa: 1.0.3 · Manual atualizado em 16/11/2026 · Licença AGPL-3.0</p>
 </header>
 
-<p>O CataVoo transforma uma pasta de vídeos brutos de drone em vídeos prontos para publicar. O trabalho tem três passos: <b>ANALISAR MATERIAL</b> (o programa assiste tudo uma vez só, dá nota a cada trecho e descarta o que tremeu, ficou borrado ou repetiu), <b>GERAR PRÉVIA</b> (o vídeo montado no ritmo da música toca na hora, sem renderizar; ali você escolhe o estilo e a duração, refaz, pede outra versão e ajusta as tomadas) e <b>RENDERIZAR</b> (grava o vídeo final, em 16:9 até 4K ou 9:16, só quando você gostar).</p>
+<p>O CataVoo transforma uma pasta de vídeos brutos de drone num vídeo pronto para publicar. Ele assiste tudo, escolhe os melhores trechos, monta no ritmo da música e mostra uma <b>prévia</b> que você ajusta antes de gerar o arquivo final. Tudo roda no seu computador, sem internet e sem custo. Os vídeos originais nunca são alterados.</p>
 
-<div class="box ok"><b>Princípios do programa</b>
-Tudo roda no seu computador: nenhum vídeo é enviado para a internet e não há mensalidade nem cobrança de API. Os arquivos originais nunca são alterados, movidos ou apagados. O assistente de IA existe, mas é <b>opcional e vem desligado</b>.</div>
-
-<nav class="toc">
-<ol>
-  <li><a href="#inicio">Primeiros passos</a></li>
-  <li><a href="#tela">A tela principal, campo por campo</a></li>
-  <li><a href="#como">Como o programa escolhe as cenas</a></li>
-  <li><a href="#estilos">Estilos de edição</a></li>
-  <li><a href="#auto">Estilo Automático e ritmo adaptativo</a></li>
-  <li><a href="#duracao">Duração do vídeo</a></li>
-  <li><a href="#organizar">Organizar: um vídeo por voo, dia, local ou subpasta</a></li>
-  <li><a href="#musica">Música</a></li>
-  <li><a href="#formatos">Formatos e resolução</a></li>
-  <li><a href="#instrucoes">Instruções em texto</a></li>
-  <li><a href="#refazer">Nova versão, ajustes e Foco</a></li>
-  <li><a href="#manual">Prévia e edição</a></li>
-  <li><a href="#ia">Assistente de IA (opcional)</a></li>
-  <li><a href="#saida">Arquivos gerados</a></li>
-  <li><a href="#cache">Cache: por que a segunda vez é rápida</a></li>
-  <li><a href="#avancado">Configuração avançada</a></li>
-  <li><a href="#desempenho">Desempenho e hardware</a></li>
-  <li><a href="#problemas">Solução de problemas</a></li>
-  <li><a href="#instalar">Instalação e atualização</a></li>
-  <li><a href="#limites">Limitações conhecidas</a></li>
-  <li><a href="#resumo">Resumo rápido: qual opção usar</a></li>
-</ol>
-</nav>
+<nav class="toc"><ol>
+  <li><a href="#instalar">Instalar</a></li>
+  <li><a href="#passos">Passo a passo</a></li>
+  <li><a href="#principal">Tela principal</a></li>
+  <li><a href="#estilos">Estilos</a></li>
+  <li><a href="#previa">Prévia e edição</a></li>
+  <li><a href="#comandos">Comandos básicos</a></li>
+  <li><a href="#versao">Nova versão</a></li>
+  <li><a href="#texto">Texto sobre a tomada</a></li>
+  <li><a href="#saidas">Renderizar e CapCut</a></li>
+  <li><a href="#problemas">Problemas comuns</a></li>
+</ol></nav>
 
 <!-- ============================================================ -->
-<h2 id="inicio">1. Primeiros passos</h2>
+<h2 id="instalar">1. Instalar</h2>
 <ol class="steps">
-  <li><b>Abra o programa:</b> <code>CataVoo.exe</code> (ou <code>python -m drone</code> na pasta do projeto).</li>
-  <li><b>Selecione a pasta</b> com os vídeos brutos, por exemplo <code>C:\VideosDrone\Pirenopolis\Brutos</code>. São aceitos MP4 e MOV, incluindo DJI em 4K e 10 bits.</li>
-  <li>(Opcional) Indique a <b>pasta de músicas</b>, escreva o <b>título</b> (por exemplo "Pirenópolis — Goiás") e escolha o <b>formato</b>.</li>
-  <li>Clique em <b>ANALISAR MATERIAL</b> e acompanhe pela barra de progresso. Os vídeos são analisados <b>uma vez só</b>: a análise fica guardada e as próximas vezes são rápidas.</li>
-  <li>O programa mostra <b>quanto material existe</b>: tempo bruto, tempo de material bom sem repetir e até quanto dá para esticar, e já deixa escolhida a <b>duração sugerida</b>. Aceite ou escolha outra.</li>
-  <li>Clique em <b>GERAR PRÉVIA</b>. O vídeo montado toca na hora, sem renderizar. Ali você troca o <b>estilo</b> (começa no Automático), muda a <b>duração</b>, pede uma <b>Nova versão</b> (com ajustes escritos e Foco) e ajusta cada tomada.</li>
-  <li>Quando gostar, clique em <b>RENDERIZAR</b> para gravar o vídeo final, ou em <b>Exportar → Enviar para o CapCut</b> para fazer o acabamento lá.</li>
+  <li>Baixe <b>CataVoo-X.Y.Z-win64.zip</b> na página do projeto (Releases) e extraia numa pasta. Requisitos: Windows 10 ou 11 de 64 bits e 8 GB de memória (16 GB para 4K). Placa NVIDIA é opcional e acelera tudo.</li>
+  <li><i>(Recomendado, uma vez só)</i> Dê dois cliques em <code>Instalar_IA_Paisagens.bat</code>. Ele baixa a IA que reconhece cachoeira, serra, pôr do sol, cidade… (uns 3 GB). Sem ela o programa funciona, mas reconhece as paisagens só pelas cores.</li>
+  <li>Abra o <code>CataVoo.exe</code>. Se aparecer <i>"O Windows protegeu o computador"</i>, clique em <i>Mais informações → Executar assim mesmo</i>.</li>
 </ol>
-<div class="box tip"><b>Nada é gerado à toa</b>Analisar e ver a prévia não grava nenhum vídeo nem ocupa espaço com versões descartadas. Só o RENDERIZAR cria o arquivo final, e você pode renderizar quantas versões quiser (outro estilo, outra duração, o vertical) a partir da mesma análise.</div>
+<p class="small">Para atualizar, apague a pasta da versão antiga e extraia a nova no lugar. As configurações e as edições salvas continuam.</p>
 
 <!-- ============================================================ -->
-<h2 id="tela">2. A tela principal, campo por campo</h2>
-<figure><img src="{{IMG_TELA}}" alt="Tela principal do CataVoo"><figcaption>Tela principal: as configurações à esquerda; à direita, ANALISAR MATERIAL, o progresso, o registro e, depois da análise, o resumo do material com a Duração e o botão GERAR PRÉVIA.</figcaption></figure>
-
-<table>
-<tr><th style="width:24%">Campo</th><th>O que faz</th></tr>
-<tr><td><b>Pasta</b></td><td>Pasta com os vídeos brutos. O programa só lê os arquivos e grava os resultados na subpasta <code>_CataVoo</code>. Vídeos que outro editor gravou na mesma pasta (por exemplo <code>…_highlight.mp4</code>) são ignorados.</td></tr>
-<tr><td><b>Título</b></td><td>Texto escrito sobre a primeira cena. Acentos funcionam.</td></tr>
-<tr><td><b>Música: Biblioteca e Música</b></td><td>Pasta das suas músicas (MP3, WAV, M4A, FLAC, OGG…), incluindo subpastas. A lista <b>Música</b> mostra as faixas dessa pasta pelo nome: escolha a que melhor combina, ou deixe em <b>Automática</b> para o programa escolher pelo estilo. Dá para trocar depois, na prévia. Sem biblioteca, o vídeo sai sem música. Veja a <a href="#musica">seção 8</a>.</td></tr>
-<tr><td><b>Formato e Resolução</b></td><td><b>Horizontal 16:9</b> ou <b>Vertical 9:16</b>; no horizontal, resolução em 4K ou Full HD (no vertical a linha some). A prévia abre nesse formato, e a lista Formato da prévia troca para o outro.</td></tr>
-<tr><td><b>Organizar</b></td><td>Um vídeo com tudo, ou um vídeo por voo, por dia, por local (GPS) ou por subpasta. Com um desses, aparece a caixa <i>Também um vídeo da viagem inteira</i>. Veja a <a href="#organizar">seção 7</a>.</td></tr>
-<tr><td><b>Instruções</b></td><td>Pedido em texto livre, como "priorizando cachoeiras e movimentos suaves". É lido por palavras-chave, ou pela IA se ela estiver ligada. Veja a <a href="#instrucoes">seção 10</a>.</td></tr>
-<tr><td><b>Reconhecer paisagens com IA local (CLIP)</b></td><td>Usa a IA de paisagens instalada pelo <code>Instalar_IA_Paisagens.bat</code> para reconhecer cachoeira, serra, cidade histórica, pôr do sol… e permite o <b>Foco</b> por assunto livre na prévia. Sem ela, a paisagem é estimada pelas cores.</td></tr>
-<tr><td><b>ANALISAR MATERIAL / Cancelar</b></td><td>Analisa a pasta (do cache quando já foi analisada). Nenhum vídeo é gerado. Cancelar não apaga o que já foi analisado.</td></tr>
-<tr><td><b>Barra de progresso</b></td><td>Porcentagem, uma bolinha girando e o tempo decorrido. Se uma etapa longa ficar sem novidade, aparece uma segunda linha: "Ainda trabalhando, normal nas etapas longas", com o tempo daquela etapa.</td></tr>
-<tr><td><b>Registro</b></td><td>Cada etapa: vídeos encontrados, análise, paisagens, música e o resumo do material.</td></tr>
-<tr><td><b>Resumo do material</b></td><td>Aparece depois da análise: <b>filmagem bruta</b>, <b>material bom sem repetir cenas</b> (com o número de tomadas e de tomadas fortes) e <b>até quanto dá esticando</b>.</td></tr>
-<tr><td><b>Duração</b></td><td>Já vem com a <b>sugerida</b> escolhida; a lista vai até o <b>máximo</b> que o material permite. Pode digitar qualquer valor (<code>90</code>, <code>1:30</code>, <code>4:00</code>). Dá para mudar de novo dentro da prévia. Veja a <a href="#duracao">seção 6</a>.</td></tr>
-<tr><td><b>GERAR PRÉVIA</b></td><td>Abre a janela de prévia e edição (<a href="#manual">seção 12</a>). Se você mudou a pasta ou outra configuração depois da análise, ela é refeita antes (do cache, rápida).</td></tr>
-<tr><td><b>Assistente de IA</b></td><td>Desligado por padrão; as opções aparecem só quando ligado. Veja a <a href="#ia">seção 13</a>.</td></tr>
-</table>
-<p class="small">O <b>estilo</b> não fica na tela principal: a prévia sempre começa no <b>Automático</b>, e você troca para qualquer outro lá dentro, vendo o resultado na hora.</p>
-
-<!-- ============================================================ -->
-<h2 id="como">3. Como o programa escolhe as cenas</h2>
-<p>Entender isso ajuda a escolher as opções certas. O processo tem seis etapas:</p>
-<ol>
-  <li><b>Leitura dos vídeos:</b> nome, duração, resolução, data de gravação, GPS (do arquivo <code>.SRT</code> da DJI, quando existe) e aviso de 10 bits / D-Log.</li>
-  <li><b>Análise (feita uma única vez por vídeo):</b> 4 vezes por segundo o programa mede a nitidez, a exposição, as cores, onde está o assunto principal e o movimento da câmera.</li>
-  <li><b>Paisagem:</b> reconhece cachoeira, serra/montanha, cidade histórica, pôr do sol, praia, cânion, lago, rio, floresta, cidade, campo e estrada.</li>
-  <li><b>Trechos candidatos:</b> vídeos longos e contínuos são divididos em vários trechos, e cada um recebe uma nota.</li>
-  <li><b>Seleção:</b> escolhe trechos bons <i>e</i> diferentes entre si.</li>
-  <li><b>Montagem:</b> define a abertura, a ordem, a duração de cada tomada (presa à batida da música), as transições e o título, e renderiza.</li>
-</ol>
-
-<h3>A nota de cada trecho</h3>
-<table>
-<tr><th>Critério</th><th>Peso inicial</th><th>O que mede</th></tr>
-<tr><td>Qualidade visual e composição</td><td>30%</td><td>Nitidez (inclusive nos piores momentos do trecho), exposição, contraste, cor e se há um assunto claro.</td></tr>
-<tr><td>Suavidade e estabilidade</td><td>25%</td><td>Se o movimento é fluido. Mede tremor e trancos, não velocidade.</td></tr>
-<tr><td>Interesse da paisagem</td><td>20%</td><td>Tipo de paisagem e as prioridades que você pediu.</td></tr>
-<tr><td>Movimento cinematográfico</td><td>15%</td><td>Tipo de movimento (revelação, órbita, aproximação…), constância e velocidade confortável.</td></tr>
-<tr><td>Variedade</td><td>10%</td><td>Aplicada na seleção: penaliza cenas parecidas com as já escolhidas.</td></tr>
-</table>
-<p class="small">Cada estilo pode alterar esses pesos. Por exemplo, o Contemplativo dá mais peso à estabilidade e o FPV dá mais peso ao movimento.</p>
-
-<div class="box tip"><b>Movimento suave não é tremor</b>Muitos editores automáticos punem qualquer movimento. Aqui o tremor é medido como a <i>diferença</i> entre o movimento de um quadro para o seguinte e a tendência geral do movimento. Uma panorâmica ou órbita rápida e fluida é considerada estável; um drone parado, mas vibrando com o vento, é descartado.</div>
-
-<h3>Movimentos de câmera reconhecidos</h3>
-<table>
-<tr><th>Nome no log</th><th>Movimento</th><th>Valor cinematográfico</th></tr>
-<tr><td><code>rise_reveal</code></td><td>Subida / revelação (a paisagem "aparece")</td><td>Muito alto</td></tr>
-<tr><td><code>orbit</code></td><td>Órbita em volta de um ponto</td><td>Muito alto</td></tr>
-<tr><td><code>push_in</code></td><td>Aproximação</td><td>Alto</td></tr>
-<tr><td><code>flyover</code></td><td>Sobrevoo para a frente</td><td>Alto</td></tr>
-<tr><td><code>pull_out</code></td><td>Afastamento</td><td>Alto (ótimo para encerrar)</td></tr>
-<tr><td><code>pan</code></td><td>Panorâmica (giro no lugar)</td><td>Médio</td></tr>
-<tr><td><code>descend</code></td><td>Descida</td><td>Médio</td></tr>
-<tr><td><code>hover</code></td><td>Parado / pairando</td><td>Médio-baixo</td></tr>
-<tr><td><code>fast</code></td><td>Movimento muito rápido</td><td>Baixo (exceto no estilo FPV)</td></tr>
-</table>
-
-<h3>Cenas que são descartadas automaticamente</h3>
-<ul>
-  <li>Trechos tremidos acima do limite de tolerância.</li>
-  <li>Imagens escuras demais ou totalmente desfocadas.</li>
-  <li>Os primeiros 0,6 s e o último 0,3 s de cada arquivo (decolagem e início da gravação).</li>
-  <li>Cenas quase idênticas a outra já escolhida, como dois arquivos do mesmo voo ou segundos vizinhos do mesmo vídeo.</li>
-</ul>
-
-<!-- ============================================================ -->
-<h2 id="estilos">4. Estilos de edição</h2>
-<p>São 10 estilos, mais o <b>Automático</b>. Todos sincronizam os cortes com a batida da música.</p>
-
-<table>
-<tr><th>Estilo</th><th>Duração de cada tomada</th><th>Transições</th><th>Música (BPM)</th><th>Duração padrão*</th></tr>
-<tr><td><b>Cinematográfico</b></td><td>3,5–6,5 s</td><td>metade fusões de 0,6 s, metade cortes na batida</td><td>70–120</td><td>90 s</td></tr>
-<tr><td><b>Natureza contemplativa</b></td><td>5–9 s</td><td>todas fusões de 1 s</td><td>55–100</td><td>120 s</td></tr>
-<tr><td><b>Pôr do sol / golden hour</b></td><td>5,5–9 s</td><td>todas fusões de 1,2 s</td><td>55–95</td><td>60 s</td></tr>
-<tr><td><b>Minimalista</b></td><td>7–12 s</td><td>todas fusões de 1,5 s</td><td>50–90</td><td>60 s</td></tr>
-<tr><td><b>Cidade histórica / arquitetura</b></td><td>3,5–6 s</td><td>40% fusões</td><td>70–115</td><td>75 s</td></tr>
-<tr><td><b>Diário de viagem</b></td><td>3,5–7 s</td><td>35% fusões</td><td>85–125</td><td>90 s</td></tr>
-<tr><td><b>Trailer épico</b></td><td>2–5 s, acelerando</td><td>30% fusões</td><td>80–140</td><td>60 s</td></tr>
-<tr><td><b>Viagem dinâmica</b></td><td>1,8–3,6 s</td><td>cortes secos</td><td>100–150</td><td>60 s</td></tr>
-<tr><td><b>Aventura / FPV radical</b></td><td>1,2–2,6 s</td><td>cortes secos</td><td>120–175</td><td>45 s</td></tr>
-<tr><td><b>Redes sociais</b></td><td>1,5–3 s</td><td>cortes secos</td><td>95–150</td><td>30 s</td></tr>
-</table>
-<p class="small">* A duração padrão do estilo é só uma referência: vale a duração escolhida depois da análise ou na prévia.</p>
-
-<h3>Quando usar cada um</h3>
-
-<h4>Cinematográfico</h4>
-<p>O padrão equilibrado: abre com impacto, alterna paisagens e mistura fusões e cortes.</p>
-<div class="pc"><div class="pro"><h5>Vantagens</h5><ul><li>Funciona bem com quase qualquer material</li><li>Bom para YouTube e portfólio</li></ul></div><div class="con"><h5>Desvantagens</h5><ul><li>Não tem uma "assinatura" forte</li><li>Pode ser calmo demais para Reels</li></ul></div></div>
-
-<h4>Natureza contemplativa</h4>
-<p>Tomadas longas e suaves, fusões lentas e preferência por cachoeira, serra, lago, rio e mata. Termina com um afastamento.</p>
-<div class="pc"><div class="pro"><h5>Vantagens</h5><ul><li>Valoriza paisagens bonitas e voos estáveis</li><li>Clima relaxante</li></ul></div><div class="con"><h5>Desvantagens</h5><ul><li>Pede bastante material bom</li><li>Pode cansar em vídeos curtos de rede social</li></ul></div></div>
-
-<h4>Pôr do sol / golden hour</h4>
-<p>Prioriza luz dourada, praia, lago e serra, termina no pôr do sol e desacelera no final.</p>
-<div class="pc"><div class="pro"><h5>Vantagens</h5><ul><li>Final emocionante</li><li>Ideal para voos ao entardecer</li></ul></div><div class="con"><h5>Desvantagens</h5><ul><li>Sem cenas de pôr do sol, perde o sentido</li><li>Sem o CLIP, o reconhecimento é menos preciso</li></ul></div></div>
-
-<h4>Minimalista</h4>
-<p>Poucas tomadas, muito longas e paradas. Cada imagem "respira".</p>
-<div class="pc"><div class="pro"><h5>Vantagens</h5><ul><li>Elegante, estilo galeria</li><li>Bom com poucos vídeos e muito bonitos</li></ul></div><div class="con"><h5>Desvantagens</h5><ul><li>Expõe qualquer defeito da imagem</li><li>Pouca variedade</li></ul></div></div>
-
-<h4>Cidade histórica / arquitetura</h4>
-<p>Prioriza centro histórico, igrejas e casarios, valoriza órbitas e abre com uma revelação.</p>
-<div class="pc"><div class="pro"><h5>Vantagens</h5><ul><li>Feito para cidades como Pirenópolis, Goiás Velho, Ouro Preto</li></ul></div><div class="con"><h5>Desvantagens</h5><ul><li>Em viagens só de natureza, não tem o que priorizar</li></ul></div></div>
-
-<h4>Diário de viagem</h4>
-<p>Monta o vídeo <b>exatamente na ordem em que você filmou</b>, contando a viagem como uma história. Do primeiro ao último trecho, tudo segue a ordem de gravação: arquivo por arquivo e, dentro de cada arquivo, do começo para o fim. Ele <b>nunca volta</b> a um vídeo que já passou. Para isso usa tomadas mais longas (3,5 a 7 s) e pode tirar até 5 trechos de cada vídeo. "Esticar" e "Encurtar" continuam valendo, e na duração automática entra só o que vale a pena.</p>
-<div class="pc"><div class="pro"><h5>Vantagens</h5><ul><li>Narrativa natural: chegada, passeios, despedida</li><li>Bom para viagens de vários dias</li></ul></div><div class="con"><h5>Desvantagens</h5><ul><li>A abertura e o final são o começo e o fim da gravação, não necessariamente as cenas mais fortes</li><li>Depende da data correta de gravação dos arquivos</li></ul></div></div>
-
-<h4>Trailer épico</h4>
-<p>Começa com tomadas longas e grandiosas e <b>acelera</b> até cortes rápidos. Abre com revelação e fecha com afastamento. Num vídeo de 60 s, as tomadas vão de cerca de 7 s no início a menos de 2 s no final.</p>
-<div class="pc"><div class="pro"><h5>Vantagens</h5><ul><li>Muito impacto, prende a atenção</li><li>Ótimo com música épica ou orquestral</li></ul></div><div class="con"><h5>Desvantagens</h5><ul><li>Pede uma música que cresça junto</li><li>Os cortes finais muito rápidos não combinam com todo material</li></ul></div></div>
-
-<h4>Viagem dinâmica</h4>
-<p>Cortes curtos na batida e muita variedade de lugares.</p>
-<div class="pc"><div class="pro"><h5>Vantagens</h5><ul><li>Energia alta</li><li>Mostra muitos lugares em pouco tempo</li></ul></div><div class="con"><h5>Desvantagens</h5><ul><li>Cada paisagem aparece pouco</li><li>Precisa de muitas cenas distintas</li></ul></div></div>
-
-<h4>Aventura / FPV radical</h4>
-<p>Favorece sobrevoos rasantes e velocidade, com cortes secos e curtos.</p>
-<div class="pc"><div class="pro"><h5>Vantagens</h5><ul><li>Feito para voos rápidos e drones FPV</li><li>Aceita movimentos rápidos que outros estilos evitam</li></ul></div><div class="con"><h5>Desvantagens</h5><ul><li>Com filmagens lentas, fica sem sentido</li><li>Ritmo cansativo em vídeos longos</li></ul></div></div>
-
-<h4>Vídeo curto para redes sociais</h4>
-<p>Gancho forte no primeiro segundo e cortes rápidos, pensado para Reels, Shorts e TikTok.</p>
-<div class="pc"><div class="pro"><h5>Vantagens</h5><ul><li>Formato certo para o celular</li><li>Prioriza as cenas mais impressionantes</li></ul></div><div class="con"><h5>Desvantagens</h5><ul><li>Ruim para vídeos longos</li></ul></div></div>
-
-<!-- ============================================================ -->
-<h2 id="auto">5. Estilo Automático e ritmo adaptativo</h2>
-<p>No estilo <b>Automático</b>, o programa lê a viagem e escolhe o estilo sozinho, <b>sem usar IA</b>, aproveitando a análise que já fez. Ele monta um perfil com:</p>
-<ul>
-  <li>a porcentagem de cada paisagem (cachoeira, cidade histórica, pôr do sol…);</li>
-  <li>os tipos de movimento da câmera, analisados em blocos de 3 segundos;</li>
-  <li>quanto das imagens é estável;</li>
-  <li>a variedade de lugares e o número de vídeos;</li>
-  <li>quantas horas separam a primeira e a última gravação, e a distância entre os pontos de GPS.</li>
-</ul>
-<p>Depois dá uma nota a cada estilo e mostra no log o motivo e as alternativas, por exemplo:</p>
-<pre><code>🧭 Perfil da viagem: pôr do sol 30%, lago 22%, serra/montanha 18%; 14 clipes, 21.5 min
-🧭 Estilo automático: Pôr do sol / golden hour (0.86) — 30% das cenas com luz de pôr do sol.
-   Alternativas: Natureza contemplativa 0.62, Cinematográfico 0.50</code></pre>
-
-<table>
-<tr><th>O que o programa encontra</th><th>Estilo que tende a escolher</th></tr>
-<tr><td>Muitas cenas de pôr do sol</td><td>Pôr do sol</td></tr>
-<tr><td>Muita cidade ou arquitetura</td><td>Cidade histórica</td></tr>
-<tr><td>Muita natureza e imagens estáveis</td><td>Contemplativo</td></tr>
-<tr><td>Muitos sobrevoos e movimentos rápidos</td><td>Aventura / FPV</td></tr>
-<tr><td>Poucos vídeos, tomadas paradas e pouca variedade</td><td>Minimalista</td></tr>
-<tr><td>Muitos vídeos e lugares variados</td><td>Viagem dinâmica</td></tr>
-<tr><td>Muitas revelações e órbitas em paisagens fortes</td><td>Trailer épico</td></tr>
-<tr><td>Gravações espalhadas por muitas horas ou quilômetros</td><td>Diário de viagem</td></tr>
-<tr><td>Só vertical e até 35 s</td><td>Redes sociais</td></tr>
-<tr><td>Nada se destaca</td><td>Cinematográfico</td></tr>
-</table>
-<p>Quando você separa os vídeos por voo, dia ou local (<a href="#organizar">seção 7</a>), <b>cada grupo recebe o seu próprio estilo</b>. Um voo no fim da tarde pode virar "Pôr do sol" e o da cidade, "Cidade histórica".</p>
-
-<h3>Ritmo adaptativo</h3>
-<p>Dentro do estilo, cada tomada recebe a duração que combina com ela: uma tomada parada, panorâmica ou em órbita, com imagem rica em detalhes e bem estável, fica mais tempo na tela, e um sobrevoo rápido, tremido ou de qualidade só razoável fica menos. Isso vem da análise de movimento e de imagem; não depende do CLIP. A duração total e o encaixe na batida não mudam.</p>
-<p><b>Não há opção para marcar:</b> o ritmo adaptativo liga sozinho conforme o estilo escolhido na prévia.</p>
-<table>
-<tr><th>Ritmo adaptativo</th><th>Estilos</th></tr>
-<tr><td><b>Ligado</b></td><td>Automático, Cinematográfico, Contemplativo, Pôr do sol, Minimalista, Cidade histórica e Diário de viagem</td></tr>
-<tr><td><b>Desligado</b> (ritmo próprio, mais rápido e regular)</td><td>Viagem dinâmica, Aventura FPV, Redes sociais e Trailer épico</td></tr>
-</table>
-<p class="small">Para um vídeo sem ritmo adaptativo, escolha um estilo da segunda linha. Para mudar só uma tomada, apare ou estique no editor (<a href="#manual">seção 12</a>).</p>
-<div class="pc"><div class="pro"><h5>Vantagens do Automático</h5><ul><li>Você não precisa pensar no estilo</li><li>Explica a escolha no log</li><li>Escolhe um estilo por grupo</li></ul></div><div class="con"><h5>Desvantagens</h5><ul><li>Regras ainda em calibração com viagens reais</li><li>Se a IA de paisagens (CLIP) não estiver instalada ou estiver desmarcada, reconhece a paisagem só pelas cores, com menos precisão</li></ul></div></div>
-
-<!-- ============================================================ -->
-<h2 id="duracao">6. Duração do vídeo</h2>
-<p>A duração é escolhida <b>depois</b> da análise, quando o programa já sabe quanto material bom existe. O programa junta os melhores trechos de <b>todos</b> os vídeos da pasta (ou do grupo) num único vídeo por formato.</p>
-
-<table>
-<tr><th>O que aparece</th><th>Significado</th></tr>
-<tr><td><b>Filmagem bruta</b></td><td>Tudo o que foi gravado.</td></tr>
-<tr><td><b>Material bom, sem repetir cenas</b></td><td>As tomadas distintas e aproveitáveis no tamanho normal do estilo. Ao lado, quantas são e quantas são <b>fortes</b> (nota de pelo menos 80% da média das 5 melhores).</td></tr>
-<tr><td><b>Até X esticando</b></td><td>O máximo sem repetir cenas: as tomadas alongadas até cerca de 1,6× o tamanho normal e trechos um pouco mais parecidos aceitos.</td></tr>
-<tr><td><b>Sugerida</b></td><td>As tomadas fortes no tamanho normal do estilo, arredondado de 5 em 5 segundos (o vertical, cerca de metade). Já vem escolhida.</td></tr>
-</table>
-
-<table>
-<tr><th>Se você escolhe…</th><th>O que acontece</th></tr>
-<tr><td>Menos que o material bom</td><td>Ficam só as tomadas com as melhores notas. Quanto menor, mais exigente.</td></tr>
-<tr><td>Entre o material bom e o máximo</td><td>Entram mais tomadas e elas esticam, seguindo o ranking.</td></tr>
-<tr><td>Mais que o máximo</td><td>O programa estica tudo o que pode e o vídeo sai do tamanho que o material permite (o registro mostra a duração real).</td></tr>
-</table>
-<p>Na prévia, a caixa <b>Duração</b> faz o mesmo a qualquer momento: escolha outro tamanho ou digite um valor e o vídeo é remontado na hora, sem processar os vídeos de novo. O tamanho vale para todos os estilos daquele formato, então dá para comparar estilos no mesmo tempo.</p>
-<p>O registro da análise mostra o cálculo, por exemplo:</p>
-<pre><code>📊 Viagem completa: 50:12 brutos → ~5:40 de material bom sem repetir (61 tomadas, 34 fortes);
-   até 8:10 esticando. Sugestão: 4:30.</code></pre>
-<div class="box warn"><b>O programa nunca "enche" com truques</b>Ele não repete cenas em loop, não usa câmera lenta e não coloca tela preta para completar o tempo. Se a música for mais curta que o vídeo, ela é repetida; para vídeos de vários minutos, prefira faixas longas.</div>
-
-<!-- ============================================================ -->
-<h2 id="organizar">7. Organizar: um vídeo por voo, dia, local ou subpasta</h2>
-<p>Por padrão, a pasta inteira vira <b>um</b> vídeo (por formato). O campo <b>Organizar</b> permite gerar vários vídeos de uma vez:</p>
-
-<table>
-<tr><th>Opção</th><th>Como separa</th><th>Melhor para</th><th>Cuidados</th></tr>
-<tr><td><b>Um vídeo com tudo</b></td><td>Não separa.</td><td>Um passeio ou o resumo de uma viagem.</td><td>—</td></tr>
-<tr><td><b>Um vídeo por voo</b></td><td>Começa um novo voo quando passam mais de <b>10 minutos</b> entre o fim de uma gravação e o início da próxima (pouso, troca de bateria).</td><td>Um vídeo para cada cachoeira ou atração visitada.</td><td>Usa a data de gravação do arquivo; se ela não existir, usa a data de modificação. Copiar os arquivos de um jeito que muda essa data pode bagunçar a separação.</td></tr>
-<tr><td><b>Um vídeo por dia</b></td><td>Pela data da gravação.</td><td>Viagens de vários dias ("Dia 1", "Dia 2"…).</td><td>Mesmo cuidado com as datas.</td></tr>
-<tr><td><b>Um vídeo por local (GPS)</b></td><td>Agrupa gravações a até <b>1,5 km</b> umas das outras, usando o GPS do <code>.SRT</code> da DJI ou dos metadados. Vídeos sem GPS entram no local filmado mais perto no tempo.</td><td>Separar pontos turísticos automaticamente.</td><td>Precisa do <code>.SRT</code> ao lado do vídeo (ative a legenda/telemetria no app DJI). Sem nenhum GPS, separa por voo.</td></tr>
-<tr><td><b>Um vídeo por subpasta</b></td><td>Cada subpasta vira um vídeo, por exemplo <code>Brutos\Cachoeira do Abade</code> e <code>Brutos\Centro Histórico</code>.</td><td>Quando você mesmo quer decidir os grupos.</td><td>A pasta principal é lida com as subpastas.</td></tr>
-</table>
-
-<p>A caixa <b>Também um vídeo da viagem inteira</b> gera, além dos vídeos separados, um resumo com o melhor de todos. Ela só tem efeito quando há mais de um grupo.</p>
-<ul>
-  <li>Cada grupo tem a sua própria escolha de cenas e, no modo Automático, o seu próprio estilo.</li>
-  <li>Com duração Automática, cada grupo recebe o tempo que o seu material merece.</li>
-  <li>Grupos sem nenhum trecho utilizável são pulados, e o log avisa.</li>
-  <li>Os arquivos levam o nome do grupo, por exemplo <code>Pirenópolis_Goiás_voo02_16x9_20261113_141500.mp4</code>.</li>
-</ul>
-<div class="pc"><div class="pro"><h5>Vantagens</h5><ul><li>Vários vídeos com um clique</li><li>Cada lugar ganha destaque próprio</li><li>A análise é feita uma vez só para todos</li></ul></div><div class="con"><h5>Desvantagens</h5><ul><li>O render demora mais (um vídeo por grupo e formato)</li><li>Grupos pequenos rendem vídeos curtos</li></ul></div></div>
-
-<!-- ============================================================ -->
-<h2 id="musica">8. Música</h2>
-<p>Na tela principal, a lista <b>Música</b> mostra as faixas da pasta pelo nome: escolha uma e ela é a música do vídeo, do começo ao fim. Na prévia, a lista <b>Música</b> da barra de cima troca a faixa a qualquer momento.</p>
-<ul>
-  <li><b>Biblioteca:</b> uma pasta com as suas músicas, que também pode ter subpastas. Use apenas músicas que você tem direito de usar.</li>
-  <li><b>Organize por nome:</b> o programa escolhe a faixa pelas palavras no nome do arquivo ou da pasta. Por exemplo: <code>Musicas\instrumental\…</code>, <code>Musicas\tranquila piano\…</code>, <code>Musicas\eletronica ambiente\…</code>, <code>Musicas\indie\…</code>, <code>Musicas\epica trailer\…</code>.</li>
-  <li><b>Critérios de escolha:</b> no modo <b>Automática</b>, combina as palavras-chave do estilo, prefere uma faixa mais longa que o vídeo e com andamento (BPM) dentro da faixa do estilo.</li>
-  <li><b>Sincronização:</b> a batida é detectada no próprio computador. Cada corte e cada início de transição caem na batida.</li>
-  <li><b>Início:</b> a música começa num tempo forte, pulando eventuais segundos de silêncio no começo.</li>
-  <li><b>Final:</b> o volume vai abaixando nos últimos ~4 segundos até zerar junto com o vídeo.</li>
-  <li><b>Música mais curta que o vídeo:</b> ela é repetida até o fim e também termina abaixando o volume.</li>
-  <li><b>Sem biblioteca:</b> o vídeo sai sem música, com cortes num ritmo fixo de 0,5 s, e o áudio original do drone é removido.</li>
-  <li>A análise de cada música também fica em cache.</li>
-</ul>
-
-<!-- ============================================================ -->
-<h2 id="formatos">9. Formatos e resolução</h2>
-<table>
-<tr><th>Formato</th><th>Detalhes</th></tr>
-<tr><td><b>Horizontal 16:9</b></td><td>4K (3840×2160) ou Full HD (1920×1080). Ideal para YouTube e TV.</td></tr>
-<tr><td><b>Vertical 9:16</b></td><td>1080×1920. O recorte vertical <b>segue o assunto principal</b> (a área de maior interesse da imagem), em vez de cortar sempre pelo meio. Ideal para Reels, Shorts e TikTok.</td></tr>
-<tr><td><b>Ambos</b></td><td>Cada formato tem sua própria duração e sua própria seleção de cenas. O vertical dá um pouco de preferência a cenas com um assunto bem definido, que funcionam melhor no recorte estreito.</td></tr>
-</table>
-<p class="small">Limitação atual: o recorte vertical fica fixo durante cada tomada e não acompanha o assunto durante uma panorâmica.</p>
-
-<!-- ============================================================ -->
-<h2 id="instrucoes">10. Instruções em texto</h2>
-<p>O campo <b>Instruções</b> aceita um pedido em português. Sem IA, ele é lido por palavras-chave:</p>
-<table>
-<tr><th>Você escreve</th><th>O programa entende</th></tr>
-<tr><td>"cinematográfico", "contemplativo", "trailer", "épico", "FPV", "aventura", "minimalista", "diário", "cronológico", "golden hour", "arquitetura", "dinâmico", "reels", "estilo automático"</td><td>Estilo de edição</td></tr>
-<tr><td>"90 segundos", "1 minuto e 30", "2 min", "1:30"</td><td>Duração</td></tr>
-<tr><td>"cachoeira", "serra", "montanha", "igreja", "colonial", "pôr do sol", "praia", "lago", "rio", "mata", "cânion"…</td><td>Paisagens prioritárias</td></tr>
-<tr><td>"movimentos suaves", "sem tremer"</td><td>Dá mais peso à estabilidade</td></tr>
-<tr><td>"música instrumental", "tranquila", "eletrônica", "indie"</td><td>Estilo da música</td></tr>
-<tr><td>"vertical", "reels", "instagram" / "horizontal", "youtube", "4K" / "ambos"</td><td>Formatos</td></tr>
-<tr><td>"vídeo de Pirenópolis…" ou <code>título: "Pirenópolis — Goiás"</code></td><td>Título (só se o campo Título estiver vazio)</td></tr>
-</table>
-<p>Exemplo: <i>"Crie um vídeo cinematográfico de Pirenópolis com 90 segundos, priorizando cachoeiras, serras e movimentos suaves, com música instrumental tranquila."</i></p>
-
-<!-- ============================================================ -->
-<h2 id="refazer">11. Nova versão, ajustes e Foco (na prévia)</h2>
-<p>O botão <b>✦ Nova versão</b>, na barra de cima, abre uma janela pequena para pedir outra montagem do vídeo. A análise já está pronta: só a montagem é refeita, e o resultado aparece na hora no monitor. Nada é renderizado.</p>
-<ol>
-  <li><b>Escreva o que mudar</b>, do seu jeito, ou clique nas <b>sugestões</b>: as paisagens encontradas neste material ("+ mais cachoeira") e as de ritmo e duração ("+ cortes mais rápidos", "+ vídeo mais curto"…). Cada sugestão é acrescentada ao pedido.</li>
-  <li>Se quiser, escolha um <b>Foco</b> (veja abaixo).</li>
-  <li>Confira a linha <b>Entendi</b>: ela mostra, enquanto você escreve, o que o programa entendeu do pedido. Se aparecer "nenhum pedido reconhecido", use as sugestões como modelo.</li>
-  <li>Clique em <b>Gerar nova versão</b>.</li>
-</ol>
-<p><b>Toda nova versão também troca as tomadas</b>, como acontece ao mudar o estilo: cada clique traz uma montagem diferente, com o pedido aplicado. Deixando o pedido em branco, o programa só varia as tomadas e a ordem. O pedido e o foco ficam guardados para a próxima vez, e o botão mostra um ponto (<b>✦ Nova versão •</b>) enquanto há algum em uso. Para voltar à versão anterior, use o <b>Desfazer</b> (<kbd>Ctrl</kbd>+<kbd>Z</kbd>), que também traz de volta uma edição manual substituída.</p>
-<table>
-<tr><th>Você escreve</th><th>O que muda</th></tr>
-<tr><td>"mais cachoeira", "mais serra"</td><td>Dá preferência a esse tipo de paisagem</td></tr>
-<tr><td>"menos cidade", "sem estrada"</td><td>Evita esse tipo de paisagem</td></tr>
-<tr><td>"cortes mais rápidos" / "cortes mais lentos"</td><td>Duração de cada tomada × 0,75 / × 1,3</td></tr>
-<tr><td>"vídeo mais curto" / "vídeo mais longo"</td><td>Duração total × 0,75 / × 1,25</td></tr>
-<tr><td>"começar com uma revelação", "começar com a cachoeira"</td><td>Escolhe a primeira tomada (por tipo de movimento ou de paisagem)</td></tr>
-<tr><td>"terminar com pôr do sol", "fechar com um afastamento"</td><td>Escolhe a última tomada</td></tr>
-<tr><td>"sem transições" / "transições suaves"</td><td>Cortes secos / fusões em todas as trocas</td></tr>
-<tr><td>"movimentos suaves", "sem tremer"</td><td>Dá mais peso à estabilidade</td></tr>
-<tr><td>"estilo trailer", "contemplativo"…</td><td>Troca o estilo da prévia</td></tr>
-</table>
-<p class="small">Com o Assistente de IA ligado (tela principal), pedidos mais livres também são entendidos. O registro confirma o que foi aplicado.</p>
-
-<h3>Foco: um assunto que deve aparecer mais</h3>
-<p>O <b>Foco</b>, dentro da janela Nova versão, diz o que deve dominar o vídeo. Ele pesa mais que "mais cachoeira" escrito no pedido: as tomadas daquele assunto passam na frente das outras.</p>
-<table>
-<tr><th>Como usar</th><th>O que acontece</th></tr>
-<tr><td>Escolher na lista</td><td>A lista mostra as paisagens <b>encontradas neste material</b>, com quantos segundos de filmagem cada uma tem (por exemplo "lago (84 s)"). Funciona com ou sem a IA de paisagens.</td></tr>
-<tr><td>Digitar qualquer assunto</td><td>Ponte, igreja, obra, barco, piscina, estádio, ilha, neblina… A IA de paisagens procura nas <b>miniaturas já guardadas</b> da análise, sem processar os vídeos de novo. A primeira busca de uma palavra leva de segundos (placa NVIDIA) a alguns minutos (só processador); as seguintes são instantâneas.</td></tr>
-<tr><td>Sem a IA de paisagens</td><td>Uma palavra ligada a uma paisagem conhecida usa essa paisagem ("igreja" → cidade histórica). Para as outras, o programa avisa que a busca livre precisa do <code>Instalar_IA_Paisagens.bat</code>.</td></tr>
-<tr><td>"Sem foco"</td><td>Volta ao normal.</td></tr>
-</table>
-<p>O registro mostra o resultado, por exemplo <code>🎯 Foco em “ponte”: 46 s de filmagem parecidos</code> e <code>🎯 7 de 18 tomadas combinam com “ponte”</code>. A IA entende melhor palavras comuns; para assuntos raros, escrever em inglês ajuda ("water tower", "wind turbine").</p>
-
-<!-- ============================================================ -->
-<h2 id="manual">12. Prévia e edição</h2>
-<p>O botão <b>GERAR PRÉVIA</b> abre esta janela, já maximizada (<kbd>F11</kbd> deixa em tela cheia). O monitor toca o vídeo como está ficando, com a música, <b>sem renderizar nada</b>. Aqui você escolhe o estilo e a duração, refaz, pede outra versão, ajusta cada tomada até o quadro exato e só então manda renderizar.</p>
-<figure><img src="{{IMG_EDITOR}}" alt="Janela de prévia e edição"><figcaption>No alto, uma linha só: estilo, formato, duração, música, texto, Nova versão e as saídas (Exportar e RENDERIZAR). Depois o monitor e, embaixo dele, os botões do player centralizados, com o tempo e o total de tomadas à esquerda e a edição à direita. À direita, o material e a tomada selecionada. No meio, a <b>sequência</b> (o vídeo final, uma tomada por bloco); embaixo, os vídeos brutos com as tomadas usadas (coloridas) e os trechos bons não usados (cinza).</figcaption></figure>
-
-<h3>O que aparece na janela</h3>
-<table>
-<tr><th style="width:26%">Parte</th><th>O que é</th></tr>
-<tr><td><b>Monitor (em cima, à esquerda)</b></td><td>Embaixo dele ficam os botões do player, <b>centralizados</b>: ■ para e volta ao início, ⏮ ⏭ pulam de tomada e ▶ toca / pausa o <b>vídeo final inteiro</b>, com a música (caixa <b>Música</b>). À esquerda dos botões, o tempo tocado e a <b>duração total com o número de tomadas</b>; à direita, Tocar tomada, Tocar clipe original e os botões de edição: <b>↶</b> (Desfazer), <b>↷</b> (Refazer edição), <b>Salvar</b> e <b>Mais</b> (menu com Restaurar automático). <b>Tocar tomada</b> (<kbd>T</kbd>) toca só a tomada selecionada; <b>Tocar clipe original</b> (<kbd>C</kbd>) toca o arquivo bruto inteiro. Na prévia as fusões aparecem como cortes secos no momento certo: elas só aparecem no vídeo renderizado. Para a prévia rodar lisa, o programa faz em segundo plano uma <b>cópia leve</b> (540p) de cada vídeo, uma vez só ("preparando prévia leve 3/8" no alto); o vídeo final usa sempre os originais.</td></tr>
-<tr><td><b>Linha vermelha</b></td><td>Durante a reprodução, mostra nas faixas de baixo qual trecho do vídeo bruto está tocando.</td></tr>
-<tr><td><b>Faixas (uma por vídeo)</b></td><td>Cada vídeo bruto inteiro, com miniaturas, nome, duração e quadros por segundo. A régua no alto mostra os segundos.</td></tr>
-<tr><td><b>Blocos coloridos numerados</b></td><td>As tomadas que estão no vídeo final. O número é a posição na sequência; a cor indica o tipo de paisagem, sempre a mesma (cachoeira azul, rio ciano, mata verde, serra verde-oliva, pôr do sol laranja, cidade histórica terracota, cidade lilás, estrada cinza…). A legenda <b>Paisagens</b>, à direita, mostra as que aparecem no vídeo.</td></tr>
-<tr><td><b>Blocos cinza tracejados</b></td><td>Trechos bons que a análise encontrou, mas que o estilo não usou. Dá para trazê-los para o vídeo.</td></tr>
-<tr><td><b>Linha branca</b></td><td>A borda ativa da tomada selecionada (entrada ou saída): é ela que as setas movem.</td></tr>
-<tr><td><b>Painel da direita</b></td><td>Detalhes da tomada (arquivo, paisagem, movimento, nota, entrada, saída, duração em segundos e em quadros, posição no vídeo, tempo na tela, transição; no 9:16, o enquadramento), as imagens exatas do <b>primeiro e do último quadro</b>, a legenda das paisagens e o registro.</td></tr>
-<tr><td><b>Sequência (no meio)</b></td><td>O vídeo final numa linha só (antes eram duas: a linha do vídeo e as miniaturas). Em cima, a <b>régua de tempo</b> com a marca vermelha onde está tocando: clique ou arraste nela para ir a qualquer ponto. Embaixo, <b>um bloco por tomada</b>, da largura do tempo que ela fica na tela, com a imagem, o número, a duração, a cor da paisagem na base, "⇢" quando há fusão para a próxima e um <b>T</b> amarelo quando tem texto. Clique num bloco para selecionar a tomada; <b>duplo clique</b> toca; arraste para reordenar; arraste a <b>linha entre dois blocos</b> para ajustar as duas tomadas; botão direito para o menu (dividir, texto, transição, remover).</td></tr>
-<tr><td><b>Divisórias</b></td><td>Arraste as linhas entre o monitor, a sequência e os clipes originais (e entre o monitor e o painel da direita) para dar mais espaço a quem você quiser; o monitor pode ficar bem pequeno. A posição fica guardada e volta igual na próxima vez que você abrir a prévia.</td></tr>
-<tr><td><b>Barra de cima</b></td><td>Uma linha só: Grupo (quando você separa por voo/dia/local), <b>Estilo</b> (começa no Automático), <b>Formato</b> (16:9 ou 9:16), <b>Duração</b> (escolha ou digite; veja a <a href="#duracao">seção 6</a>), <b>Música</b> (com "Escolher pasta de músicas…" no fim da lista), <b>T Texto</b>, <b>✦ Nova versão</b> (pedido de ajustes e Foco; <a href="#refazer">seção 11</a>) e, à direita, as saídas: <b>Exportar</b> (menu com <b>Enviar para o CapCut</b>) e <b>RENDERIZAR</b>. O botão Cancelar só aparece enquanto algo está sendo processado. Logo abaixo, a barra de progresso. O resumo do material ("bruto · bom · até X esticando") fica no alto do painel da direita.</td></tr>
-</table>
-
-<h3>Enviar para o CapCut</h3>
-<p>O item <b>Enviar para o CapCut</b>, no menu <b>Exportar</b> ao lado de Renderizar, prepara o acabamento no CapCut. O CapCut não abre projetos de outros editores, então o programa entrega o corte pronto em peças: uma pasta em <code>_CataVoo\capcut\</code> com cada tomada já cortada no quadro exato e numerada na ordem do vídeo (<code>01_…mp4</code>, <code>02_…mp4</code>…), a música já no tamanho e com fade (<code>00_musica.m4a</code>) e um <code>ORDEM.txt</code> com os tempos e as transições. A pasta abre sozinha e, se o CapCut estiver instalado, ele também. No CapCut: <b>Importar</b> → selecione todos os arquivos → arraste para a linha do tempo (entram na ordem) → arraste a música para a faixa de áudio.</p>
-
-<h3>Trocar de estilo sem renderizar</h3>
-<p>Escolha outro estilo na lista <b>Estilo</b> e a timeline mostra na hora os cortes daquele estilo. Assim dá para comparar, por exemplo, Cinematográfico, Trailer épico e Contemplativo antes de gastar tempo com o render.</p>
-<ul>
-  <li><b>✎</b> na frente do nome indica um estilo que você já editou. Suas edições ficam guardadas por estilo e por formato, então dá para editar o Cinematográfico, olhar o Trailer, voltar e continuar de onde parou.</li>
-  <li><b>• gerado</b> indica o estilo com que a prévia abriu (o Automático).</li>
-  <li>No estilo <b>Automático</b>, o registro mostra qual estilo ele escolheu.</li>
-  <li>O formato 16:9 e o 9:16 têm cortes e edições separados.</li>
-</ul>
-
-<h3>Ajustar com o mouse</h3>
-<table>
-<tr><th>Ação</th><th>Como</th></tr>
-<tr><td>Selecionar uma tomada</td><td>Clique no bloco colorido (nos clipes originais) ou no bloco da sequência.</td></tr>
-<tr><td>Tocar / pausar uma tomada</td><td>Clique no bloco colorido (ou <kbd>Espaço</kbd>); clique de novo para pausar. <b>Duplo clique</b> toca do início, uma vez.</td></tr>
-<tr><td>Aparar o começo ou o fim</td><td>Arraste a <b>borda</b> esquerda ou direita do bloco (o cursor vira ↔). O corte fica exatamente onde você soltar. A borda <b>para ao encostar</b> em outra tomada do mesmo vídeo, sem passar por cima dela.</td></tr>
-<tr><td>Ajustar duas tomadas de uma vez</td><td>Quando duas tomadas se encostam (por exemplo, depois de <b>Dividir ao meio</b>), arraste a borda entre elas: uma aumenta e a outra diminui na mesma medida. Na <b>sequência</b>, a linha entre dois blocos faz o mesmo com quaisquer duas tomadas vizinhas, e o vídeo mantém a duração. Útil para controlar quanto tempo um texto fica na tela.</td></tr>
-<tr><td>Dividir ao meio</td><td>Botão direito na tomada → <b>Dividir ao meio</b>: ela vira duas tomadas seguidas (a 5 vira 5 e 6), com a mesma imagem, encostadas. O texto, se houver, fica nas duas; tire de uma delas para o texto durar só metade.</td></tr>
-<tr><td>Deslizar a tomada no vídeo</td><td>Arraste o <b>meio</b> do bloco: escolhe outro momento do mesmo vídeo mantendo a duração.</td></tr>
-<tr><td>Adicionar um trecho cinza</td><td><b>Duplo clique</b> no bloco cinza: entra logo depois da tomada selecionada.</td></tr>
-<tr><td>Mais opções do trecho cinza</td><td>Botão direito: adicionar depois da selecionada, adicionar no final ou <b>substituir</b> a selecionada.</td></tr>
-<tr><td>Transição, texto, divisão e remoção</td><td>Botão direito na tomada (nos clipes originais ou na sequência): corte seco ou fusão para a próxima, dividir ao meio, texto, remover.</td></tr>
-<tr><td>Reordenar</td><td>Arraste um bloco da <b>sequência</b> e solte entre outros dois (a marca amarela mostra onde ele entra).</td></tr>
-<tr><td>Ver um ponto do vídeo bruto</td><td>Clique num espaço vazio de uma faixa: o monitor mostra aquele quadro. <b>Duplo clique</b>: toca o vídeo bruto a partir dali.</td></tr>
-<tr><td>Zoom</td><td>Barra de zoom, ou o botão <b>Ajustar</b> para caber o vídeo mais longo na largura.</td></tr>
-</table>
-
-<h3>Ajuste fino com o teclado</h3>
-<p>Clique na timeline para dar foco e selecione uma tomada:</p>
-<table>
-<tr><th>Tecla</th><th>O que faz</th></tr>
-<tr><td><kbd>←</kbd> / <kbd>→</kbd></td><td>Move a borda ativa <b>1 quadro</b>.</td></tr>
-<tr><td><kbd>Shift</kbd> + <kbd>←</kbd> / <kbd>→</kbd></td><td>Move a borda <b>1 segundo</b>.</td></tr>
-<tr><td><kbd>Alt</kbd> + <kbd>←</kbd> / <kbd>→</kbd></td><td>Desliza a tomada inteira 1 quadro.</td></tr>
-<tr><td><kbd>[</kbd> / <kbd>]</kbd> ou <kbd>Tab</kbd></td><td>Escolhe a borda ativa: entrada / saída (Tab alterna).</td></tr>
-<tr><td><kbd>↑</kbd> / <kbd>↓</kbd></td><td>Tomada anterior / próxima.</td></tr>
-<tr><td><kbd>Delete</kbd></td><td>Remove a tomada do vídeo (também funciona na sequência).</td></tr>
-<tr><td><kbd>Espaço</kbd></td><td>Segue o seu último clique. Depois de clicar numa <b>tomada</b> (na sequência ou nos clipes originais), toca / pausa <b>só aquela tomada</b>. Depois de clicar na <b>régua de tempo</b> da sequência ou nos <b>botões do player</b>, toca / pausa o <b>vídeo inteiro</b>.</td></tr>
-<tr><td>Clique num bloco colorido</td><td>Toca / pausa a tomada (clicar de novo pausa, e de novo continua).</td></tr>
-<tr><td>Duplo clique num bloco colorido</td><td>Toca a tomada do início, uma vez.</td></tr>
-<tr><td><kbd>T</kbd> / <kbd>L</kbd> / <kbd>C</kbd></td><td>Toca a tomada do início / a tomada em loop / o vídeo bruto dela.</td></tr>
-<tr><td><kbd>F11</kbd></td><td>Tela cheia (<kbd>Esc</kbd> sai).</td></tr>
-</table>
-<p>As imagens de <b>Entrada</b> e <b>Saída</b> mostram o quadro exato de cada borda e se atualizam a cada ajuste, para você parar no ponto certo.</p>
-
-<h3>Música</h3>
-<p>A lista <b>Música</b>, no alto, mostra as faixas da sua biblioteca (a pasta escolhida na tela principal, com subpastas). Escolha uma e ela passa a tocar na prévia e no vídeo: <b>uma faixa só</b>, do começo ao fim do vídeo, cortada no final com o volume abaixando. Os cortes automáticos são refeitos no ritmo dessa faixa; as tomadas que você ajustou à mão continuam como estão. <b>Automática</b> deixa o programa escolher pelo estilo. As edições são livres, quadro a quadro: aparar ou deslizar uma tomada não fica preso à batida.</p>
-
-<h3>Texto sobre a tomada</h3>
-<p>Selecione uma tomada e clique em <b>T Texto</b> (ou botão direito na tomada → <b>Texto…</b>). O texto fica na tela <b>durante toda a tomada</b>. Cada linha (Enter quebra a linha) ganha a sua própria caixa, como nas legendas de vídeos curtos. Você escolhe:</p>
-<ul>
-  <li><b>Alinhamento:</b> caixa à esquerda ou centralizada; <b>Posição:</b> embaixo, no meio ou no alto.</li>
-  <li><b>Fonte</b> (Arial, Verdana, Trebuchet MS, Georgia, Impact, Courier New), <b>tamanho</b>, negrito e MAIÚSCULAS.</li>
-  <li><b>Cor do texto</b>, <b>fundo preenchido</b> (com a <b>cor do fundo</b>) ou <b>transparente</b> (com um contorno escuro para continuar legível).</li>
-</ul>
-<p>A janela mostra a prévia no quadro da própria tomada, e o monitor mostra o texto enquanto a tomada toca. Um texto novo já vem com o estilo do último que você usou. A sequência marca com <b>T</b> as tomadas com texto. O texto entra no vídeo renderizado exatamente como na prévia; no <b>Enviar para o CapCut</b> as tomadas saem sem o texto, para você refazê-lo lá se quiser. Para tirar, abra o texto e clique em <b>Remover texto</b>.</p>
-
-<h3>Desfazer e refazer</h3>
-<p><b>↶ Desfazer</b> (<kbd>Ctrl</kbd>+<kbd>Z</kbd>) volta a última mudança: apagar, mover, aparar, adicionar, trocar transição, enquadrar o 9:16, colocar ou tirar texto, e também Nova versão, Duração e Restaurar automático. <b>↷ Refazer edição</b> (<kbd>Ctrl</kbd>+<kbd>Y</kbd>) volta o que foi desfeito. São até 100 passos, guardados separadamente para cada estilo e formato enquanto a janela está aberta.</p>
-
-<h3>Enquadramento do 9:16</h3>
-<p>No formato <b>Vertical 9:16</b>, o monitor mostra um <b>quadro branco</b> com a parte que entra no vídeo vertical; as laterais escurecidas são cortadas. Para reenquadrar, <b>segure o mouse dentro do quadro</b> (a parte clara; o cursor vira uma mão) e arraste para os lados. Clicar nas laterais escuras não faz nada, para você não mudar o recorte sem querer. Vale <b>só para a tomada que está na tela</b>, fica salvo e é usado no render. O painel da direita mostra a posição, e o botão <b>Enquadramento automático</b> desfaz.</p>
-
-<div class="box tip"><b>A duração total muda com as edições</b>Esticar ou encurtar uma tomada muda o tamanho do vídeo, e o total no alto da janela se atualiza na hora. A música é cortada no tamanho final.</div>
-
-<h3>Salvar, restaurar e renderizar</h3>
-<table>
-<tr><th>Botão</th><th>O que faz</th></tr>
-<tr><td><b>💾 Salvar</b></td><td>Grava as edições em <code>_CataVoo\projeto\edicao_manual.json</code>. Elas também são salvas ao trocar de estilo, ao renderizar e ao fechar a janela. Na próxima vez que abrir a prévia da mesma pasta, elas voltam.</td></tr>
-<tr><td><b>↺ Mais → Restaurar automático</b></td><td>Descarta as edições do estilo e formato atuais e volta ao corte automático.</td></tr>
-<tr><td><b>RENDERIZAR</b></td><td>Pede confirmação mostrando o que vai ser gravado (estilo, formato, duração, número de tomadas) e grava o vídeo do estilo, formato e duração que estão na tela, com a música e o título, em <code>_CataVoo</code>. No fim, oferece <b>Assistir</b> e <b>Abrir pasta</b>. Para gerar outro estilo, outra duração ou o vertical, mude na barra de cima e renderize de novo.</td></tr>
-</table>
-
-<div class="pc"><div class="pro"><h5>Vantagens</h5><ul><li>Controle total, até o quadro</li><li>Compara estilos sem esperar o render</li><li>Aproveita o que a análise encontrou (os blocos cinza)</li><li>As edições ficam salvas por estilo e formato</li></ul></div><div class="con"><h5>Desvantagens</h5><ul><li>Dá mais trabalho que o modo automático</li><li>Ajustes livres podem tirar cortes do ritmo da música</li><li>Na prévia, as fusões aparecem como cortes secos; elas só aparecem no vídeo renderizado</li></ul></div></div>
-
-<!-- ============================================================ -->
-<h2 id="ia">13. Assistente de IA (opcional)</h2>
-<div class="box ok"><b>O programa funciona 100% sem IA</b>O assistente vem desligado. Ligue só se quiser testar uma interpretação mais livre dos pedidos ou uma montagem "pensada" por um modelo de linguagem.</div>
-<p>Quando ligado (marque a caixa <b>Assistente de IA</b>), ele pode fazer duas coisas, cada uma com sua própria caixa:</p>
-<ol>
-  <li><b>Interpretar instruções e ajustes:</b> entende pedidos livres como "quero começar pela cachoeira e terminar com algo tranquilo, sem pressa".</li>
-  <li><b>Escolher e ordenar as tomadas:</b> recebe uma pré-seleção dos melhores trechos (já sem tremidos, borrados ou repetidos) e decide quais entram e em que ordem. O ritmo continua preso à batida da música.</li>
-</ol>
-
-<h3>Provedores</h3>
-<table>
-<tr><th>Provedor</th><th>Onde roda</th><th>Custo</th><th>Configuração</th></tr>
-<tr><td><b>Ollama</b></td><td>Sua placa de vídeo</td><td>Grátis</td><td>Instale o Ollama (ollama.com) e rode <code>ollama pull qwen3:8b</code>. São ~5 GB, que cabem numa placa de 8 GB como a RTX 4060.</td></tr>
-<tr><td><b>LM Studio</b></td><td>Sua placa de vídeo</td><td>Grátis</td><td>Carregue um modelo e ligue o servidor local. O programa usa o modelo que estiver carregado.</td></tr>
-<tr><td><b>Outro compatível</b></td><td>Sua placa de vídeo</td><td>Grátis</td><td>llama.cpp (<code>llama-server</code>), Jan etc. Informe o endereço.</td></tr>
-<tr><td><b>OpenAI / ChatGPT</b></td><td>Nuvem</td><td>Pago por uso</td><td>Chave da API no campo "Chave da API" ou na variável <code>OPENAI_API_KEY</code>. Modelo padrão: <code>gpt-5-mini</code> (editável).</td></tr>
-<tr><td><b>Anthropic / Claude</b></td><td>Nuvem</td><td>Pago por uso</td><td>Chave no campo ou na variável <code>ANTHROPIC_API_KEY</code>. Modelo padrão: <code>claude-haiku-5-5</code> (editável).</td></tr>
-</table>
-<p class="small">Os nomes de modelo das APIs mudam com o tempo. Se der erro de "modelo não encontrado", confira o nome atual no site do provedor e altere o campo "Modelo".</p>
-
-<h3>Local × nuvem</h3>
-<div class="pc"><div class="pro"><h5>IA local (Ollama / LM Studio)</h5><ul><li>Grátis e privado</li><li>Funciona sem internet</li><li>Modelos menores entendem pedidos simples bem</li><li><i>Desvantagem:</i> mais lento e menos "esperto" com pedidos complexos; ocupa memória da placa de vídeo</li></ul></div><div class="con" style="background:var(--accent-soft);border-color:#b6cff9"><h5>IA na nuvem (Claude / GPT)</h5><ul><li>Entende pedidos complexos melhor</li><li>Rápido, sem usar sua placa</li><li>Custo baixo: uma ou duas mensagens curtas por vídeo</li><li><i>Desvantagem:</i> precisa de internet e chave paga; o texto da tabela de cenas vai para o provedor</li></ul></div></div>
-
-<h3>Privacidade: o que é enviado</h3>
-<p>Somente <b>texto</b>: as suas instruções e uma tabela dos trechos (nome do arquivo, tempo, tipo de paisagem, movimento e notas). <b>Nunca</b> imagens, vídeo ou áudio. O log avisa sempre que algo é enviado, por exemplo: <code>🤖 Enviando para a nuvem a descrição em texto de 40 trechos (sem imagens nem vídeo)…</code></p>
-
-<h3>Segurança e falhas</h3>
-<ul>
-  <li>Toda resposta da IA é verificada. Estilos, paisagens ou números fora do permitido são ignorados, e trechos inventados pela IA são descartados.</li>
-  <li>Se a IA não responder, a chave estiver errada ou a resposta não fizer sentido, o log mostra o motivo e o programa <b>segue com o modo automático</b>. Um problema na IA nunca impede o vídeo de ser gerado.</li>
-  <li>O botão <b>Testar conexão</b> confere se a IA responde antes de você gerar.</li>
-  <li>A chave da API fica salva só no seu PC, em <code>%LOCALAPPDATA%\CataVoo\config.json</code>. Se preferir não gravá-la, deixe o campo vazio e use a variável de ambiente.</li>
-</ul>
-
-<!-- ============================================================ -->
-<h2 id="saida">14. Arquivos gerados</h2>
-<p>Vídeos feitos por outros editores a partir dos originais (por exemplo <code>DJI_0421_highlight.mp4</code>, criado pelo VideoHighlighter) são ignorados na análise: só os originais entram. Os vídeos prontos vão para <code>&lt;pasta dos vídeos&gt;\_CataVoo\</code>, e os arquivos de trabalho ficam numa subpasta dela, <code>projeto\</code>, para a pasta principal mostrar só os vídeos. Os originais não são tocados.</p>
-<table>
-<tr><th>Arquivo</th><th>Para que serve</th></tr>
-<tr><td><code>Título[_grupo]_16x9_DATA.mp4</code> / <code>_9x16_</code></td><td>Os vídeos prontos.</td></tr>
-<tr><td><code>projeto\….edl.yaml</code></td><td>A "lista de cortes", um por vídeo. Pode ser aberta no editor do VideoHighlighter (<code>python main.py</code>) para ajustes manuais e um novo render.</td></tr>
-<tr><td><code>projeto\…_musica.m4a</code></td><td>A música já cortada e com o volume abaixando no final, um por vídeo. Só existe quando há uma <b>biblioteca de música</b> escolhida; sem ela, o vídeo sai sem música e este arquivo não é criado.</td></tr>
-<tr><td><code>…_manual_16x9_DATA.mp4</code></td><td>Vídeos renderizados pela prévia (com o próprio <code>.edl.yaml</code>, música e relatório).</td></tr>
-<tr><td><code>projeto\edicao_manual.json</code></td><td>As suas edições na timeline, por grupo, estilo e formato. Apagar este arquivo descarta todas.</td></tr>
-<tr><td><code>projeto\…_relatorio.json</code></td><td>Um por vídeo renderizado. Tudo o que foi decidido: estilo e motivo, material disponível, música, cada tomada (arquivo, tempo de entrada e saída, paisagem, movimento e notas) e eventos da IA. Serve para conferir o que foi feito e para calibrar o programa.</td></tr>
-<tr><td><code>capcut\…</code></td><td>Só depois de usar <b>Enviar para o CapCut</b>: as tomadas numeradas, a música e o <code>ORDEM.txt</code>.</td></tr>
-</table>
-<p>Os pedaços intermediários do render (cada tomada cortada antes de juntar) vão para a pasta temporária do Windows e são apagados no fim. A análise (cache), as cópias leves da prévia e o <code>erros.log</code> ficam em <code>%LOCALAPPDATA%\CataVoo</code>, fora da pasta dos vídeos.</p>
-
-<!-- ============================================================ -->
-<h2 id="cache">15. Cache: por que a segunda vez é rápida</h2>
-<ul>
-  <li>Cada vídeo é analisado <b>uma única vez</b>. O resultado fica em <code>%LOCALAPPDATA%\CataVoo\analysis.sqlite</code>.</li>
-  <li>Mudar estilo, duração, formato, organização, música ou ajustes <b>não</b> refaz a análise.</li>
-  <li>O cache reconhece o vídeo pelo conteúdo: se você <b>renomear ou mover</b> o arquivo, a análise é reaproveitada. Se o arquivo for <b>alterado</b>, ele é analisado de novo.</li>
-  <li>A classificação de paisagens do CLIP e a análise das músicas também ficam salvas.</li>
-  <li>Para começar do zero, feche o programa e apague a pasta <code>%LOCALAPPDATA%\CataVoo</code>. Isso também apaga as configurações.</li>
-</ul>
-
-<!-- ============================================================ -->
-<h2 id="avancado">16. Configuração avançada</h2>
-<p>Arquivo: <code>%LOCALAPPDATA%\CataVoo\config.json</code>. Ele é criado na primeira análise pela janela e pode ser editado com o Bloco de Notas, com o programa fechado.</p>
-<table>
-<tr><th>Seção</th><th>Para que serve</th></tr>
-<tr><td><code>weights</code></td><td>Pesos dos critérios (qualidade, suavidade, interesse, movimento, variedade).</td></tr>
-<tr><td><code>motion</code></td><td>Limites de tremor, velocidade confortável, rapidez etc. São os valores a calibrar com filmagens reais.</td></tr>
-<tr><td><code>analysis</code></td><td>Amostras por segundo e resolução da análise. Mudar estes valores faz todos os vídeos serem analisados de novo.</td></tr>
-<tr><td><code>duplicate_threshold</code></td><td>Quão parecidas duas cenas precisam ser para contar como repetição (padrão 0,90).</td></tr>
-<tr><td><code>max_shots_per_clip</code></td><td>Máximo de trechos de um mesmo arquivo (padrão 3).</td></tr>
-<tr><td><code>render_mode</code> / <code>hwaccel</code></td><td>Uso da GPU para codificar (NVENC) e decodificar.</td></tr>
-<tr><td><code>ai</code></td><td>Configurações do assistente de IA.</td></tr>
-</table>
-<p>Os estilos ficam em <code>drone/config.py</code> (no código). Lá dá para criar novos ou alterar faixa de duração, transições, BPM, paisagens preferidas, abertura e fechamento, curva de ritmo, ordem cronológica e preferência por tipo de movimento.</p>
-
-<!-- ============================================================ -->
-<h2 id="desempenho">17. Desempenho e hardware</h2>
-<p>Hardware de referência: Intel Core i5-10600K e NVIDIA RTX 2060 (6 GB) ou RTX 4060 (8 GB), no Windows 11. Os números abaixo são estimativas.</p>
-<table>
-<tr><th>Etapa</th><th>Estimativa</th></tr>
-<tr><td>Análise (só na 1ª vez)</td><td>Estimativa: 5 a 12× mais rápida que a duração dos vídeos (45 min de filmagem em 4 a 9 min). O programa analisa 2 ou 3 vídeos ao mesmo tempo, conforme o processador; o registro mostra "Analisando N vídeos, 3 ao mesmo tempo".</td></tr>
-<tr><td>Classificação de paisagens (CLIP)</td><td>Alguns segundos por vídeo; usa ~600 MB da placa e libera em seguida.</td></tr>
-<tr><td>Render 90 s em 4K</td><td>6 a 10 min.</td></tr>
-<tr><td>Render vertical 45 s (1080×1920)</td><td>Cerca de 1 min.</td></tr>
-<tr><td>Nova versão da mesma viagem</td><td>Só o tempo do render: a análise vem do cache.</td></tr>
-</table>
-<div class="box tip"><b>Dica de velocidade</b>Para testar estilos e ajustes, use resolução Full HD e só o formato horizontal. Quando gostar do resultado, gere a versão final em 4K.</div>
-
-<!-- ============================================================ -->
-<h2 id="problemas">18. Solução de problemas</h2>
-<table>
-<tr><th>Situação</th><th>O que fazer</th></tr>
-<tr><td>"Nenhum vídeo MP4/MOV encontrado"</td><td>Confira a pasta. Os arquivos <code>.LRF</code> (proxies DJI) são ignorados de propósito. Para ler subpastas, use Organizar → por subpasta ou <code>--recursivo</code>.</td></tr>
-<tr><td>"Nenhum trecho utilizável"</td><td>Tudo foi considerado tremido, escuro ou desfocado. Confira o material; se for o caso, aumente <code>jitter_reject</code> em <code>config.json</code>.</td></tr>
-<tr><td>O vídeo saiu mais curto que o pedido</td><td>Faltou material distinto. O log mostra quanto havia. Use "Esticar", reduza a duração ou acrescente vídeos.</td></tr>
-<tr><td>Cores lavadas / acinzentadas</td><td>Filmagem em D-Log ou HLG (10 bits); o log avisa. A correção automática de cor ainda não existe; por enquanto, grave em modo Normal ou aplique uma LUT antes.</td></tr>
-<tr><td>A música acaba antes ou não combina</td><td>Organize a biblioteca por pastas com nomes de estilo e prefira faixas mais longas que o vídeo. Para usar uma faixa específica, use <code>--musica</code>.</td></tr>
-<tr><td>Separar por voo/dia junta ou separa errado</td><td>As datas de gravação podem ter mudado ao copiar os arquivos. Use "por subpasta" e organize você mesmo.</td></tr>
-<tr><td>Separar por local não funciona</td><td>Faltam os arquivos <code>.SRT</code> da DJI ao lado dos vídeos. Sem GPS, o programa separa por voo.</td></tr>
-<tr><td>IA: "não consegui conectar… está aberto?"</td><td>Abra o Ollama ou o LM Studio (e ligue o servidor local no LM Studio). Use "Testar conexão".</td></tr>
-<tr><td>IA: "modelo não encontrado"</td><td>No Ollama, rode <code>ollama pull &lt;modelo&gt;</code>. Nas APIs, confira o nome atual do modelo.</td></tr>
-<tr><td>IA: "chave de API recusada" / "limite de uso"</td><td>Confira a chave e o saldo de créditos no site do provedor.</td></tr>
-<tr><td>CLIP indisponível</td><td>Falta o PyTorch/transformers ou o download do modelo. O programa segue com a estimativa por cores. Rode o <code>Instalar_IA_Paisagens.bat</code> de novo (seção 20). Se você trocou de versão do programa, a versão do Python pode ter mudado: o instalador resolve isso.</td></tr>
-</table>
-
-<!-- ============================================================ -->
-<h2 id="instalar">19. Instalação e atualização</h2>
-<h3>Opção 1: programa .exe (sem instalar Python)</h3>
-<p>O CataVoo pode virar um programa comum do Windows: a pasta <code>CataVoo</code> com o <b>CataVoo.exe</b>. O ffmpeg vem junto, e o PC que vai usar o programa não precisa de Python nem de ffmpeg.</p>
-<table>
-<tr><th>Como gerar</th><th>Passos</th></tr>
-<tr><td><b>No seu PC</b></td><td>Instale o Python 3.12 (python.org, marcando "Add python.exe to PATH") e dê dois cliques em <code>packaging\drone\build_exe.bat</code>. Em alguns minutos aparecem <code>dist\CataVoo\CataVoo.exe</code> e <code>dist\CataVoo-win64.zip</code>.</td></tr>
-<tr><td><b>No GitHub</b></td><td>No seu fork, aba <b>Actions</b> → <b>Build CataVoo.exe</b> → <b>Run workflow</b>. Ele roda os testes no Windows, gera o programa e deixa o <code>.zip</code> para baixar.</td></tr>
-</table>
-<ul>
-  <li>Mantenha a pasta inteira (o <code>.exe</code> usa os arquivos de <code>_internal</code>). Para levar a outro PC, copie a pasta ou o <code>.zip</code>.</li>
-  <li>O <code>.exe</code> vem sem o PyTorch, para ficar leve: até você instalar a IA de paisagens (abaixo), as paisagens são reconhecidas pela cor.</li>
-  <li>Pela AGPL, ao distribuir o <code>.exe</code> você deve oferecer também o código-fonte (por exemplo, o link do seu fork).</li>
-</ul>
-<h3>IA de paisagens (CLIP): Instalar_IA_Paisagens.bat</h3>
-<p>Na pasta do <code>.exe</code> vem o arquivo <b>Instalar_IA_Paisagens.bat</b>. Com o programa fechado, dê dois cliques nele: ele baixa o PyTorch e o transformers para a subpasta <code>packs\clip</code> e já baixa o modelo CLIP. Não é preciso ter Python instalado (o instalador usa um Python temporário e apaga depois). Na próxima vez que você abrir o CataVoo, o registro mostra <b>"CLIP carregado na placa NVIDIA"</b> e <b>"Classificação de paisagem: clip"</b>.</p>
-<table>
-<tr><th>Item</th><th>Detalhe</th></tr>
-<tr><td>Placa de vídeo</td><td>Se houver placa NVIDIA (RTX 2060, 4060…), instala o PyTorch com CUDA (~2,5 GB). Sem NVIDIA, instala a versão para processador (~400 MB), que funciona mas é mais lenta. Para forçar a versão sem placa: <code>Instalar_IA_Paisagens.bat /cpu</code>.</td></tr>
-<tr><td>Espaço em disco</td><td>Deixe uns 6 GB livres durante a instalação; depois ficam ~3 GB (pacote) + ~600 MB (modelo, em <code>%USERPROFILE%\.cache\huggingface</code>).</td></tr>
-<tr><td>Internet</td><td>Só na instalação. Depois disso o CLIP roda 100% no seu PC, sem API.</td></tr>
-<tr><td>Atualizar o programa</td><td>Ao trocar a pasta do programa por uma versão nova, copie junto a pasta <code>packs</code> (ou rode o instalador de novo).</td></tr>
-<tr><td>Desinstalar</td><td>Apague a pasta <code>packs\clip</code>. O programa volta a usar as cores.</td></tr>
-<tr><td>Desligar sem desinstalar</td><td>Desmarque <b>Reconhecer paisagens com IA local (CLIP)</b> na janela (ou use <code>--sem-clip</code>).</td></tr>
-</table>
-<div class="pc"><div class="pro"><h5>Vantagens</h5><ul><li>Reconhece cachoeira, serra, cidade histórica, pôr do sol… com bem mais precisão</li><li>O Automático e os estilos que dependem da paisagem acertam mais</li><li>A análise fica salva no cache: cada vídeo é classificado uma vez só</li></ul></div><div class="con"><h5>Desvantagens</h5><ul><li>Download grande na instalação</li><li>Ocupa ~3 GB no disco</li><li>Sem placa NVIDIA, a primeira análise fica mais lenta</li></ul></div></div>
-
-<h3>Opção 2: rodar pelo Python</h3>
+<h2 id="passos">2. Passo a passo</h2>
 <ol class="steps">
-  <li>No GitHub, faça um <b>fork</b> de <code>Aseiel/VideoHighlighter</code> e clone o seu fork.</li>
-  <li>Copie o conteúdo do pacote do CataVoo (pastas <code>drone/</code>, <code>tests/</code>, <code>docs/</code>) para a raiz do clone.</li>
-  <li>Crie o ambiente: <code>python -m venv .venv</code> e <code>.venv\Scripts\activate</code>.</li>
-  <li>Instale o PyTorch com CUDA e as dependências: <code>pip install -r requirements.txt</code>.</li>
-  <li>Teste: <code>python -m pytest tests/test_drone_*.py -q</code>.</li>
-  <li>Abra: <code>python -m drone</code>.</li>
+  <li>Na tela principal, escolha a <b>pasta dos vídeos</b>, a <b>pasta de músicas</b> (e, se quiser, uma música da lista) e o <b>formato</b>: Horizontal 16:9 ou Vertical 9:16.</li>
+  <li>Clique em <b>ANALISAR MATERIAL</b>. Na primeira vez demora (o programa assiste tudo); depois fica guardado e é rápido.</li>
+  <li>Veja o resumo do material, aceite a <b>duração sugerida</b> ou escolha outra, e clique em <b>GERAR PRÉVIA</b>.</li>
+  <li>Na prévia, o vídeo toca na hora. Troque <b>estilo</b>, <b>duração</b> e <b>música</b> à vontade, peça uma <b>Nova versão</b>, ajuste tomadas e coloque <b>texto</b>.</li>
+  <li>Clique em <b>RENDERIZAR</b> para gerar o vídeo final, ou em <b>Exportar → Enviar para o CapCut</b> para terminar lá.</li>
 </ol>
-<h3>Receber atualizações do projeto original</h3>
-<pre><code>git remote add upstream https://github.com/Aseiel/VideoHighlighter.git   (só na primeira vez)
-git fetch upstream
-git merge upstream/main
-python -m pytest tests/test_drone_*.py -q</code></pre>
-<p>O CataVoo só <b>acrescenta</b> arquivos e não altera nenhum arquivo do VideoHighlighter, por isso as atualizações entram sem conflito. Se o autor original mudar alguma função usada aqui, os testes mostram na hora o que precisa de ajuste.</p>
-<p>O VideoHighlighter completo (com chat, editor manual e assistente com Ollama/LM Studio) continua disponível em <code>python main.py</code>.</p>
+<figure><img src="{{IMG_TELA}}" alt="Tela principal do CataVoo"><figcaption>Tela principal: configurações à esquerda; à direita, ANALISAR MATERIAL, o registro e, depois da análise, a duração e GERAR PRÉVIA.</figcaption></figure>
 
 <!-- ============================================================ -->
-<h2 id="limites">20. Limitações conhecidas</h2>
-<ul>
-  <li>Os limites de pontuação e as regras do modo Automático foram ajustados com vídeos de teste e ainda precisam ser calibrados com filmagens DJI reais.</li>
-  <li>Sem o CLIP, o reconhecimento de paisagens é feito só pelas cores e é bem menos preciso.</li>
-  <li>O recorte vertical fica fixo durante cada tomada e ainda não pode ser ajustado na timeline.</li>
-  <li>Na prévia, as miniaturas das faixas são de 1 em 1 segundo (as imagens de entrada e saída é que são exatas) e as fusões aparecem como cortes secos.</li>
-  <li>O Foco por assunto livre depende da IA de paisagens e funciona melhor com palavras comuns; ainda está em teste.</li>
-  <li>Renderiza um vídeo por vez (um estilo, um formato, um grupo).</li>
-  <li>Ainda não há correção automática de cor para D-Log/HLG nem nivelamento do horizonte.</li>
-  <li>No render em 4K, uma das etapas do motor original codifica na CPU, o que deixa o processo mais lento.</li>
-  <li>Licença AGPL-3.0: se você distribuir o programa ou oferecê-lo pela internet, precisa disponibilizar o código-fonte, incluindo as suas modificações.</li>
-</ul>
-
-<!-- ============================================================ -->
-<h2 id="resumo">21. Resumo rápido: qual opção usar</h2>
+<h2 id="principal">3. Tela principal</h2>
 <table>
-<tr><th>Eu quero…</th><th>Use</th></tr>
-<tr><td>Não pensar em nada</td><td><b>ANALISAR MATERIAL</b> → aceitar a duração sugerida → <b>GERAR PRÉVIA</b> (Automático) → <b>RENDERIZAR</b></td></tr>
-<tr><td>Saber quanto material bom existe</td><td><b>ANALISAR MATERIAL</b> e ler o resumo</td></tr>
-<tr><td>Um vídeo mais curto ou mais longo</td><td>Caixa <b>Duração</b> na prévia (escolha ou digite)</td></tr>
-<tr><td>Comparar estilos sem renderizar</td><td>Lista <b>Estilo</b> na prévia</td></tr>
-<tr><td>Mais de um assunto (lago, ponte, igreja…)</td><td><b>Nova versão</b> → <b>Foco</b></td></tr>
-<tr><td>Corrigir o resultado</td><td><b>Nova versão</b> → escreva o que mudar → <b>Gerar nova versão</b></td></tr>
-<tr><td>Ver alternativas</td><td><b>Nova versão</b> com o pedido em branco</td></tr>
-<tr><td>Acertar o corte até o quadro</td><td>Selecionar a tomada e usar <kbd>←</kbd>/<kbd>→</kbd></td></tr>
-<tr><td>Um vídeo para cada cachoeira ou atração</td><td>Organizar: <b>por voo</b> ou <b>por local (GPS)</b> + "Também um vídeo da viagem inteira"</td></tr>
-<tr><td>Um vídeo por dia de viagem</td><td>Organizar: <b>por dia</b></td></tr>
-<tr><td>Um Reels de 30 s</td><td>Formato <b>Vertical 9:16</b>; na prévia, duração 0:30 e estilo <b>Redes sociais</b></td></tr>
-<tr><td>Algo calmo, para relaxar</td><td><b>Contemplativo</b>, <b>Minimalista</b> ou <b>Pôr do sol</b></td></tr>
-<tr><td>Contar a viagem em ordem</td><td><b>Diário de viagem</b></td></tr>
-<tr><td>Acabamento com efeitos e textos</td><td><b>Exportar → Enviar para o CapCut</b></td></tr>
-<tr><td>Testar IA sem pagar</td><td>Assistente de IA → <b>Ollama</b> com <code>qwen3:8b</code></td></tr>
+<tr><th style="width:28%">Campo</th><th>Para que serve</th></tr>
+<tr><td><b>Pasta e Título</b></td><td>A pasta com os vídeos do drone (MP4/MOV, subpastas incluídas) e um título opcional.</td></tr>
+<tr><td><b>Música</b></td><td><b>Biblioteca</b>: a pasta das suas músicas. <b>Música</b>: a lista das faixas dessa pasta, pelo nome; escolha uma ou deixe em <b>Automática</b> (o programa escolhe pelo estilo). A música toca do começo ao fim do vídeo e termina com o volume abaixando.</td></tr>
+<tr><td><b>Formato e Resolução</b></td><td>Horizontal 16:9 (4K ou Full HD) ou Vertical 9:16 (Reels, Shorts, TikTok).</td></tr>
+<tr><td><b>Organizar</b></td><td>Um vídeo com tudo, ou um vídeo por voo, por dia ou por local.</td></tr>
+<tr><td><b>Instruções</b></td><td>Opcional: um pedido em texto, como "priorizando cachoeiras e movimentos suaves".</td></tr>
+<tr><td><b>Reconhecer paisagens com IA local</b></td><td>Usa a IA de paisagens, se instalada. Deixe marcado.</td></tr>
+<tr><td><b>Duração</b></td><td>Aparece depois da análise, já com a sugestão escolhida. Pode digitar qualquer tempo (90, 1:30, 4:00…).</td></tr>
 </table>
 
-<footer>
-CataVoo: camada de edição de vídeos de drone construída sobre o VideoHighlighter (Aseiel/VideoHighlighter). Licença GNU AGPL-3.0-or-later. Os projetos SkyGrid serviram apenas como referência de ideias; todo o código é original.
-</footer>
+<!-- ============================================================ -->
+<h2 id="estilos">4. Estilos</h2>
+<p>O estilo decide o ritmo, as transições e a ordem das tomadas. A prévia começa no <b>Automático</b>, e você troca na lista <b>Estilo</b> quando quiser: o vídeo é remontado na hora.</p>
+<table>
+<tr><th style="width:26%">Estilo</th><th>Como fica</th><th style="width:13%">Ritmo adaptativo</th></tr>
+<tr><td><b>Automático</b></td><td>O programa escolhe por você: lê as paisagens, os movimentos, a luz e a quantidade de material e usa o estilo que mais combina. Bom para começar ou quando não souber qual escolher.</td><td>sim</td></tr>
+<tr><td><b>Cinematográfico</b></td><td>O equilíbrio clássico: tomadas de 3,5 a 6,5 s, fusões suaves alternadas com cortes na batida, abre e fecha com as cenas mais fortes. Serve para quase qualquer viagem.</td><td>sim</td></tr>
+<tr><td><b>Natureza contemplativa</b></td><td>Calmo e lento: tomadas longas (5 a 9 s) e estáveis, fusões demoradas, música tranquila. Para natureza, cachoeiras e serras, quando a ideia é relaxar olhando a paisagem.</td><td>sim</td></tr>
+<tr><td><b>Pôr do sol / golden hour</b></td><td>Feito para a luz dourada: fusões longas, ritmo que vai desacelerando e final no pôr do sol. Use quando boa parte da filmagem foi no fim da tarde ou no amanhecer.</td><td>sim</td></tr>
+<tr><td><b>Minimalista</b></td><td>Poucas tomadas, bem longas e muito estáveis; cada imagem fica na tela tempo suficiente para ser apreciada. Para quem tem poucas cenas, mas muito bonitas.</td><td>sim</td></tr>
+<tr><td><b>Cidade histórica / arquitetura</b></td><td>Valoriza arquitetura: órbitas em torno de igrejas e casarios e revelações do centro histórico, em ritmo médio. Para cidades como Pirenópolis ou Goiás Velho.</td><td>sim</td></tr>
+<tr><td><b>Diário de viagem (ordem cronológica)</b></td><td>Conta a viagem exatamente na ordem em que foi filmada, como um diário: tomadas mais longas e mais trechos de cada vídeo, sem nunca voltar a um vídeo que já passou. Para guardar de lembrança.</td><td>sim</td></tr>
+<tr><td><b>Trailer épico</b></td><td>Como trailer de cinema: começa lento e grandioso, vai acelerando até cortes rápidos e fecha com um afastamento. Para paisagens imponentes e música forte.</td><td>não</td></tr>
+<tr><td><b>Viagem dinâmica</b></td><td>Animado: cortes curtos (2 a 3,5 s) na batida, com muita variedade de lugares e movimentos. Para mostrar bastante coisa em pouco tempo, com música alegre.</td><td>não</td></tr>
+<tr><td><b>Aventura / FPV radical</b></td><td>Velocidade: prioriza sobrevoos rasantes e movimentos rápidos, com cortes secos e curtos. Para voos esportivos, trilhas, estradas e cenas de ação.</td><td>não</td></tr>
+<tr><td><b>Vídeo curto para redes sociais</b></td><td>Para Reels, Shorts e TikTok: a cena mais impactante logo no primeiro segundo e cortes rápidos para prender a atenção. Ideal para o vídeo vertical curto.</td><td>não</td></tr>
+</table>
+<p class="small"><b>Ritmo adaptativo:</b> dentro do estilo, cada tomada fica o tempo que combina com ela. Uma tomada parada, panorâmica ou em órbita, rica em detalhes e estável fica mais; um sobrevoo rápido, tremido ou de qualidade razoável fica menos. Ele liga sozinho nos estilos marcados com "sim"; não há opção para marcar. Não depende da IA de paisagens.</p>
+
+<!-- ============================================================ -->
+<h2 id="previa">5. Prévia e edição</h2>
+<figure><img src="{{IMG_EDITOR}}" alt="Janela de prévia e edição"><figcaption>A janela de prévia: barra de cima, monitor com o player, sequência (o vídeo final) e os clipes originais.</figcaption></figure>
+<table>
+<tr><th style="width:24%">Parte</th><th>O que é</th></tr>
+<tr><td><b>Barra de cima</b></td><td><b>Estilo</b>, <b>Formato</b>, <b>Duração</b>, <b>Música</b>, <b>T Texto</b>, <b>✦ Nova versão</b> e, à direita, <b>Exportar</b> e <b>RENDERIZAR</b>.</td></tr>
+<tr><td><b>Monitor e player</b></td><td>O vídeo com a música. Embaixo, os botões ■ ⏮ ▶ ⏭ no centro; à esquerda, o tempo e o total de tomadas; à direita, Tocar tomada, Tocar clipe original, <b>↶ ↷</b> (desfazer e refazer), Salvar e Mais.</td></tr>
+<tr><td><b>Sequência</b></td><td>O vídeo final numa linha: em cima a régua de tempo; embaixo um bloco por tomada, com imagem, número, duração, a cor da paisagem e um <b>T</b> amarelo quando tem texto.</td></tr>
+<tr><td><b>Clipes originais</b></td><td>Cada vídeo bruto numa faixa. Blocos coloridos numerados são as tomadas usadas; blocos cinza tracejados são trechos bons que ficaram de fora.</td></tr>
+<tr><td><b>Painel da direita</b></td><td>Resumo do material, detalhes da tomada selecionada (com o primeiro e o último quadro), as paisagens e o <b>registro</b> do que foi feito, inclusive as suas edições.</td></tr>
+<tr><td><b>Divisórias</b></td><td>Arraste as linhas entre as áreas para dar mais espaço a quem quiser. A posição fica guardada.</td></tr>
+</table>
+<p class="small">Para a prévia rodar lisa, o programa faz cópias leves dos vídeos em segundo plano, uma vez só. As fusões aparecem só no vídeo renderizado.</p>
+
+<!-- ============================================================ -->
+<h2 id="comandos">6. Comandos básicos</h2>
+<table>
+<tr><th style="width:34%">Para…</th><th>Faça</th></tr>
+<tr><td>Tocar / pausar o vídeo inteiro</td><td>▶ no player, ou clique na régua de tempo da sequência e use <kbd>Espaço</kbd>.</td></tr>
+<tr><td>Tocar / pausar uma tomada</td><td>Clique na tomada (na sequência ou nos clipes) e use <kbd>Espaço</kbd>. Duplo clique toca do início.</td></tr>
+<tr><td>Ir a um ponto do vídeo</td><td>Clique ou arraste na régua de tempo da sequência.</td></tr>
+<tr><td>Mudar a ordem</td><td>Arraste um bloco da sequência e solte onde quiser (a marca amarela mostra onde entra).</td></tr>
+<tr><td>Aparar o começo ou o fim</td><td>Nos clipes originais, arraste a borda do bloco colorido. Ela para ao encostar em outra tomada do mesmo vídeo.</td></tr>
+<tr><td>Ajustar duas tomadas de uma vez</td><td>Arraste a linha entre dois blocos da sequência (ou a borda entre duas tomadas que se encostam): uma aumenta e a outra diminui, e o vídeo mantém a duração.</td></tr>
+<tr><td>Escolher outro momento do mesmo vídeo</td><td>Arraste o meio do bloco colorido nos clipes originais.</td></tr>
+<tr><td>Dividir uma tomada</td><td>Botão direito → <b>Dividir ao meio</b> (a 5 vira 5 e 6).</td></tr>
+<tr><td>Transição, texto ou remover</td><td>Botão direito na tomada: corte seco ou fusão, texto, remover. Ou selecione e tecle <kbd>Delete</kbd>.</td></tr>
+<tr><td>Usar um trecho cinza</td><td>Duplo clique nele (entra depois da tomada selecionada) ou botão direito para mais opções.</td></tr>
+<tr><td>Recorte do vertical 9:16</td><td>No monitor, segure <b>dentro do quadro branco</b> e arraste para os lados. Vale só para a tomada na tela; "Enquadramento automático" desfaz.</td></tr>
+<tr><td>Ajuste fino</td><td><kbd>←</kbd> <kbd>→</kbd> movem a borda 1 quadro (<kbd>Shift</kbd>: 1 segundo); <kbd>[</kbd> <kbd>]</kbd> escolhem a borda.</td></tr>
+<tr><td>Desfazer / refazer</td><td><kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>Y</kbd> (ou ↶ ↷), até 100 passos, inclusive Nova versão e Duração.</td></tr>
+<tr><td>Tela cheia</td><td><kbd>F11</kbd> (<kbd>Esc</kbd> sai).</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 id="versao">7. Nova versão</h2>
+<p>O botão <b>✦ Nova versão</b> abre uma janela para pedir outra montagem, a partir da mesma análise:</p>
+<ol>
+  <li>Escreva o que mudar ou clique nas sugestões ("+ mais cachoeira", "+ cortes mais rápidos", "+ vídeo mais curto"…).</li>
+  <li>Se quiser, escolha um <b>Foco</b>: um assunto que deve aparecer mais (uma paisagem da lista ou qualquer palavra, como ponte ou igreja).</li>
+  <li>Confira a linha <b>Entendi</b> e clique em <b>Gerar nova versão</b>.</li>
+</ol>
+<p>Cada clique traz uma montagem diferente, com o pedido aplicado; em branco, só varia as tomadas. <kbd>Ctrl</kbd>+<kbd>Z</kbd> volta à anterior. Exemplos que o programa entende: "mais serra", "menos cidade", "cortes mais lentos", "vídeo mais longo", "começar com uma revelação", "terminar com pôr do sol", "sem transições", "movimentos suaves".</p>
+
+<!-- ============================================================ -->
+<h2 id="texto">8. Texto sobre a tomada</h2>
+<p>Selecione a tomada e clique em <b>T Texto</b> (ou botão direito → Texto…). O texto fica na tela durante toda a tomada; para durar menos, divida a tomada e tire o texto de uma das partes.</p>
+<table>
+<tr><th style="width:28%">Opção</th><th>O que faz</th></tr>
+<tr><td>Texto</td><td>Enter quebra a linha; cada linha ganha a sua caixa. Espaços no começo da linha a empurram para a direita.</td></tr>
+<tr><td>Alinhamento e posição</td><td>Esquerda, centro ou direita; embaixo, no meio ou no alto.</td></tr>
+<tr><td>Fonte e tamanho</td><td>Arial, Verdana, Trebuchet MS, Georgia, Impact, Comic Sans MS ou Courier New. O tamanho é a altura das letras em pixels num vídeo Full HD (em 4K fica proporcional). Negrito e MAIÚSCULAS opcionais.</td></tr>
+<tr><td>Cores e fundo</td><td>Cor do texto e cor do fundo (preto por padrão). A barra <b>Fundo</b> vai de 100 (sólido) a 0 (sem fundo, com contorno escuro no texto).</td></tr>
+</table>
+<p class="small">A janela mostra a prévia no quadro da própria tomada, e o vídeo final sai igual. No envio para o CapCut as tomadas saem sem texto.</p>
+
+<!-- ============================================================ -->
+<h2 id="saidas">9. Renderizar e CapCut</h2>
+<table>
+<tr><th style="width:28%">Botão</th><th>Resultado</th></tr>
+<tr><td><b>RENDERIZAR</b></td><td>Grava o vídeo final, exatamente como na prévia, na pasta <code>_CataVoo</code> ao lado dos vídeos. Uma única barra de progresso mostra o andamento.</td></tr>
+<tr><td><b>Exportar → Enviar para o CapCut</b></td><td>Entrega cada tomada já cortada e numerada na ordem (<code>01_…</code>, <code>02_…</code>), a música pronta e um <code>ORDEM.txt</code>, em <code>_CataVoo\capcut\</code>. No CapCut: importe tudo e arraste para a linha do tempo, que entra na ordem.</td></tr>
+<tr><td><b>Salvar</b></td><td>Guarda a edição daquele estilo e formato. Ela volta quando você abrir a prévia de novo.</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 id="problemas">10. Problemas comuns</h2>
+<table>
+<tr><th style="width:34%">Problema</th><th>O que fazer</th></tr>
+<tr><td>A primeira análise demora</td><td>É normal: o programa assiste tudo uma vez. As próximas usam o que ficou guardado.</td></tr>
+<tr><td>Paisagens reconhecidas errado</td><td>Rode o <code>Instalar_IA_Paisagens.bat</code> e deixe marcada a opção de IA na tela principal.</td></tr>
+<tr><td>Pouco material para a duração</td><td>Aceite a duração sugerida, ou deixe o programa esticar as tomadas.</td></tr>
+<tr><td>Prévia travando</td><td>Espere terminarem as cópias leves ("preparando prévia leve" no alto).</td></tr>
+<tr><td>Vídeo sem música</td><td>Escolha a pasta de músicas na tela principal ou na lista Música da prévia.</td></tr>
+<tr><td>O programa fechou sozinho</td><td>O motivo fica em <code>%LOCALAPPDATA%\CataVoo\erros.log</code>. Conte na página do projeto (Issues).</td></tr>
+</table>
+
+<footer>CataVoo é código aberto (AGPL-3.0), construído sobre o VideoHighlighter, de Aseiel. Dúvidas, problemas e ideias: página do projeto no GitHub.</footer>
+
 </div>
 </body>
 </html>

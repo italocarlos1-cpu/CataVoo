@@ -1,16 +1,14 @@
-"""Dialog to write the text of one shot: box left or centred, basic fonts,
-filled or transparent background, text and background colours — with a live
-preview on the shot's own frame."""
+"""Dialog to write the text of one shot: box left, centred or right, basic
+fonts, letter height in pixels, background from solid to none, text and
+background colours — with a live preview on the shot's own frame."""
 from __future__ import annotations
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QPainter, QPixmap
 from PySide6.QtWidgets import (QCheckBox, QColorDialog, QComboBox, QDialog, QFormLayout, QHBoxLayout,
-                               QLabel, QPlainTextEdit, QPushButton, QVBoxLayout)
+                               QLabel, QPlainTextEdit, QPushButton, QSlider, QSpinBox, QVBoxLayout)
 
 from drone import text_overlay as T
-
-FILLS = [("Preenchido", True), ("Transparente", False)]
 
 
 class TextDialog(QDialog):
@@ -20,13 +18,14 @@ class TextDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle(f"Texto da tomada #{shot_no}")
         self.frame, self.vertical = frame, vertical
-        self.spec = dict(T.DEFAULT)
-        self.spec.update(spec or {})
+        self.spec = T.normalize({**T.DEFAULT, **(spec or {}), "text": (spec or {}).get("text") or " "}) or dict(T.DEFAULT)
+        self.spec["text"] = (spec or {}).get("text", "")
         self.result_spec: dict = {}
 
         lay = QHBoxLayout(self)
         left = QVBoxLayout()
-        left.addWidget(QLabel("Texto (Enter quebra a linha; cada linha ganha a sua caixa)"))
+        left.addWidget(QLabel("Texto (Enter quebra a linha; cada linha ganha a sua caixa;\n"
+                              "espaços no começo da linha a empurram para a direita)"))
         self.edit = QPlainTextEdit(self.spec["text"])
         self.edit.setPlaceholderText("DICAS DE DRONE ESSENCIAIS!")
         self.edit.setMinimumSize(320, 90)
@@ -36,8 +35,19 @@ class TextDialog(QDialog):
         self.align = self._combo(T.ALIGNS, self.spec["align"])
         self.pos = self._combo(T.POSITIONS, self.spec["pos"])
         self.font = self._combo([(f, f) for f in T.FONTS], self.spec["font"])
-        self.size = self._combo(T.SIZE_LABELS, self.spec["size"])
-        self.fill = self._combo(FILLS, bool(self.spec["fill"]))
+        self.size = QSpinBox()
+        self.size.setRange(T.SIZE_MIN, T.SIZE_MAX)
+        self.size.setValue(int(self.spec["size"]))
+        self.size.setSuffix(" px")
+        self.size.setToolTip("Altura das letras num vídeo de 1080 pixels (Full HD). Em 4K fica proporcional.")
+        self.size.valueChanged.connect(self._changed)
+        self.opacity = QSlider(Qt.Horizontal)
+        self.opacity.setRange(0, 100)
+        self.opacity.setValue(int(self.spec["bg_opacity"]))
+        self.opacity.setToolTip("100 = fundo sólido · 0 = sem fundo (o texto ganha um contorno escuro)")
+        self.opacity.valueChanged.connect(self._changed)
+        self.opacity_lbl = QLabel()
+        self.opacity_lbl.setMinimumWidth(42)
         form.addRow("Alinhamento", self.align)
         form.addRow("Posição", self.pos)
         form.addRow("Fonte", self.font)
@@ -55,7 +65,10 @@ class TextDialog(QDialog):
         self.color_btn = QPushButton()
         self.color_btn.clicked.connect(lambda: self._pick("color"))
         form.addRow("Cor do texto", self.color_btn)
-        form.addRow("Fundo", self.fill)
+        orow = QHBoxLayout()
+        orow.addWidget(self.opacity, 1)
+        orow.addWidget(self.opacity_lbl)
+        form.addRow("Fundo", orow)
         self.bg_btn = QPushButton()
         self.bg_btn.clicked.connect(lambda: self._pick("bg_color"))
         form.addRow("Cor do fundo", self.bg_btn)
@@ -100,7 +113,7 @@ class TextDialog(QDialog):
     def _read(self) -> dict:
         self.spec.update(text=self.edit.toPlainText(), align=self.align.currentData(),
                          pos=self.pos.currentData(), font=self.font.currentData(),
-                         size=self.size.currentData(), fill=self.fill.currentData(),
+                         size=self.size.value(), bg_opacity=self.opacity.value(),
                          bold=self.bold.isChecked(), upper=self.upper.isChecked())
         return self.spec
 
@@ -110,7 +123,9 @@ class TextDialog(QDialog):
             btn.setText(spec[key])
             fg = "#000" if QColor(spec[key]).lightness() > 140 else "#fff"
             btn.setStyleSheet(f"background:{spec[key]}; color:{fg}")
-        self.bg_btn.setEnabled(bool(spec["fill"]))
+        self.bg_btn.setEnabled(spec["bg_opacity"] > 0)
+        o = spec["bg_opacity"]
+        self.opacity_lbl.setText("sólido" if o == 100 else "sem" if o == 0 else f"{o}%")
         w, h = self.preview.width(), self.preview.height()
         base = QPixmap(w, h)
         base.fill(Qt.black)

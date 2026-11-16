@@ -19,7 +19,7 @@ Licensed under the GNU Affero General Public License v3 or later, like the
 VideoHighlighter code it builds on (see LICENSE and COPYRIGHT at the repo root).
 """
 
-__version__ = "1.0.2"
+__version__ = "1.0.3"
 
 # Bump whenever the per-sample measurements change meaning: it is part of the
 # cache key, so old analyses are recomputed instead of silently misread.

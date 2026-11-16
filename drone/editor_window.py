@@ -34,6 +34,7 @@ The window only edits; analysis and rendering go through drone.pipeline.Session.
 from __future__ import annotations
 
 import html
+import re
 import os
 import traceback
 
@@ -65,6 +66,21 @@ TAGS = [("16x9", "Horizontal 16:9"), ("9x16", "Vertical 9:16")]
 def _colour(category: str) -> QColor:
     """Fixed colour per landscape (same every time the program opens)."""
     return QColor(category_colour(category))
+
+
+_QUIET = re.compile(r"^\s|^(📱 Recorte 9:16 \d|✂ CapCut \d|⚙️ Normalizing|🔗 |🎬 Building|🔤 Text on clip|"
+                    r"🔤 Caption|🎵 .+ BPM, |ℹ️ Tomada extra|✅ Reel saved)")
+
+
+def _short_log(msg: str) -> str:
+    """Keep the REGISTRO readable: no shot-by-shot lists or per-clip progress."""
+    first, _, rest = msg.partition("\n")
+    if first.startswith("🎬 Roteiro"):
+        summary = rest.split("\n", 1)[0].split(", unidade")[0].strip()
+        return f"{first.rstrip(':')}: {summary}" if summary else first
+    if _QUIET.match(first):
+        return ""
+    return first
 
 
 def _clock(t: float) -> str:
@@ -749,7 +765,7 @@ class EditorWindow(QMainWindow):
         self.scrub.play_shot.connect(self.play_shot)
         self.scrub.moved.connect(self._strip_moved)
         self.scrub.roll.connect(self._film_roll)
-        self.scrub.roll_done.connect(self._changed)
+        self.scrub.roll_done.connect(self._roll_done)
         self.scrub.menu.connect(self.shot_menu)
         self.scrub.delete.connect(self.remove)
         tr = QGridLayout()
@@ -1056,8 +1072,17 @@ class EditorWindow(QMainWindow):
         return (self.group_box.currentData(), self.style_box.currentData(), self.tag_box.currentData())
 
     def log(self, msg: str) -> None:
-        if hasattr(self, "logbox"):
-            self.logbox.appendPlainText(str(msg))
+        """The REGISTRO: what was decided and what you changed. Per-shot and
+        per-clip technical detail goes to the debug log only."""
+        msg = str(msg)
+        short = _short_log(msg)
+        if short != msg:
+            print(msg)                      # the full detail stays in debug.log
+        if not short or not hasattr(self, "logbox"):
+            return
+        self.logbox.appendPlainText(short)
+        bar = self.logbox.verticalScrollBar()
+        bar.setValue(bar.maximum())
 
     def _fill_styles(self, current: str = "") -> None:
         current = current or self.style_box.currentData()
@@ -2051,6 +2076,16 @@ class EditorWindow(QMainWindow):
         self._update_info()
 
     def commit_drag(self) -> None:
+        if self.sel is not None and self.sel < len(self.plan.shots):
+            s = self.plan.shots[self.sel]
+            self.log(f"✎ Tomada #{self.sel + 1} ajustada: {fmt_time(s.start)}–{fmt_time(s.end)} ({s.length:.1f} s)")
+        self._changed()
+
+    def _roll_done(self) -> None:
+        i = self.sel
+        if i is not None and i + 1 < len(self.plan.shots):
+            self.log(f"↔ Corte entre #{i + 1} e #{i + 2} ajustado: {self.plan.shots[i].length:.1f} s + "
+                     f"{self.plan.shots[i + 1].length:.1f} s")
         self._changed()
 
     def _changed(self) -> None:
@@ -2193,11 +2228,13 @@ class EditorWindow(QMainWindow):
             return
         self.plan.remove(i)
         self.sel = min(i, len(self.plan.shots) - 1)
+        self.log(f"🗑 Tomada #{i + 1} removida")
         self._changed()
 
     def add_candidate(self, cand: dict, at: int | None = None) -> None:
         at = (self.sel + 1) if (at is None and self.sel is not None) else at
         self.sel = self.plan.insert(cand, at)
+        self.log(f"➕ Trecho adicionado como tomada #{self.sel + 1}")
         self._changed()
 
     def candidate_menu(self, cand: dict, pos) -> None:
@@ -2213,6 +2250,7 @@ class EditorWindow(QMainWindow):
             self.add_candidate(cand, at=len(self.plan.shots))
         elif chosen is a3 and self.sel is not None:
             self.plan.replace(self.sel, cand)
+            self.log(f"⇄ Tomada #{self.sel + 1} substituída")
             self._changed()
 
     def shot_menu(self, i: int, pos) -> None:
@@ -2231,8 +2269,10 @@ class EditorWindow(QMainWindow):
         chosen = m.exec(pos)
         if chosen is cut:
             self.plan.set_transition(i, "cut")
+            self.log(f"✎ Tomada #{i + 1}: corte seco para a próxima")
         elif chosen is fade:
             self.plan.set_transition(i, "crossfade", 0.6)
+            self.log(f"✎ Tomada #{i + 1}: fusão para a próxima")
         elif chosen is txt:
             self.edit_text()
             return
@@ -2322,6 +2362,7 @@ class EditorWindow(QMainWindow):
 
     def _strip_moved(self, src: int, dst: int) -> None:
         self.plan.move(src, dst)
+        self.log(f"↕ Tomada #{src + 1} movida para a posição {dst + 1}")
         self.sel = dst
         self._changed()
         self._scroll_to_sel()
@@ -2370,9 +2411,9 @@ class EditorWindow(QMainWindow):
             size = job.vertical_size if tag == "9x16" else job.horizontal_size
             plan.overlays = text_overlay.write_pngs(
                 self.plan, size, os.path.join(self.session.ctx.out_dir, "projeto", "textos"))
-        self.log(f"🎬 Renderizando {what}. Ordem: "
-                 + ", ".join(f"#{i + 1} {os.path.splitext(os.path.basename(s.path))[0]}"
-                             for i, s in enumerate(self.plan.shots)))
+        print("Ordem do render: " + ", ".join(f"#{i + 1} {os.path.basename(s.path)}"
+                                              for i, s in enumerate(self.plan.shots)))
+        self.log(f"🎬 Renderizando {what}")
         self.beat.start("Renderizando…")
         self.render_btn.setEnabled(False)
         self.capcut_btn.setEnabled(False)
