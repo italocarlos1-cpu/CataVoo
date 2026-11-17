@@ -953,3 +953,27 @@ def test_registro_keeps_it_short():
     assert _short_log("⏱️ Duração escolhida 16x9: 120 s") == "⏱️ Duração escolhida 16x9: 120 s"
     assert _short_log("📱 Recorte 9:16 3/22 (centro 0.50)") == ""
     assert _short_log("   12.3s  [body] 3.0s  DJI_0001") == ""
+
+
+def test_windows_get_the_dark_title_bar(monkeypatch):
+    """Every window shown gets the dark title bar once (a no-op off Windows)."""
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    qtw = pytest.importorskip("PySide6.QtWidgets")
+    if not hasattr(qtw, "QApplication") or "Mock" in type(qtw.QApplication).__name__:
+        pytest.skip("real PySide6 required")
+    app = qtw.QApplication.instance() or qtw.QApplication([])
+    from drone import theme
+    seen = []
+    monkeypatch.setattr(theme, "dark_title_bar", lambda w: seen.append(w))
+    f = theme._NoWheelOnChoices(app)
+    app.installEventFilter(f)
+    w = qtw.QDialog()
+    w.show()
+    app.processEvents()
+    w.hide()
+    w.show()
+    app.processEvents()
+    assert seen.count(w) == 1
+    app.removeEventFilter(f)
+    w.close()
+    assert theme._colorref("#1c2b3a") == 0x3A2B1C

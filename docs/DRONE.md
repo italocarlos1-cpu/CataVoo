@@ -58,6 +58,12 @@ ficam menos. A duração total e o encaixe na música não mudam.
   a sua seleção e, no modo Automático, o seu estilo.
 - **Música**: volume abaixando nos últimos ~4 s; uma faixa mais curta que o vídeo é repetida.
 
+## v1.0.4 — barra de título escura
+
+- `theme.dark_title_bar`: DWM `USE_IMMERSIVE_DARK_MODE` (20/19) e, no Windows 11, cor da barra,
+  do texto e da borda (`TITLE_BG`); aplicada a cada janela no primeiro `Show` pelo filtro do tema.
+  Qt 6.8+ também recebe `setColorScheme(Dark)`.
+
 ## v1.0.3 — texto, registro, manual enxuto
 
 - `text_overlay`: `align` right; Comic Sans MS; `size` numérico = altura em px num quadro de 1080

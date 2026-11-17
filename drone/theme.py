@@ -20,6 +20,7 @@ from PySide6.QtGui import QColor, QFont, QPainter, QPalette, QPixmap, QPolygonF
 
 BG = "#0a0a0a"          # window
 PANEL = "#141414"       # cards, lists
+TITLE_BG = "#1c1c1c"    # Windows title bar (Windows 11 colours it; 10 uses its own dark grey)
 FIELD = "#1b1b1b"       # inputs
 LINE = "#262626"        # borders
 HOVER = "#2e2e2e"
@@ -150,6 +151,10 @@ def apply(app) -> None:
     app.setStyleSheet(QSS.replace("@ARROW@", _arrow_png()).replace("@DOT@", _dot_png()))
     app._cv_no_wheel = _NoWheelOnChoices(app)
     app.installEventFilter(app._cv_no_wheel)
+    try:                                        # Qt 6.8+: dark window frames everywhere
+        app.styleHints().setColorScheme(Qt.ColorScheme.Dark)
+    except Exception:  # noqa: BLE001 — older Qt: the filter below does it
+        pass
 
 
 def _dot_png() -> str:
@@ -191,13 +196,52 @@ def _arrow_png() -> str:
 class _NoWheelOnChoices(QObject):
     """The mouse wheel over a closed list (or a number box) changed its value
     without a click — easy to do by accident while scrolling the window.
-    Those values now change only by clicking; the wheel is ignored there."""
+    Those values now change only by clicking; the wheel is ignored there.
+
+    It also gives every window (main, prévia, dialogs) the dark Windows title
+    bar the first time it is shown, instead of the white default."""
 
     def eventFilter(self, obj, e):
         from PySide6.QtCore import QEvent
-        from PySide6.QtWidgets import QAbstractSpinBox, QComboBox
-        if e.type() == QEvent.Wheel and isinstance(obj, (QComboBox, QAbstractSpinBox)):
+        from PySide6.QtWidgets import QAbstractSpinBox, QComboBox, QWidget
+        t = e.type()
+        if t == QEvent.Wheel and isinstance(obj, (QComboBox, QAbstractSpinBox)):
             return True
+        if t == QEvent.Show and isinstance(obj, QWidget) and obj.isWindow() \
+                and not obj.property("cv_dark_frame"):
+            obj.setProperty("cv_dark_frame", True)
+            dark_title_bar(obj)
+        return False
+
+
+def _colorref(hex_colour: str) -> int:
+    c = QColor(hex_colour)
+    return c.red() | (c.green() << 8) | (c.blue() << 16)
+
+
+def dark_title_bar(widget) -> bool:
+    """Windows 10/11: dark title bar (and, on 11, the app's own grey with white
+    text), like the other dark apps. Nothing happens on other systems."""
+    if os.name != "nt":
+        return False
+    try:
+        import ctypes
+        from ctypes import wintypes
+        hwnd = wintypes.HWND(int(widget.winId()))
+        dwm = ctypes.windll.dwmapi
+        on = ctypes.c_int(1)
+        ok = False
+        for attr in (20, 19):                    # DWMWA_USE_IMMERSIVE_DARK_MODE (new id, then Win10 1809–1909)
+            if dwm.DwmSetWindowAttribute(hwnd, attr, ctypes.byref(on), ctypes.sizeof(on)) == 0:
+                ok = True
+                break
+        for attr, colour in ((35, TITLE_BG), (36, TEXT), (34, TITLE_BG)):   # caption, text, border (Win11)
+            v = ctypes.c_int(_colorref(colour))
+            dwm.DwmSetWindowAttribute(hwnd, attr, ctypes.byref(v), ctypes.sizeof(v))
+        # Windows 10 repaints the frame only when it changes: nudge it
+        ctypes.windll.user32.SetWindowPos(hwnd, None, 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0004 | 0x0010 | 0x0020)
+        return ok
+    except Exception:  # noqa: BLE001 — cosmetic only
         return False
 
 

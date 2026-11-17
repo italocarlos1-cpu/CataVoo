@@ -3,6 +3,10 @@
 Escritas para quem usa o programa; as notas técnicas ficam em `DRONE.md`. A seção da versão
 publicada vira o texto da página de download.
 
+## v1.0.4
+
+- **Barra de título escura** em todas as janelas (principal, prévia e janelas menores), no lugar da barra branca do Windows.
+
 ## v1.0.3
 
 - **Texto:** alinhamento à **direita**, fonte **Comic Sans MS**, **tamanho em números** (altura das
