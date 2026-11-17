@@ -5,7 +5,36 @@ publicada vira o texto da página de download.
 
 ## v1.0.4
 
-- **Barra de título escura** em todas as janelas (principal, prévia e janelas menores), no lugar da barra branca do Windows.
+O **CataVoo** transforma uma pasta de vídeos brutos de drone num vídeo pronto para publicar — sozinho,
+no seu computador, sem internet e sem custo. Os vídeos originais nunca são alterados.
+
+**Como funciona**
+1. Escolha a pasta dos vídeos, a pasta de músicas (e a faixa, se quiser) e o formato: Horizontal 16:9
+   (até 4K) ou Vertical 9:16 (Reels, Shorts, TikTok).
+2. **ANALISAR MATERIAL:** o programa assiste tudo, separa tremedeira de movimento de câmera, dá nota
+   a cada trecho, descarta cenas repetidas e reconhece as paisagens (cachoeira, serra, pôr do sol,
+   cidade…) com uma IA local opcional.
+3. Escolha a duração — a sugestão já vem pronta, de acordo com o material bom que existe.
+4. **GERAR PRÉVIA:** o vídeo montado toca na hora, sem renderizar, no ritmo da música.
+5. **RENDERIZAR** grava o vídeo final, ou **Exportar → Enviar para o CapCut** entrega as tomadas
+   cortadas e numeradas na ordem, com a música, para terminar lá.
+
+**Na prévia**
+- **11 estilos + Automático** (Cinematográfico, Natureza contemplativa, Pôr do sol, Minimalista,
+  Cidade histórica, Diário de viagem, Trailer épico, Viagem dinâmica, Aventura/FPV, Redes sociais),
+  com ritmo adaptativo nos estilos calmos.
+- **Nova versão:** peça ajustes por escrito ("mais cachoeira, cortes mais rápidos"), com sugestões e
+  um Foco ("ponte", "igreja"…), e veja o que o programa entendeu antes de gerar.
+- **Editor completo:** sequência com régua de tempo e miniaturas, arrastar para reordenar, aparar
+  quadro a quadro, dividir ao meio, ajustar duas tomadas de uma vez, trocar transições, usar trechos
+  que ficaram de fora, desfazer e refazer (Ctrl+Z / Ctrl+Y).
+- **Texto sobre a tomada:** alinhamento, posição, fontes, tamanho, cores e fundo com transparência.
+- **Vertical 9:16:** arraste o quadro de recorte em cada tomada.
+- **Música:** escolha a faixa pelo nome; ela toca do começo ao fim e termina com fade.
+
+**Novo nesta versão:** barra de título escura em todas as janelas, combinando com o resto do programa.
+
+Manual completo no PDF abaixo (10 páginas: instalação, passo a passo, estilos e comandos).
 
 ## v1.0.3
 
